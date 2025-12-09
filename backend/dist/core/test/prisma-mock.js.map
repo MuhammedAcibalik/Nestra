@@ -1,0 +1,1 @@
+{"version":3,"file":"prisma-mock.js","sourceRoot":"","sources":["../../../src/core/test/prisma-mock.ts"],"names":[],"mappings":";;;AACA,2DAA6D;AAUtD,MAAM,iBAAiB,GAAG,GAAgB,EAAE;IAC/C,OAAO;QACH,MAAM,EAAE,IAAA,6BAAQ,GAAgB;KACnC,CAAC;AACN,CAAC,CAAC;AAJW,QAAA,iBAAiB,qBAI5B"}
