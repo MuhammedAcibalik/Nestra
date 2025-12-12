@@ -47,8 +47,7 @@ export interface ICuttingJobService {
 }
 export declare class CuttingJobService implements ICuttingJobService {
     private readonly repository;
-    private readonly prisma;
-    constructor(repository: ICuttingJobRepository, prisma: import('@prisma/client').PrismaClient);
+    constructor(repository: ICuttingJobRepository);
     getJobs(filter?: ICuttingJobFilter): Promise<IResult<ICuttingJobDto[]>>;
     getJobById(id: string): Promise<IResult<ICuttingJobDto>>;
     createJob(data: ICreateCuttingJobInput): Promise<IResult<ICuttingJobDto>>;

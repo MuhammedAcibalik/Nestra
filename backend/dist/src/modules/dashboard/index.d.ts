@@ -1,6 +1,7 @@
 /**
  * Dashboard Module - Barrel Export
  */
-export { DashboardService, IDashboardStats, IRecentActivity, IWasteAnalytics, IDashboardService } from './dashboard.service';
-export { DashboardController } from './dashboard.controller';
+export * from './dashboard.repository';
+export * from './dashboard.service';
+export * from './dashboard.controller';
 //# sourceMappingURL=index.d.ts.map

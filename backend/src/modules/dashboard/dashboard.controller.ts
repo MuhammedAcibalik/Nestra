@@ -1,18 +1,25 @@
 /**
  * Dashboard Controller
  * Handles HTTP requests for dashboard analytics
+ * Refactored to use proper service injection
  */
 
 import { Router, Request, Response } from 'express';
-import { DashboardService } from './dashboard.service';
+import { IDashboardService } from './dashboard.service';
 
-export class DashboardController {
+// ==================== INTERFACES ====================
+
+export interface IDashboardController {
+    readonly router: Router;
+}
+
+// ==================== CONTROLLER ====================
+
+export class DashboardController implements IDashboardController {
     public readonly router: Router;
-    private readonly dashboardService: DashboardService;
 
-    constructor(private readonly prisma: import('@prisma/client').PrismaClient) {
+    constructor(private readonly dashboardService: IDashboardService) {
         this.router = Router();
-        this.dashboardService = new DashboardService(prisma);
         this.initializeRoutes();
     }
 

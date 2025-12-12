@@ -9,10 +9,8 @@ const interfaces_1 = require("../../core/interfaces");
 const events_1 = require("../../core/events");
 class CuttingJobService {
     repository;
-    prisma;
-    constructor(repository, prisma) {
+    constructor(repository) {
         this.repository = repository;
-        this.prisma = prisma;
     }
     async getJobs(filter) {
         try {
@@ -49,10 +47,8 @@ class CuttingJobService {
     }
     async createJob(data) {
         try {
-            // Get order items to determine quantities
-            const orderItems = await this.prisma.orderItem.findMany({
-                where: { id: { in: data.orderItemIds } }
-            });
+            // Get order items to determine quantities using repository
+            const orderItems = await this.repository.getOrderItemsByIds(data.orderItemIds);
             const items = orderItems.map(item => ({
                 orderItemId: item.id,
                 quantity: item.quantity
@@ -150,16 +146,8 @@ class CuttingJobService {
     }
     async autoGenerateFromOrders(confirmedOnly = true) {
         try {
-            // Get order items that haven't been assigned to a cutting job yet
-            const orderItems = await this.prisma.orderItem.findMany({
-                where: {
-                    order: confirmedOnly ? { status: 'CONFIRMED' } : undefined,
-                    cuttingJobItems: { none: {} }
-                },
-                include: {
-                    order: { select: { status: true } }
-                }
-            });
+            // Get order items that haven't been assigned to a cutting job yet using repository
+            const orderItems = await this.repository.getUnassignedOrderItems(confirmedOnly);
             // Group by materialTypeId and thickness
             const grouped = new Map();
             const skippedItems = [];

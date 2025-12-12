@@ -55,6 +55,16 @@ export interface ICuttingJobRepository {
     getItems(jobId: string): Promise<CuttingJobItem[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
     generateJobNumber(): Promise<string>;
+    getOrderItemsByIds(ids: string[]): Promise<{
+        id: string;
+        quantity: number;
+    }[]>;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
+        id: string;
+        materialTypeId: string;
+        thickness: number;
+        quantity: number;
+    }[]>;
 }
 export declare class CuttingJobRepository implements ICuttingJobRepository {
     private readonly prisma;
@@ -73,5 +83,15 @@ export declare class CuttingJobRepository implements ICuttingJobRepository {
     getItems(jobId: string): Promise<CuttingJobItem[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
     generateJobNumber(): Promise<string>;
+    getOrderItemsByIds(ids: string[]): Promise<{
+        id: string;
+        quantity: number;
+    }[]>;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
+        id: string;
+        materialTypeId: string;
+        thickness: number;
+        quantity: number;
+    }[]>;
 }
 //# sourceMappingURL=cutting-job.repository.d.ts.map

@@ -1,9 +1,10 @@
 /**
  * File Import Service
  * Handles importing order data from Excel (.xlsx) and CSV files
+ * Refactored to use repository injection instead of direct Prisma
  */
-import { PrismaClient } from '@prisma/client';
 import { IResult } from '../../core/interfaces';
+import { IImportRepository } from './import.repository';
 export interface IColumnMapping {
     itemCode?: string;
     itemName?: string;
@@ -45,8 +46,8 @@ export interface IImportService {
     getFileHeaders(buffer: Buffer, fileType: 'excel' | 'csv'): Promise<IResult<string[]>>;
 }
 export declare class ImportService implements IImportService {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly repository;
+    constructor(repository: IImportRepository);
     importFromExcel(buffer: Buffer, options: IImportOptions, userId: string): Promise<IResult<IImportResult>>;
     importFromCSV(buffer: Buffer, options: IImportOptions, userId: string): Promise<IResult<IImportResult>>;
     getFileHeaders(buffer: Buffer, fileType: 'excel' | 'csv'): Promise<IResult<string[]>>;

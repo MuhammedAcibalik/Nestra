@@ -2,16 +2,18 @@
 /**
  * Export Controller
  * Handles HTTP requests for PDF and Excel export
+ * Refactored to follow microservice architecture - uses repository injection
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExportController = void 0;
 const express_1 = require("express");
 const export_service_1 = require("./export.service");
+// ==================== CONTROLLER ====================
 class ExportController {
-    prisma;
+    repository;
     router;
-    constructor(prisma) {
-        this.prisma = prisma;
+    constructor(repository) {
+        this.repository = repository;
         this.router = (0, express_1.Router)();
         this.initializeRoutes();
     }
@@ -29,20 +31,26 @@ class ExportController {
             const includeLayouts = req.query.layouts === 'true';
             const includePieceDetails = req.query.pieces === 'true';
             const language = req.query.lang ?? 'tr';
-            const planData = await this.getPlanExportData(planId);
-            if (!planData) {
-                res.status(404).json({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Plan bulunamadı' } });
+            const exportData = await this.getPlanExportData(planId);
+            if (!exportData) {
+                res.status(404).json({
+                    success: false,
+                    error: { code: 'PLAN_NOT_FOUND', message: 'Plan bulunamadı' }
+                });
                 return;
             }
             const options = { includeLayouts, includePieceDetails, language };
-            const pdfBuffer = await export_service_1.exportService.exportPlanToPdf(planData, options);
+            const pdfBuffer = await export_service_1.exportService.exportPlanToPdf(exportData, options);
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="plan-${planData.planNumber}.pdf"`);
+            res.setHeader('Content-Disposition', `attachment; filename="plan-${exportData.planNumber}.pdf"`);
             res.send(pdfBuffer);
         }
         catch (error) {
             console.error('PDF export error:', error);
-            res.status(500).json({ success: false, error: { code: 'EXPORT_ERROR', message: 'PDF oluşturulurken hata' } });
+            res.status(500).json({
+                success: false,
+                error: { code: 'EXPORT_ERROR', message: 'PDF oluşturulurken hata' }
+            });
         }
     }
     async exportPlanToExcel(req, res) {
@@ -51,20 +59,26 @@ class ExportController {
             const includeLayouts = req.query.layouts === 'true';
             const includePieceDetails = req.query.pieces === 'true';
             const language = req.query.lang ?? 'tr';
-            const planData = await this.getPlanExportData(planId);
-            if (!planData) {
-                res.status(404).json({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Plan bulunamadı' } });
+            const exportData = await this.getPlanExportData(planId);
+            if (!exportData) {
+                res.status(404).json({
+                    success: false,
+                    error: { code: 'PLAN_NOT_FOUND', message: 'Plan bulunamadı' }
+                });
                 return;
             }
             const options = { includeLayouts, includePieceDetails, language };
-            const excelBuffer = await export_service_1.exportService.exportPlanToExcel(planData, options);
+            const excelBuffer = await export_service_1.exportService.exportPlanToExcel(exportData, options);
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.setHeader('Content-Disposition', `attachment; filename="plan-${planData.planNumber}.xlsx"`);
+            res.setHeader('Content-Disposition', `attachment; filename="plan-${exportData.planNumber}.xlsx"`);
             res.send(excelBuffer);
         }
         catch (error) {
             console.error('Excel export error:', error);
-            res.status(500).json({ success: false, error: { code: 'EXPORT_ERROR', message: 'Excel oluşturulurken hata' } });
+            res.status(500).json({
+                success: false,
+                error: { code: 'EXPORT_ERROR', message: 'Excel oluşturulurken hata' }
+            });
         }
     }
     async exportMultiplePlansToExcel(req, res) {
@@ -72,18 +86,24 @@ class ExportController {
             const { planIds } = req.body;
             const language = req.query.lang ?? 'tr';
             if (!planIds || planIds.length === 0) {
-                res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Plan ID listesi gerekli' } });
+                res.status(400).json({
+                    success: false,
+                    error: { code: 'VALIDATION_ERROR', message: 'Plan ID listesi gerekli' }
+                });
                 return;
             }
             const plans = [];
             for (const planId of planIds) {
-                const planData = await this.getPlanExportData(planId);
-                if (planData) {
-                    plans.push(planData);
+                const exportData = await this.getPlanExportData(planId);
+                if (exportData) {
+                    plans.push(exportData);
                 }
             }
             if (plans.length === 0) {
-                res.status(404).json({ success: false, error: { code: 'NO_PLANS_FOUND', message: 'Geçerli plan bulunamadı' } });
+                res.status(404).json({
+                    success: false,
+                    error: { code: 'NO_PLANS_FOUND', message: 'Geçerli plan bulunamadı' }
+                });
                 return;
             }
             const options = { language };
@@ -94,45 +114,47 @@ class ExportController {
         }
         catch (error) {
             console.error('Excel export error:', error);
-            res.status(500).json({ success: false, error: { code: 'EXPORT_ERROR', message: 'Excel oluşturulurken hata' } });
+            res.status(500).json({
+                success: false,
+                error: { code: 'EXPORT_ERROR', message: 'Excel oluşturulurken hata' }
+            });
         }
     }
+    /**
+     * Transform repository data to export format
+     */
     async getPlanExportData(planId) {
-        const plan = await this.prisma.cuttingPlan.findUnique({
-            where: { id: planId },
-            include: {
-                scenario: {
-                    include: {
-                        cuttingJob: {
-                            include: {
-                                items: {
-                                    include: {
-                                        orderItem: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                stockItems: {
-                    include: {
-                        stockItem: true
-                    },
-                    orderBy: { sequence: 'asc' }
-                }
-            }
-        });
+        const plan = await this.repository.findPlanById(planId);
         if (!plan)
             return null;
-        const layouts = plan.stockItems.map((ps) => {
+        // Get material type name
+        const materialType = await this.repository.findMaterialTypeById(plan.scenario.cuttingJob.materialTypeId);
+        const layouts = this.transformLayouts(plan);
+        return {
+            planNumber: plan.planNumber,
+            scenarioName: plan.scenario.name,
+            materialType: materialType?.name ?? 'Bilinmiyor',
+            thickness: plan.scenario.cuttingJob.thickness,
+            totalWaste: plan.totalWaste,
+            wastePercentage: plan.wastePercentage,
+            stockUsedCount: plan.stockUsedCount,
+            createdAt: plan.createdAt,
+            layouts
+        };
+    }
+    /**
+     * Transform stock items to layout export format
+     */
+    transformLayouts(plan) {
+        return plan.stockItems.map(ps => {
             const stock = ps.stockItem;
             const is2D = stock.stockType === 'SHEET_2D';
             const dimensions = is2D
                 ? `${stock.width ?? 0} x ${stock.height ?? 0} mm`
                 : `${stock.length ?? 0} mm`;
-            // Parse layout data for pieces (simplified)
+            // Parse layout data for pieces
             const layoutData = ps.layoutData;
-            const pieces = (layoutData?.pieces ?? []).map((p) => ({
+            const pieces = (layoutData?.pieces ?? []).map(p => ({
                 code: p.code,
                 dimensions: is2D ? `${p.width ?? 0} x ${p.height ?? 0}` : `${p.length ?? 0}`,
                 quantity: p.quantity ?? 1
@@ -146,20 +168,6 @@ class ExportController {
                 pieces
             };
         });
-        // Get material type name from the cutting job
-        const materialTypeId = plan.scenario.cuttingJob.materialTypeId;
-        const materialType = await this.prisma.materialType.findUnique({ where: { id: materialTypeId } });
-        return {
-            planNumber: plan.planNumber,
-            scenarioName: plan.scenario.name,
-            materialType: materialType?.name ?? 'Bilinmiyor',
-            thickness: plan.scenario.cuttingJob.thickness,
-            totalWaste: plan.totalWaste,
-            wastePercentage: plan.wastePercentage,
-            stockUsedCount: plan.stockUsedCount,
-            createdAt: plan.createdAt,
-            layouts
-        };
     }
 }
 exports.ExportController = ExportController;

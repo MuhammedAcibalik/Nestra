@@ -1,6 +1,7 @@
-import { ImportService } from '../import.service';
-import { createMockContext, MockContext } from '../../../core/test/prisma-mock';
+import { ImportService, IImportService } from '../import.service';
+import { IImportRepository } from '../import.repository';
 import xlsx from 'xlsx';
+import { mock, MockProxy } from 'jest-mock-extended';
 
 // Mock xlsx
 jest.mock('xlsx', () => ({
@@ -13,12 +14,12 @@ jest.mock('xlsx', () => ({
 }));
 
 describe('ImportService', () => {
-    let service: ImportService;
-    let mockCtx: MockContext;
+    let service: IImportService;
+    let repository: MockProxy<IImportRepository>;
 
     beforeEach(() => {
-        mockCtx = createMockContext();
-        service = new ImportService(mockCtx.prisma);
+        repository = mock<IImportRepository>();
+        service = new ImportService(repository);
     });
 
     describe('detectFileType', () => {
@@ -55,11 +56,12 @@ describe('ImportService', () => {
                 { 'Malzeme': 'MDF', 'Kalınlık': 18, 'Adet': 2, 'Boy': 100, 'En': 50 }
             ]);
 
-            mockCtx.prisma.order.count.mockResolvedValue(0);
-            mockCtx.prisma.order.create.mockResolvedValue({
+            // Mock repository methods
+            repository.getOrderCount.mockResolvedValue(0);
+            repository.createOrderWithItems.mockResolvedValue({
                 id: 'order-1',
                 orderNumber: 'ORD-2023-00001'
-            } as any);
+            });
 
             const buffer = Buffer.from('');
             const options = {
@@ -76,7 +78,7 @@ describe('ImportService', () => {
 
             expect(result.success).toBe(true);
             expect(result.data?.importedItems).toBe(1);
-            expect(mockCtx.prisma.order.create).toHaveBeenCalled();
+            expect(repository.createOrderWithItems).toHaveBeenCalled();
         });
     });
 });

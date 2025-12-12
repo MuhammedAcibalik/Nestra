@@ -32,7 +32,7 @@ describe('CuttingJobService', () => {
     beforeEach(() => {
         repository = mock<ICuttingJobRepository>();
         mockCtx = createMockContext();
-        service = new CuttingJobService(repository, mockCtx.prisma);
+        service = new CuttingJobService(repository);
 
         // Mock EventBus.publish
         const eventBus = EventBus.getInstance();
@@ -76,7 +76,7 @@ describe('CuttingJobService', () => {
             const mockOrderItems = [{ id: 'item-1', quantity: 5 }];
             const mockJob = createMockJob({ _count: { items: 1, scenarios: 0 } });
 
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue(mockOrderItems as any); // Prisma mocks still tricky without deep partials, keep specific any or improve
+            repository.getOrderItemsByIds.mockResolvedValue(mockOrderItems);
             repository.create.mockResolvedValue(mockJob as unknown as import('@prisma/client').CuttingJob);
             repository.findById.mockResolvedValue(mockJob);
 
@@ -179,9 +179,9 @@ describe('CuttingJobService', () => {
 
     describe('autoGenerateFromOrders', () => {
         it('should create new job for unassigned items', async () => {
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue([
+            repository.getUnassignedOrderItems.mockResolvedValue([
                 { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
-            ] as any);
+            ]);
             repository.findByMaterialAndThickness.mockResolvedValue([]);
 
             const mockJob = createMockJob();
@@ -196,9 +196,9 @@ describe('CuttingJobService', () => {
         });
 
         it('should add to existing PENDING job', async () => {
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue([
+            repository.getUnassignedOrderItems.mockResolvedValue([
                 { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
-            ] as any);
+            ]);
             const existingJob = createMockJob({ id: 'job-EXISTING', status: 'PENDING' });
             repository.findByMaterialAndThickness.mockResolvedValue([existingJob]);
             repository.findById.mockResolvedValue(existingJob);

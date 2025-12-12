@@ -2,19 +2,18 @@
 /**
  * Dashboard Controller
  * Handles HTTP requests for dashboard analytics
+ * Refactored to use proper service injection
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
 const express_1 = require("express");
-const dashboard_service_1 = require("./dashboard.service");
+// ==================== CONTROLLER ====================
 class DashboardController {
-    prisma;
-    router;
     dashboardService;
-    constructor(prisma) {
-        this.prisma = prisma;
+    router;
+    constructor(dashboardService) {
+        this.dashboardService = dashboardService;
         this.router = (0, express_1.Router)();
-        this.dashboardService = new dashboard_service_1.DashboardService(prisma);
         this.initializeRoutes();
     }
     initializeRoutes() {

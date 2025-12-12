@@ -1,31 +1,14 @@
 /**
  * Dashboard Service
  * Provides analytics and KPIs for the dashboard
+ * Refactored to use repository injection instead of direct Prisma
  */
-import { PrismaClient } from '@prisma/client';
+import { IDashboardRepository, IOrderStats, IJobStats, IStockStats, IProductionStats } from './dashboard.repository';
 export interface IDashboardStats {
-    orders: {
-        total: number;
-        pending: number;
-        inProduction: number;
-        completed: number;
-    };
-    cuttingJobs: {
-        total: number;
-        pending: number;
-        optimizing: number;
-        inProduction: number;
-    };
-    stock: {
-        totalItems: number;
-        lowStockCount: number;
-        totalValue: number;
-    };
-    production: {
-        activePlans: number;
-        completedToday: number;
-        averageWastePercentage: number;
-    };
+    orders: IOrderStats;
+    cuttingJobs: IJobStats;
+    stock: IStockStats;
+    production: IProductionStats;
 }
 export interface IRecentActivity {
     type: 'order' | 'cutting_job' | 'plan' | 'production';
@@ -40,31 +23,24 @@ export interface IWasteAnalytics {
     wastePercentage: number;
     planCount: number;
 }
+export interface IMaterialUsage {
+    materialType: string;
+    usageCount: number;
+    wastePercentage: number;
+}
 export interface IDashboardService {
     getStats(): Promise<IDashboardStats>;
     getRecentActivity(limit?: number): Promise<IRecentActivity[]>;
     getWasteAnalytics(days?: number): Promise<IWasteAnalytics[]>;
-    getMaterialUsage(): Promise<{
-        materialType: string;
-        usageCount: number;
-        wastePercentage: number;
-    }[]>;
+    getMaterialUsage(): Promise<IMaterialUsage[]>;
 }
 export declare class DashboardService implements IDashboardService {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly repository;
+    constructor(repository: IDashboardRepository);
     getStats(): Promise<IDashboardStats>;
-    private getOrderStats;
-    private getJobStats;
-    private getStockStats;
-    private getProductionStats;
     getRecentActivity(limit?: number): Promise<IRecentActivity[]>;
     getWasteAnalytics(days?: number): Promise<IWasteAnalytics[]>;
     private getWeekStart;
-    getMaterialUsage(): Promise<{
-        materialType: string;
-        usageCount: number;
-        wastePercentage: number;
-    }[]>;
+    getMaterialUsage(): Promise<IMaterialUsage[]>;
 }
 //# sourceMappingURL=dashboard.service.d.ts.map

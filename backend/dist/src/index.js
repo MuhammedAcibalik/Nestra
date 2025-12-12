@@ -38,6 +38,11 @@ const authMiddleware_1 = require("./middleware/authMiddleware");
 const services_1 = require("./core/services");
 const optimization_service_handler_1 = require("./modules/optimization/optimization.service-handler");
 const stock_service_handler_1 = require("./modules/stock/stock.service-handler");
+const order_service_handler_1 = require("./modules/order/order.service-handler");
+const material_service_handler_1 = require("./modules/material/material.service-handler");
+const machine_service_handler_1 = require("./modules/machine/machine.service-handler");
+const customer_service_handler_1 = require("./modules/customer/customer.service-handler");
+const cutting_job_service_handler_1 = require("./modules/cutting-job/cutting-job.service-handler");
 // Event Handlers (Event-Driven Architecture)
 const stock_event_handler_1 = require("./modules/stock/stock.event-handler");
 const optimization_event_handler_1 = require("./modules/optimization/optimization.event-handler");
@@ -102,6 +107,21 @@ class Application {
         // Register stock service handler
         const stockServiceHandler = new stock_service_handler_1.StockServiceHandler(stockRepository);
         serviceRegistry.register('stock', stockServiceHandler);
+        // Register order service handler
+        const orderServiceHandler = new order_service_handler_1.OrderServiceHandler(orderRepository);
+        serviceRegistry.register('order', orderServiceHandler);
+        // Register material service handler
+        const materialServiceHandler = new material_service_handler_1.MaterialServiceHandler(materialRepository);
+        serviceRegistry.register('material', materialServiceHandler);
+        // Register machine service handler
+        const machineServiceHandler = new machine_service_handler_1.MachineServiceHandler(machineRepository);
+        serviceRegistry.register('machine', machineServiceHandler);
+        // Register customer service handler
+        const customerServiceHandler = new customer_service_handler_1.CustomerServiceHandler(customerRepository);
+        serviceRegistry.register('customer', customerServiceHandler);
+        // Register cutting-job service handler
+        const cuttingJobServiceHandler = new cutting_job_service_handler_1.CuttingJobServiceHandler(cuttingJobRepository);
+        serviceRegistry.register('cutting-job', cuttingJobServiceHandler);
         // Create service clients for cross-module access
         const optimizationClient = (0, services_1.createOptimizationClient)(serviceRegistry);
         const stockClient = (0, services_1.createStockClient)(serviceRegistry);
@@ -115,8 +135,9 @@ class Application {
         // ProductionService uses service clients instead of cross-module repositories
         this.productionService = new production_1.ProductionService(productionRepository, optimizationClient, stockClient);
         this.reportService = new report_1.ReportService(reportRepository);
-        this.cuttingJobService = new cutting_job_1.CuttingJobService(cuttingJobRepository, this.prisma);
-        this.importService = new import_1.ImportService(this.prisma);
+        this.cuttingJobService = new cutting_job_1.CuttingJobService(cuttingJobRepository);
+        const importRepository = new import_1.ImportRepository(this.prisma);
+        this.importService = new import_1.ImportService(importRepository);
         this.machineService = new machine_1.MachineService(machineRepository);
         this.customerService = new customer_1.CustomerService(customerRepository);
         this.locationService = new location_1.LocationService(locationRepository);
@@ -154,8 +175,13 @@ class Application {
         const machineController = new machine_1.MachineController(this.machineService);
         const customerController = new customer_1.CustomerController(this.customerService);
         const locationController = new location_1.LocationController(this.locationService);
-        const exportController = new export_1.ExportController(this.prisma);
-        const dashboardController = new dashboard_1.DashboardController(this.prisma);
+        // Export module with repository injection
+        const exportRepository = new export_1.ExportRepository(this.prisma);
+        const exportController = new export_1.ExportController(exportRepository);
+        // Dashboard module with repository -> service -> controller injection
+        const dashboardRepository = new dashboard_1.DashboardRepository(this.prisma);
+        const dashboardService = new dashboard_1.DashboardService(dashboardRepository);
+        const dashboardController = new dashboard_1.DashboardController(dashboardService);
         // Create auth middleware with proper type
         const authMiddleware = (0, authMiddleware_1.createAuthMiddleware)(this.authService);
         // Health check (public)

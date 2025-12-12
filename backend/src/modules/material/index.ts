@@ -6,3 +6,6 @@
 export { MaterialRepository, IMaterialRepository } from './material.repository';
 export { MaterialService } from './material.service';
 export { MaterialController, createMaterialController } from './material.controller';
+
+// Microservice
+export { MaterialServiceHandler } from './material.service-handler';

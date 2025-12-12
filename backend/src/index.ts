@@ -24,12 +24,12 @@ import {
 import { ProductionRepository, ProductionService, ProductionController } from './modules/production';
 import { ReportRepository, ReportService, ReportController } from './modules/report';
 import { CuttingJobRepository, CuttingJobService, CuttingJobController } from './modules/cutting-job';
-import { ImportService, ImportController } from './modules/import';
+import { ImportRepository, ImportService, ImportController } from './modules/import';
 import { MachineRepository, MachineService, MachineController } from './modules/machine';
 import { CustomerRepository, CustomerService, CustomerController } from './modules/customer';
 import { LocationRepository, LocationService, LocationController } from './modules/location';
-import { ExportController } from './modules/export';
-import { DashboardController } from './modules/dashboard';
+import { ExportRepository, ExportController } from './modules/export';
+import { DashboardRepository, DashboardService, DashboardController } from './modules/dashboard';
 
 // WebSocket
 import { websocketService } from './websocket';
@@ -45,6 +45,11 @@ import { IAuthService } from './core/interfaces';
 import { ServiceRegistry, createOptimizationClient, createStockClient } from './core/services';
 import { OptimizationServiceHandler } from './modules/optimization/optimization.service-handler';
 import { StockServiceHandler } from './modules/stock/stock.service-handler';
+import { OrderServiceHandler } from './modules/order/order.service-handler';
+import { MaterialServiceHandler } from './modules/material/material.service-handler';
+import { MachineServiceHandler } from './modules/machine/machine.service-handler';
+import { CustomerServiceHandler } from './modules/customer/customer.service-handler';
+import { CuttingJobServiceHandler } from './modules/cutting-job/cutting-job.service-handler';
 
 // Event Handlers (Event-Driven Architecture)
 import { StockEventHandler } from './modules/stock/stock.event-handler';
@@ -122,6 +127,26 @@ export class Application {
         const stockServiceHandler = new StockServiceHandler(stockRepository);
         serviceRegistry.register('stock', stockServiceHandler);
 
+        // Register order service handler
+        const orderServiceHandler = new OrderServiceHandler(orderRepository);
+        serviceRegistry.register('order', orderServiceHandler);
+
+        // Register material service handler
+        const materialServiceHandler = new MaterialServiceHandler(materialRepository);
+        serviceRegistry.register('material', materialServiceHandler);
+
+        // Register machine service handler
+        const machineServiceHandler = new MachineServiceHandler(machineRepository);
+        serviceRegistry.register('machine', machineServiceHandler);
+
+        // Register customer service handler
+        const customerServiceHandler = new CustomerServiceHandler(customerRepository);
+        serviceRegistry.register('customer', customerServiceHandler);
+
+        // Register cutting-job service handler
+        const cuttingJobServiceHandler = new CuttingJobServiceHandler(cuttingJobRepository);
+        serviceRegistry.register('cutting-job', cuttingJobServiceHandler);
+
         // Create service clients for cross-module access
         const optimizationClient = createOptimizationClient(serviceRegistry);
         const stockClient = createStockClient(serviceRegistry);
@@ -138,8 +163,9 @@ export class Application {
         this.productionService = new ProductionService(productionRepository, optimizationClient, stockClient);
 
         this.reportService = new ReportService(reportRepository);
-        this.cuttingJobService = new CuttingJobService(cuttingJobRepository, this.prisma);
-        this.importService = new ImportService(this.prisma);
+        this.cuttingJobService = new CuttingJobService(cuttingJobRepository);
+        const importRepository = new ImportRepository(this.prisma);
+        this.importService = new ImportService(importRepository);
         this.machineService = new MachineService(machineRepository);
         this.customerService = new CustomerService(customerRepository);
         this.locationService = new LocationService(locationRepository);
@@ -182,8 +208,14 @@ export class Application {
         const machineController = new MachineController(this.machineService);
         const customerController = new CustomerController(this.customerService);
         const locationController = new LocationController(this.locationService);
-        const exportController = new ExportController(this.prisma);
-        const dashboardController = new DashboardController(this.prisma);
+        // Export module with repository injection
+        const exportRepository = new ExportRepository(this.prisma);
+        const exportController = new ExportController(exportRepository);
+
+        // Dashboard module with repository -> service -> controller injection
+        const dashboardRepository = new DashboardRepository(this.prisma);
+        const dashboardService = new DashboardService(dashboardRepository);
+        const dashboardController = new DashboardController(dashboardService);
 
         // Create auth middleware with proper type
         const authMiddleware = createAuthMiddleware(this.authService as IAuthService);

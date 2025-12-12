@@ -29,7 +29,7 @@ describe('CuttingJobService', () => {
     beforeEach(() => {
         repository = (0, jest_mock_extended_1.mock)();
         mockCtx = (0, prisma_mock_1.createMockContext)();
-        service = new cutting_job_service_1.CuttingJobService(repository, mockCtx.prisma);
+        service = new cutting_job_service_1.CuttingJobService(repository);
         // Mock EventBus.publish
         const eventBus = events_1.EventBus.getInstance();
         eventBusPublishSpy = jest.spyOn(eventBus, 'publish').mockResolvedValue(undefined);
@@ -62,7 +62,7 @@ describe('CuttingJobService', () => {
             };
             const mockOrderItems = [{ id: 'item-1', quantity: 5 }];
             const mockJob = createMockJob({ _count: { items: 1, scenarios: 0 } });
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue(mockOrderItems); // Prisma mocks still tricky without deep partials, keep specific any or improve
+            repository.getOrderItemsByIds.mockResolvedValue(mockOrderItems);
             repository.create.mockResolvedValue(mockJob);
             repository.findById.mockResolvedValue(mockJob);
             const result = await service.createJob(input);
@@ -135,7 +135,7 @@ describe('CuttingJobService', () => {
     });
     describe('autoGenerateFromOrders', () => {
         it('should create new job for unassigned items', async () => {
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue([
+            repository.getUnassignedOrderItems.mockResolvedValue([
                 { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
             ]);
             repository.findByMaterialAndThickness.mockResolvedValue([]);
@@ -148,7 +148,7 @@ describe('CuttingJobService', () => {
             expect(repository.create).toHaveBeenCalled();
         });
         it('should add to existing PENDING job', async () => {
-            mockCtx.prisma.orderItem.findMany.mockResolvedValue([
+            repository.getUnassignedOrderItems.mockResolvedValue([
                 { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
             ]);
             const existingJob = createMockJob({ id: 'job-EXISTING', status: 'PENDING' });

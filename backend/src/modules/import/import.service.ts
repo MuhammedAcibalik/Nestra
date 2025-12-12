@@ -1,11 +1,11 @@
 /**
  * File Import Service
  * Handles importing order data from Excel (.xlsx) and CSV files
+ * Refactored to use repository injection instead of direct Prisma
  */
 
 import xlsx from 'xlsx';
 import { parse as csvParse } from 'csv-parse/sync';
-import { PrismaClient, GeometryType } from '@prisma/client';
 import {
     IResult,
     success,
@@ -14,8 +14,11 @@ import {
     ICreateOrderItemInput
 } from '../../core/interfaces';
 import { createModuleLogger } from '../../core/logger';
+import { IImportRepository } from './import.repository';
 
 const logger = createModuleLogger('ImportService');
+
+// ==================== INTERFACES ====================
 
 export interface IColumnMapping {
     itemCode?: string;
@@ -66,8 +69,10 @@ export interface IImportService {
     getFileHeaders(buffer: Buffer, fileType: 'excel' | 'csv'): Promise<IResult<string[]>>;
 }
 
+// ==================== SERVICE ====================
+
 export class ImportService implements IImportService {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(private readonly repository: IImportRepository) { }
 
     async importFromExcel(
         buffer: Buffer,
@@ -238,33 +243,17 @@ export class ImportService implements IImportService {
                 items: validItems
             };
 
-            // Generate order number
-            const orderCount = await this.prisma.order.count();
+            // Generate order number using repository
+            const orderCount = await this.repository.getOrderCount();
             const date = new Date();
             const orderNumber = `ORD-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}-${String(orderCount + 1).padStart(5, '0')}`;
 
-            const order = await this.prisma.order.create({
-                data: {
-                    orderNumber,
-                    createdById: userId,
-                    notes: orderData.notes,
-                    items: {
-                        create: validItems.map(item => ({
-                            itemCode: item.itemCode,
-                            itemName: item.itemName,
-                            geometryType: (item.geometryType || 'RECTANGLE') as GeometryType,
-                            length: item.length,
-                            width: item.width,
-                            height: item.height,
-                            diameter: item.diameter,
-                            materialTypeId: item.materialTypeId,
-                            thickness: item.thickness,
-                            quantity: item.quantity,
-                            canRotate: item.canRotate ?? true
-                        }))
-                    }
-                }
-            });
+            const order = await this.repository.createOrderWithItems(
+                orderNumber,
+                userId,
+                orderData.notes ?? '',
+                validItems
+            );
 
             logger.info('Import completed', {
                 orderId: order.id,

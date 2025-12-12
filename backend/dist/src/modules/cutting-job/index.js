@@ -17,7 +17,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CuttingJobServiceHandler = void 0;
 __exportStar(require("./cutting-job.repository"), exports);
 __exportStar(require("./cutting-job.service"), exports);
 __exportStar(require("./cutting-job.controller"), exports);
+// Microservice
+var cutting_job_service_handler_1 = require("./cutting-job.service-handler");
+Object.defineProperty(exports, "CuttingJobServiceHandler", { enumerable: true, get: function () { return cutting_job_service_handler_1.CuttingJobServiceHandler; } });
 //# sourceMappingURL=index.js.map

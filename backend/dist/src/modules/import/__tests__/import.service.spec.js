@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const import_service_1 = require("../import.service");
-const prisma_mock_1 = require("../../../core/test/prisma-mock");
 const xlsx_1 = __importDefault(require("xlsx"));
+const jest_mock_extended_1 = require("jest-mock-extended");
 // Mock xlsx
 jest.mock('xlsx', () => ({
     read: jest.fn(),
@@ -17,10 +17,10 @@ jest.mock('xlsx', () => ({
 }));
 describe('ImportService', () => {
     let service;
-    let mockCtx;
+    let repository;
     beforeEach(() => {
-        mockCtx = (0, prisma_mock_1.createMockContext)();
-        service = new import_service_1.ImportService(mockCtx.prisma);
+        repository = (0, jest_mock_extended_1.mock)();
+        service = new import_service_1.ImportService(repository);
     });
     describe('detectFileType', () => {
         it('should detect file types correctly', () => {
@@ -52,8 +52,9 @@ describe('ImportService', () => {
             xlsx_1.default.utils.sheet_to_json.mockReturnValue([
                 { 'Malzeme': 'MDF', 'Kalınlık': 18, 'Adet': 2, 'Boy': 100, 'En': 50 }
             ]);
-            mockCtx.prisma.order.count.mockResolvedValue(0);
-            mockCtx.prisma.order.create.mockResolvedValue({
+            // Mock repository methods
+            repository.getOrderCount.mockResolvedValue(0);
+            repository.createOrderWithItems.mockResolvedValue({
                 id: 'order-1',
                 orderNumber: 'ORD-2023-00001'
             });
@@ -70,7 +71,7 @@ describe('ImportService', () => {
             const result = await service.importFromExcel(buffer, options, 'user-1');
             expect(result.success).toBe(true);
             expect(result.data?.importedItems).toBe(1);
-            expect(mockCtx.prisma.order.create).toHaveBeenCalled();
+            expect(repository.createOrderWithItems).toHaveBeenCalled();
         });
     });
 });

@@ -51,6 +51,14 @@ export interface ICuttingJobRepository {
     getItems(jobId: string): Promise<CuttingJobItem[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
     generateJobNumber(): Promise<string>;
+    // OrderItem queries for service use
+    getOrderItemsByIds(ids: string[]): Promise<{ id: string; quantity: number }[]>;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
+        id: string;
+        materialTypeId: string;
+        thickness: number;
+        quantity: number;
+    }[]>;
 }
 
 interface CuttingJobWhereInput {
@@ -227,5 +235,34 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         const year = date.getFullYear().toString().slice(-2);
         const month = String(date.getMonth() + 1).padStart(2, '0');
         return `JOB-${year}${month}-${String(count + 1).padStart(5, '0')}`;
+    }
+
+    async getOrderItemsByIds(ids: string[]): Promise<{ id: string; quantity: number }[]> {
+        const items = await this.prisma.orderItem.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, quantity: true }
+        });
+        return items;
+    }
+
+    async getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
+        id: string;
+        materialTypeId: string;
+        thickness: number;
+        quantity: number;
+    }[]> {
+        const items = await this.prisma.orderItem.findMany({
+            where: {
+                order: confirmedOnly ? { status: 'CONFIRMED' } : undefined,
+                cuttingJobItems: { none: {} }
+            },
+            select: {
+                id: true,
+                materialTypeId: true,
+                thickness: true,
+                quantity: true
+            }
+        });
+        return items;
     }
 }

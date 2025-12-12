@@ -159,6 +159,28 @@ class CuttingJobRepository {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         return `JOB-${year}${month}-${String(count + 1).padStart(5, '0')}`;
     }
+    async getOrderItemsByIds(ids) {
+        const items = await this.prisma.orderItem.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, quantity: true }
+        });
+        return items;
+    }
+    async getUnassignedOrderItems(confirmedOnly) {
+        const items = await this.prisma.orderItem.findMany({
+            where: {
+                order: confirmedOnly ? { status: 'CONFIRMED' } : undefined,
+                cuttingJobItems: { none: {} }
+            },
+            select: {
+                id: true,
+                materialTypeId: true,
+                thickness: true,
+                quantity: true
+            }
+        });
+        return items;
+    }
 }
 exports.CuttingJobRepository = CuttingJobRepository;
 //# sourceMappingURL=cutting-job.repository.js.map
