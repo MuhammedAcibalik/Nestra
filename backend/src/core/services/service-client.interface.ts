@@ -38,6 +38,13 @@ export interface IOptimizationServiceClient {
     getPlanById(planId: string): Promise<IServiceResponse<IPlanSummary>>;
     getPlanStockItems(planId: string): Promise<IServiceResponse<IPlanStockItem[]>>;
     updatePlanStatus(planId: string, status: string): Promise<IServiceResponse<void>>;
+    getApprovedPlans(filter?: IApprovedPlansFilter): Promise<IServiceResponse<IPlanSummary[]>>;
+}
+
+export interface IApprovedPlansFilter {
+    scenarioId?: string;
+    fromDate?: Date;
+    toDate?: Date;
 }
 
 export interface IPlanSummary {
@@ -97,4 +104,60 @@ export interface IOrderSummary {
     status: string;
     customerId?: string;
     itemCount: number;
+}
+
+/**
+ * CuttingJob Service API
+ * Used by Optimization module
+ */
+export interface ICuttingJobServiceClient {
+    getJobWithItems(jobId: string): Promise<IServiceResponse<ICuttingJobWithItems>>;
+}
+
+export interface ICuttingJobWithItems {
+    id: string;
+    jobNumber: string;
+    materialTypeId: string;
+    thickness: number;
+    status: string;
+    items: ICuttingJobItemDetail[];
+}
+
+export interface ICuttingJobItemDetail {
+    id: string;
+    orderItemId: string;
+    quantity: number;
+    orderItem: {
+        geometryType: string;
+        length: number | null;
+        width: number | null;
+        height: number | null;
+    } | null;
+}
+
+/**
+ * Extended Stock Service API
+ * Used by Optimization module for stock queries
+ */
+export interface IStockQueryClient {
+    getAvailableStock(params: IStockQueryParams): Promise<IServiceResponse<IStockItemForOptimization[]>>;
+}
+
+export interface IStockQueryParams {
+    materialTypeId: string;
+    thickness: number;
+    stockType: 'BAR_1D' | 'SHEET_2D';
+    selectedStockIds?: string[];
+}
+
+export interface IStockItemForOptimization {
+    id: string;
+    code: string;
+    name: string;
+    stockType: string;
+    length: number | null;
+    width: number | null;
+    height: number | null;
+    quantity: number;
+    unitPrice: number | null;
 }

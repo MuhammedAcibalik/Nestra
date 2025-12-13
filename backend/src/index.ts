@@ -42,7 +42,7 @@ import { createAuthMiddleware } from './middleware/authMiddleware';
 import { IAuthService } from './core/interfaces';
 
 // Services (Microservice Infrastructure)
-import { ServiceRegistry, createOptimizationClient, createStockClient } from './core/services';
+import { ServiceRegistry, createOptimizationClient, createStockClient, createCuttingJobClient, createStockQueryClient } from './core/services';
 import { OptimizationServiceHandler } from './modules/optimization/optimization.service-handler';
 import { StockServiceHandler } from './modules/stock/stock.service-handler';
 import { OrderServiceHandler } from './modules/order/order.service-handler';
@@ -50,6 +50,8 @@ import { MaterialServiceHandler } from './modules/material/material.service-hand
 import { MachineServiceHandler } from './modules/machine/machine.service-handler';
 import { CustomerServiceHandler } from './modules/customer/customer.service-handler';
 import { CuttingJobServiceHandler } from './modules/cutting-job/cutting-job.service-handler';
+import { AuthServiceHandler } from './modules/auth/auth.service-handler';
+import { LocationServiceHandler } from './modules/location/location.service-handler';
 
 // Event Handlers (Event-Driven Architecture)
 import { StockEventHandler } from './modules/stock/stock.event-handler';
@@ -147,9 +149,19 @@ export class Application {
         const cuttingJobServiceHandler = new CuttingJobServiceHandler(cuttingJobRepository);
         serviceRegistry.register('cutting-job', cuttingJobServiceHandler);
 
+        // Register auth service handler
+        const authServiceHandler = new AuthServiceHandler(userRepository);
+        serviceRegistry.register('auth', authServiceHandler);
+
+        // Register location service handler
+        const locationServiceHandler = new LocationServiceHandler(locationRepository);
+        serviceRegistry.register('location', locationServiceHandler);
+
         // Create service clients for cross-module access
         const optimizationClient = createOptimizationClient(serviceRegistry);
         const stockClient = createStockClient(serviceRegistry);
+        const cuttingJobClient = createCuttingJobClient(serviceRegistry);
+        const stockQueryClient = createStockQueryClient(serviceRegistry);
 
         // ==================== SERVICES ====================
         // Initialize services with dependencies (DIP)
@@ -157,7 +169,7 @@ export class Application {
         this.stockService = new StockService(stockRepository);
         this.authService = new AuthService(userRepository, authConfig);
         this.orderService = new OrderService(orderRepository);
-        this.optimizationService = new OptimizationService(optimizationRepository, this.prisma);
+        this.optimizationService = new OptimizationService(optimizationRepository, cuttingJobClient, stockQueryClient);
 
         // ProductionService uses service clients instead of cross-module repositories
         this.productionService = new ProductionService(productionRepository, optimizationClient, stockClient);

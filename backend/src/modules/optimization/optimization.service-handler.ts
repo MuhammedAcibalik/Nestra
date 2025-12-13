@@ -38,6 +38,12 @@ export class OptimizationServiceHandler implements IServiceHandler {
             return this.updatePlanStatus(planId, status) as Promise<IServiceResponse<TRes>>;
         }
 
+        // Route: POST /plans/approved (for Production module)
+        if (method === 'POST' && path === '/plans/approved') {
+            const filter = data as { scenarioId?: string; fromDate?: Date; toDate?: Date } | undefined;
+            return this.getApprovedPlans(filter) as Promise<IServiceResponse<TRes>>;
+        }
+
         return {
             success: false,
             error: {
@@ -108,6 +114,43 @@ export class OptimizationServiceHandler implements IServiceHandler {
         try {
             await this.repository.updatePlanStatus(planId, status);
             return { success: true };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'INTERNAL_ERROR',
+                    message: error instanceof Error ? error.message : 'Unknown error'
+                }
+            };
+        }
+    }
+
+    private async getApprovedPlans(
+        filter?: { scenarioId?: string; fromDate?: Date; toDate?: Date }
+    ): Promise<IServiceResponse<IPlanSummary[]>> {
+        try {
+            const plans = await this.repository.findAllPlans({ status: 'APPROVED' });
+
+            // Apply optional filters
+            let filtered = plans;
+            if (filter?.scenarioId) {
+                filtered = filtered.filter(p => p.scenarioId === filter.scenarioId);
+            }
+            // Note: Date filtering would require comparing plan dates
+            // For now, we return all approved plans
+
+            return {
+                success: true,
+                data: filtered.map(plan => ({
+                    id: plan.id,
+                    planNumber: plan.planNumber,
+                    scenarioId: plan.scenarioId,
+                    status: plan.status,
+                    totalWaste: plan.totalWaste,
+                    wastePercentage: plan.wastePercentage,
+                    stockUsedCount: plan.stockUsedCount
+                }))
+            };
         } catch (error) {
             return {
                 success: false,

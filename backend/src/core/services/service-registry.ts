@@ -10,7 +10,9 @@ import {
     IServiceResponse,
     IOptimizationServiceClient,
     IStockServiceClient,
-    IOrderServiceClient
+    IOrderServiceClient,
+    ICuttingJobServiceClient,
+    IStockQueryClient
 } from './service-client.interface';
 
 // ==================== SERVICE REGISTRY ====================
@@ -127,6 +129,13 @@ export function createOptimizationClient(registry: IServiceClient): IOptimizatio
                 path: `/plans/${planId}/status`,
                 data: { status }
             });
+        },
+        async getApprovedPlans(filter) {
+            return registry.request('optimization', {
+                method: 'POST',
+                path: '/plans/approved',
+                data: filter ?? {}
+            });
         }
     };
 }
@@ -169,6 +178,37 @@ export function createOrderClient(registry: IServiceClient): IOrderServiceClient
                 method: 'PUT',
                 path: `/orders/${orderId}/status`,
                 data: { status }
+            });
+        }
+    };
+}
+
+/**
+ * CuttingJob Service Client
+ * Used by Optimization module
+ */
+export function createCuttingJobClient(registry: IServiceClient): ICuttingJobServiceClient {
+    return {
+        async getJobWithItems(jobId: string) {
+            return registry.request('cutting-job', {
+                method: 'GET',
+                path: `/cutting-jobs/${jobId}/with-items`
+            });
+        }
+    };
+}
+
+/**
+ * Stock Query Client
+ * Used by Optimization module for stock queries
+ */
+export function createStockQueryClient(registry: IServiceClient): IStockQueryClient {
+    return {
+        async getAvailableStock(params) {
+            return registry.request('stock', {
+                method: 'POST',
+                path: '/stock/query/available',
+                data: params
             });
         }
     };

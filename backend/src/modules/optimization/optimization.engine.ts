@@ -2,16 +2,17 @@
  * Optimization Engine
  * Bridge layer between cutting algorithms and database
  * Following SRP - Only handles algorithm execution and data transformation
+ * Following DIP - Uses service clients instead of direct database access
  */
 
-import { PrismaClient, StockItem, CuttingJob, CuttingJobItem, OrderItem } from '@prisma/client';
 import {
     firstFitDecreasing,
     bestFitDecreasing,
     CuttingPiece1D,
     StockBar1D,
     Optimization1DResult,
-    Optimization1DOptions
+    Optimization1DOptions,
+    BarCuttingResult
 } from '../../algorithms/1d/cutting1d';
 import {
     bottomLeftFill,
@@ -19,8 +20,15 @@ import {
     CuttingPiece2D,
     StockSheet2D,
     Optimization2DResult,
-    Optimization2DOptions
+    Optimization2DOptions,
+    SheetCuttingResult
 } from '../../algorithms/2d/cutting2d';
+import {
+    ICuttingJobServiceClient,
+    IStockQueryClient,
+    ICuttingJobWithItems,
+    IStockItemForOptimization
+} from '../../core/services';
 
 // ==================== INTERFACES ====================
 
@@ -65,14 +73,17 @@ export interface LayoutData {
 // ==================== ENGINE CLASS ====================
 
 export class OptimizationEngine {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(
+        private readonly cuttingJobClient: ICuttingJobServiceClient,
+        private readonly stockQueryClient: IStockQueryClient
+    ) { }
 
     /**
      * Main entry point - runs optimization for a cutting job
      */
     async runOptimization(input: OptimizationInput): Promise<OptimizationOutput> {
         try {
-            // 1. Get cutting job with items
+            // 1. Get cutting job with items via service client
             const cuttingJob = await this.getCuttingJobWithItems(input.cuttingJobId);
             if (!cuttingJob) {
                 return { success: false, planData: this.emptyPlanData(), error: 'Cutting job not found' };
@@ -81,7 +92,7 @@ export class OptimizationEngine {
             // 2. Determine if 1D or 2D based on geometry
             const is1D = this.is1DJob(cuttingJob);
 
-            // 3. Get available stock
+            // 3. Get available stock via service client
             const stock = await this.getAvailableStock(
                 cuttingJob.materialTypeId,
                 cuttingJob.thickness,
@@ -111,11 +122,10 @@ export class OptimizationEngine {
     // ==================== 1D OPTIMIZATION ====================
 
     private async run1DOptimization(
-        job: CuttingJobWithItems,
-        stock: StockItem[],
+        job: ICuttingJobWithItems,
+        stock: IStockItemForOptimization[],
         params: OptimizationParameters
     ): Promise<OptimizationOutput> {
-        // Convert to algorithm format
         const pieces = this.convertTo1DPieces(job);
         const bars = this.convertTo1DStock(stock);
 
@@ -125,61 +135,51 @@ export class OptimizationEngine {
             minUsableWaste: params.minUsableWaste ?? 100
         };
 
-        // Run algorithm
-        const result = params.algorithm === '1D_BFD'
-            ? bestFitDecreasing(pieces, bars, options)
-            : firstFitDecreasing(pieces, bars, options);
+        let result: Optimization1DResult;
+        if (params.algorithm === '1D_BFD') {
+            result = bestFitDecreasing(pieces, bars, options);
+        } else {
+            result = firstFitDecreasing(pieces, bars, options);
+        }
 
-        // Convert result to plan data
         return {
-            success: result.success,
+            success: true,
             planData: this.convert1DResult(result, stock)
         };
     }
 
-    private convertTo1DPieces(job: CuttingJobWithItems): CuttingPiece1D[] {
-        const pieces: CuttingPiece1D[] = [];
-
-        for (const item of job.items) {
-            if (item.orderItem?.length) {
-                pieces.push({
-                    id: item.orderItem.id,
-                    length: item.orderItem.length,
-                    quantity: item.quantity,
-                    orderItemId: item.orderItemId
-                });
-            }
-        }
-
-        return pieces;
+    private convertTo1DPieces(job: ICuttingJobWithItems): CuttingPiece1D[] {
+        return job.items.map(item => ({
+            id: item.id,
+            length: item.orderItem?.length ?? 0,
+            quantity: item.quantity,
+            orderItemId: item.orderItemId,
+            canRotate: false
+        }));
     }
 
-    private convertTo1DStock(stock: StockItem[]): StockBar1D[] {
-        return stock
-            .filter(s => s.stockType === 'BAR_1D' && s.length)
-            .map(s => ({
-                id: s.id,
-                length: s.length!,
-                available: s.quantity - s.reservedQty,
-                unitPrice: s.unitPrice ? Number(s.unitPrice) : undefined
-            }));
+    private convertTo1DStock(stock: IStockItemForOptimization[]): StockBar1D[] {
+        return stock.map(s => ({
+            id: s.id,
+            length: s.length ?? 0,
+            available: s.quantity,
+            unitPrice: s.unitPrice ?? undefined
+        }));
     }
 
-    private convert1DResult(result: Optimization1DResult, _stock: StockItem[]): PlanData {
-        const layouts: LayoutData[] = result.bars.map((bar, index) => {
-            return {
-                stockItemId: bar.stockId,
-                sequence: index + 1,
-                waste: bar.waste,
-                wastePercentage: bar.wastePercentage,
-                layoutJson: JSON.stringify({
-                    type: '1D',
-                    stockLength: bar.stockLength,
-                    cuts: bar.cuts,
-                    usableWaste: bar.usableWaste
-                })
-            };
-        });
+    private convert1DResult(result: Optimization1DResult, _stock: IStockItemForOptimization[]): PlanData {
+        const layouts: LayoutData[] = result.bars.map((bar: BarCuttingResult, i: number) => ({
+            stockItemId: bar.stockId,
+            sequence: i + 1,
+            waste: bar.waste,
+            wastePercentage: bar.wastePercentage,
+            layoutJson: JSON.stringify({
+                barId: bar.stockId,
+                barLength: bar.stockLength,
+                cuts: bar.cuts,
+                waste: bar.waste
+            })
+        }));
 
         return {
             totalWaste: result.totalWaste,
@@ -194,12 +194,11 @@ export class OptimizationEngine {
     // ==================== 2D OPTIMIZATION ====================
 
     private async run2DOptimization(
-        job: CuttingJobWithItems,
-        stock: StockItem[],
+        job: ICuttingJobWithItems,
+        stock: IStockItemForOptimization[],
         params: OptimizationParameters
     ): Promise<OptimizationOutput> {
-        // Convert to algorithm format
-        const pieces = this.convertTo2DPieces(job);
+        const pieces = this.convertTo2DPieces(job, params.allowRotation ?? true);
         const sheets = this.convertTo2DStock(stock);
 
         const options: Optimization2DOptions = {
@@ -209,65 +208,52 @@ export class OptimizationEngine {
             guillotineOnly: params.algorithm === '2D_GUILLOTINE'
         };
 
-        // Run algorithm
-        const result = params.algorithm === '2D_GUILLOTINE'
-            ? guillotineCutting(pieces, sheets, options)
-            : bottomLeftFill(pieces, sheets, options);
+        let result: Optimization2DResult;
+        if (params.algorithm === '2D_GUILLOTINE') {
+            result = guillotineCutting(pieces, sheets, options);
+        } else {
+            result = bottomLeftFill(pieces, sheets, options);
+        }
 
-        // Convert result to plan data
         return {
-            success: result.success,
+            success: true,
             planData: this.convert2DResult(result, stock)
         };
     }
 
-    private convertTo2DPieces(job: CuttingJobWithItems): CuttingPiece2D[] {
-        const pieces: CuttingPiece2D[] = [];
-
-        for (const item of job.items) {
-            const orderItem = item.orderItem;
-            if (orderItem?.width && orderItem?.height) {
-                pieces.push({
-                    id: orderItem.id,
-                    width: orderItem.width,
-                    height: orderItem.height,
-                    quantity: item.quantity,
-                    orderItemId: item.orderItemId,
-                    canRotate: orderItem.canRotate
-                });
-            }
-        }
-
-        return pieces;
+    private convertTo2DPieces(job: ICuttingJobWithItems, allowRotation: boolean): CuttingPiece2D[] {
+        return job.items.map(item => ({
+            id: item.id,
+            width: item.orderItem?.width ?? 0,
+            height: item.orderItem?.height ?? item.orderItem?.length ?? 0,
+            quantity: item.quantity,
+            orderItemId: item.orderItemId,
+            canRotate: allowRotation
+        }));
     }
 
-    private convertTo2DStock(stock: StockItem[]): StockSheet2D[] {
-        return stock
-            .filter(s => s.stockType === 'SHEET_2D' && s.width && s.height)
-            .map(s => ({
-                id: s.id,
-                width: s.width!,
-                height: s.height!,
-                available: s.quantity - s.reservedQty,
-                unitPrice: s.unitPrice ? Number(s.unitPrice) : undefined
-            }));
+    private convertTo2DStock(stock: IStockItemForOptimization[]): StockSheet2D[] {
+        return stock.map(s => ({
+            id: s.id,
+            width: s.width ?? 0,
+            height: s.height ?? s.length ?? 0,
+            available: s.quantity,
+            unitPrice: s.unitPrice ?? undefined
+        }));
     }
 
-    private convert2DResult(result: Optimization2DResult, _stock: StockItem[]): PlanData {
-        const layouts: LayoutData[] = result.sheets.map((sheet, index) => {
-            return {
-                stockItemId: sheet.stockId,
-                sequence: index + 1,
-                waste: sheet.wasteArea,
-                wastePercentage: sheet.wastePercentage,
-                layoutJson: JSON.stringify({
-                    type: '2D',
-                    stockWidth: sheet.stockWidth,
-                    stockHeight: sheet.stockHeight,
-                    placements: sheet.placements
-                })
-            };
-        });
+    private convert2DResult(result: Optimization2DResult, _stock: IStockItemForOptimization[]): PlanData {
+        const layouts: LayoutData[] = result.sheets.map((sheet: SheetCuttingResult, i: number) => ({
+            stockItemId: sheet.stockId,
+            sequence: i + 1,
+            waste: sheet.wasteArea,
+            wastePercentage: sheet.wastePercentage,
+            layoutJson: JSON.stringify({
+                sheetId: sheet.stockId,
+                placements: sheet.placements,
+                wasteArea: sheet.wasteArea
+            })
+        }));
 
         return {
             totalWaste: result.totalWasteArea,
@@ -281,17 +267,12 @@ export class OptimizationEngine {
 
     // ==================== HELPER METHODS ====================
 
-    private async getCuttingJobWithItems(jobId: string): Promise<CuttingJobWithItems | null> {
-        return this.prisma.cuttingJob.findUnique({
-            where: { id: jobId },
-            include: {
-                items: {
-                    include: {
-                        orderItem: true
-                    }
-                }
-            }
-        });
+    private async getCuttingJobWithItems(jobId: string): Promise<ICuttingJobWithItems | null> {
+        const response = await this.cuttingJobClient.getJobWithItems(jobId);
+        if (!response.success || !response.data) {
+            return null;
+        }
+        return response.data;
     }
 
     private async getAvailableStock(
@@ -299,40 +280,26 @@ export class OptimizationEngine {
         thickness: number,
         is1D: boolean,
         params: OptimizationParameters
-    ): Promise<StockItem[]> {
-        const where: {
-            materialTypeId: string;
-            thickness: number;
-            stockType: 'BAR_1D' | 'SHEET_2D';
-            id?: { in: string[] };
-        } = {
+    ): Promise<IStockItemForOptimization[]> {
+        const response = await this.stockQueryClient.getAvailableStock({
             materialTypeId,
             thickness,
-            stockType: is1D ? 'BAR_1D' : 'SHEET_2D'
-        };
-
-        // If specific stock IDs are selected, filter by them
-        if (params.selectedStockIds && params.selectedStockIds.length > 0) {
-            where.id = { in: params.selectedStockIds };
-        }
-
-        return this.prisma.stockItem.findMany({
-            where,
-            orderBy: [
-                { unitPrice: 'asc' },
-                { quantity: 'desc' }
-            ]
+            stockType: is1D ? 'BAR_1D' : 'SHEET_2D',
+            selectedStockIds: params.selectedStockIds
         });
+
+        if (!response.success || !response.data) {
+            return [];
+        }
+        return response.data;
     }
 
-    private is1DJob(job: CuttingJobWithItems): boolean {
+    private is1DJob(job: ICuttingJobWithItems): boolean {
         // Check first item's geometry type
         if (job.items.length === 0) return true;
-
-        const firstItem = job.items[0]?.orderItem;
-        if (!firstItem) return true;
-
-        return firstItem.geometryType === 'BAR_1D';
+        const firstItem = job.items[0];
+        if (!firstItem.orderItem) return true;
+        return firstItem.orderItem.geometryType === 'BAR_1D';
     }
 
     private emptyPlanData(): PlanData {
@@ -346,11 +313,3 @@ export class OptimizationEngine {
         };
     }
 }
-
-// ==================== TYPES ====================
-
-type CuttingJobWithItems = CuttingJob & {
-    items: (CuttingJobItem & {
-        orderItem: OrderItem | null;
-    })[];
-};
