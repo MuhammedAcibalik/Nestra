@@ -12,5 +12,6 @@ export declare class OptimizationServiceHandler implements IServiceHandler {
     private getPlanById;
     private getPlanStockItems;
     private updatePlanStatus;
+    private getApprovedPlans;
 }
 //# sourceMappingURL=optimization.service-handler.d.ts.map

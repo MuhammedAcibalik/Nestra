@@ -19,6 +19,7 @@ export declare const EventTypes: {
     readonly CUTTING_JOB_CREATED: "cutting-job.created";
     readonly CUTTING_JOB_STARTED: "cutting-job.started";
     readonly CUTTING_JOB_COMPLETED: "cutting-job.completed";
+    readonly OPTIMIZATION_RUN_REQUESTED: "optimization.run-requested";
     readonly OPTIMIZATION_STARTED: "optimization.started";
     readonly OPTIMIZATION_COMPLETED: "optimization.completed";
     readonly OPTIMIZATION_FAILED: "optimization.failed";

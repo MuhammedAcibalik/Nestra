@@ -1,10 +1,11 @@
 /**
  * Order Event Handlers
  * Handles events from other modules and emits order state changes
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 
 import { IDomainEvent } from '../../core/interfaces';
-import { EventBus, EventTypes, DomainEvents, OrderStatusUpdateRequestedPayload } from '../../core/events';
+import { EventTypes, DomainEvents, OrderStatusUpdateRequestedPayload, getEventAdapter } from '../../core/events';
 import { IOrderRepository } from './order.repository';
 
 export class OrderEventHandler {
@@ -14,16 +15,16 @@ export class OrderEventHandler {
      * Register all event handlers
      */
     register(): void {
-        const eventBus = EventBus.getInstance();
+        const adapter = getEventAdapter();
 
         // Handle order status update requests
-        eventBus.subscribe(EventTypes.ORDER_STATUS_UPDATE_REQUESTED, this.handleStatusUpdateRequested.bind(this));
+        adapter.subscribe(EventTypes.ORDER_STATUS_UPDATE_REQUESTED, this.handleStatusUpdateRequested.bind(this));
 
         // Handle cutting job completed - may update order status
-        eventBus.subscribe(EventTypes.CUTTING_JOB_COMPLETED, this.handleCuttingJobCompleted.bind(this));
+        adapter.subscribe(EventTypes.CUTTING_JOB_COMPLETED, this.handleCuttingJobCompleted.bind(this));
 
         // Handle production completed - may complete order
-        eventBus.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
+        adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
         console.log('[EVENT] Order event handlers registered');
     }
@@ -33,7 +34,7 @@ export class OrderEventHandler {
      */
     private async handleStatusUpdateRequested(event: IDomainEvent): Promise<void> {
         const payload = event.payload as unknown as OrderStatusUpdateRequestedPayload;
-        const eventBus = EventBus.getInstance();
+        const adapter = getEventAdapter();
 
         try {
             const order = await this.repository.findById(payload.orderId);
@@ -46,7 +47,7 @@ export class OrderEventHandler {
             const oldStatus = order.status;
             await this.repository.updateStatus(payload.orderId, payload.newStatus);
 
-            await eventBus.publish(DomainEvents.orderStatusUpdated({
+            await adapter.publish(DomainEvents.orderStatusUpdated({
                 orderId: payload.orderId,
                 oldStatus,
                 newStatus: payload.newStatus,
@@ -74,15 +75,5 @@ export class OrderEventHandler {
     private async handleProductionCompleted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { planId: string };
         console.log(`[ORDER] Production completed for plan: ${payload.planId}`);
-    }
-
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister(): void {
-        const eventBus = EventBus.getInstance();
-        eventBus.unsubscribe(EventTypes.ORDER_STATUS_UPDATE_REQUESTED);
-        eventBus.unsubscribe(EventTypes.CUTTING_JOB_COMPLETED);
-        eventBus.unsubscribe(EventTypes.PRODUCTION_COMPLETED);
     }
 }

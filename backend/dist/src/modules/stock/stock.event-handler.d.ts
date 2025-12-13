@@ -2,6 +2,7 @@
  * Stock Event Handlers
  * Handles events from other modules that require stock operations
  * Following Event-Driven Architecture for loose coupling
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 import { IStockRepository } from './stock.repository';
 export declare class StockEventHandler {
@@ -24,9 +25,5 @@ export declare class StockEventHandler {
      * Handle production completed - check for alerts
      */
     private handleProductionCompleted;
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister(): void;
 }
 //# sourceMappingURL=stock.event-handler.d.ts.map

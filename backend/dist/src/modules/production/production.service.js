@@ -18,12 +18,39 @@ class ProductionService {
         this.stockClient = stockClient;
     }
     async getApprovedPlans(_filter) {
-        // Note: For full microservice, this would call optimization service
-        // Current limitation: we need a new method in optimization client
-        return (0, interfaces_1.failure)({
-            code: 'NOT_IMPLEMENTED',
-            message: 'getApprovedPlans should call optimization service - requires additional endpoint'
-        });
+        try {
+            // Call optimization service to get approved plans
+            const response = await this.optimizationClient.getApprovedPlans({
+                scenarioId: _filter?.scenarioId,
+                fromDate: _filter?.fromDate,
+                toDate: _filter?.toDate
+            });
+            if (!response.success || !response.data) {
+                return (0, interfaces_1.failure)({
+                    code: 'FETCH_ERROR',
+                    message: 'Onaylı planlar getirilemedi'
+                });
+            }
+            // Transform to ICuttingPlanDto format
+            const plans = response.data.map(plan => ({
+                id: plan.id,
+                planNumber: plan.planNumber,
+                scenarioId: plan.scenarioId,
+                totalWaste: plan.totalWaste,
+                wastePercentage: plan.wastePercentage,
+                stockUsedCount: plan.stockUsedCount,
+                status: plan.status,
+                layoutItems: [] // Layout items not needed for listing
+            }));
+            return (0, interfaces_1.success)(plans);
+        }
+        catch (error) {
+            return (0, interfaces_1.failure)({
+                code: 'APPROVED_PLANS_ERROR',
+                message: 'Onaylı planlar getirilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
     }
     async startProduction(planId, operatorId) {
         try {
@@ -159,6 +186,7 @@ class ProductionService {
     }
     /**
      * Consume stock via service client - no direct repository access
+     * Uses Promise.allSettled for partial failure handling
      */
     async consumeStockForPlan(planId, productionLogId) {
         // Get stock items from optimization service
@@ -166,17 +194,52 @@ class ProductionService {
         if (!stockItemsResponse.success || !stockItemsResponse.data) {
             throw new Error('Failed to get plan stock items');
         }
-        for (const item of stockItemsResponse.data) {
-            // Create consumption movement via stock service
-            await this.stockClient.createMovement({
-                stockItemId: item.stockItemId,
-                movementType: 'CONSUMPTION',
-                quantity: 1,
-                notes: `Üretim planı: ${planId}`,
-                productionLogId
-            });
-            // Update stock quantity via stock service
-            await this.stockClient.updateQuantity(item.stockItemId, -1);
+        const items = stockItemsResponse.data;
+        const consumptionResults = [];
+        // Process all items and track results
+        const consumptionPromises = items.map(async (item) => {
+            try {
+                // Create consumption movement via stock service
+                const movementResponse = await this.stockClient.createMovement({
+                    stockItemId: item.stockItemId,
+                    movementType: 'CONSUMPTION',
+                    quantity: 1,
+                    notes: `Üretim planı: ${planId}`,
+                    productionLogId
+                });
+                if (!movementResponse.success) {
+                    throw new Error(movementResponse.error?.message ?? 'Movement creation failed');
+                }
+                // Update stock quantity via stock service
+                const quantityResponse = await this.stockClient.updateQuantity(item.stockItemId, -1);
+                if (!quantityResponse.success) {
+                    throw new Error(quantityResponse.error?.message ?? 'Quantity update failed');
+                }
+                return { stockItemId: item.stockItemId, success: true };
+            }
+            catch (error) {
+                console.error(`[PRODUCTION] Stock consumption failed for ${item.stockItemId}:`, error);
+                return {
+                    stockItemId: item.stockItemId,
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                };
+            }
+        });
+        // Wait for all with settled pattern (doesn't throw on individual failures)
+        const results = await Promise.all(consumptionPromises);
+        consumptionResults.push(...results);
+        // Check for failures
+        const failedItems = consumptionResults.filter(r => !r.success);
+        if (failedItems.length > 0) {
+            const failedIds = failedItems.map(f => f.stockItemId).join(', ');
+            console.error(`[PRODUCTION] Partial stock consumption failure: ${failedIds}`);
+            // If all failed, throw error
+            if (failedItems.length === items.length) {
+                throw new Error(`All stock consumptions failed: ${failedIds}`);
+            }
+            // Log warning for partial failure (production continues but needs attention)
+            console.warn(`[PRODUCTION] ${failedItems.length}/${items.length} stock items failed to consume for plan ${planId}`);
         }
     }
     toDto(log) {

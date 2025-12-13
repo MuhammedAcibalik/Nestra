@@ -4,7 +4,6 @@
  * Following Facade Pattern - Simplifies complex subsystem
  */
 
-import { PrismaClient } from '@prisma/client';
 import { IResult } from '../../../core/interfaces';
 import {
     IOptimizationParameters,
@@ -19,6 +18,7 @@ import {
 import { OptimizationEngine } from '../optimization.engine';
 import { OptimizationValidator } from './optimization.validator';
 import { websocketService } from '../../../websocket';
+import { ICuttingJobServiceClient, IStockQueryClient } from '../../../core/services';
 
 // Import existing repository
 import { IOptimizationRepository, ScenarioWithRelations, PlanWithRelations } from '../optimization.repository';
@@ -29,9 +29,10 @@ export class OptimizationFacade {
 
     constructor(
         private readonly repository: IOptimizationRepository,
-        prisma: PrismaClient
+        cuttingJobClient: ICuttingJobServiceClient,
+        stockQueryClient: IStockQueryClient
     ) {
-        this.engine = new OptimizationEngine(prisma);
+        this.engine = new OptimizationEngine(cuttingJobClient, stockQueryClient);
         this.validator = new OptimizationValidator();
     }
 

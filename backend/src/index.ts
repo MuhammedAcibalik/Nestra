@@ -21,6 +21,7 @@ import {
     OptimizationController,
 
 } from './modules/optimization';
+import { OptimizationConsumer } from './modules/optimization/optimization.consumer';
 import { ProductionRepository, ProductionService, ProductionController } from './modules/production';
 import { ReportRepository, ReportService, ReportController } from './modules/report';
 import { CuttingJobRepository, CuttingJobService, CuttingJobController } from './modules/cutting-job';
@@ -37,6 +38,10 @@ import { websocketService } from './websocket';
 // Middleware
 import { errorHandler } from './middleware/errorHandler';
 import { createAuthMiddleware } from './middleware/authMiddleware';
+import { metricsMiddleware } from './middleware/metrics.middleware';
+
+// Monitoring
+import { getMetrics, getMetricsContentType } from './core/monitoring';
 
 // Interfaces
 import { IAuthService } from './core/interfaces';
@@ -57,6 +62,9 @@ import { LocationServiceHandler } from './modules/location/location.service-hand
 import { StockEventHandler } from './modules/stock/stock.event-handler';
 import { OptimizationEventHandler } from './modules/optimization/optimization.event-handler';
 import { OrderEventHandler } from './modules/order/order.event-handler';
+
+// Messaging (RabbitMQ / In-Memory)
+import { initializeMessageBus, shutdownMessageBus } from './core/messaging';
 
 dotenv.config();
 
@@ -192,6 +200,11 @@ export class Application {
 
         const orderEventHandler = new OrderEventHandler(orderRepository);
         orderEventHandler.register();
+
+        // ==================== RABBITMQ CONSUMERS ====================
+        // Register RabbitMQ consumers for async optimization requests
+        const optimizationConsumer = new OptimizationConsumer(this.optimizationService.getEngine());
+        optimizationConsumer.register();
     }
 
     /**
@@ -201,6 +214,20 @@ export class Application {
         this.app.use(cors());
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
+
+        // Prometheus metrics middleware
+        this.app.use(metricsMiddleware);
+
+        // Metrics endpoint for Prometheus scraping
+        this.app.get('/metrics', async (_req, res) => {
+            try {
+                const metrics = await getMetrics();
+                res.set('Content-Type', getMetricsContentType());
+                res.send(metrics);
+            } catch (error) {
+                res.status(500).send('Error collecting metrics');
+            }
+        });
     }
 
     /**
@@ -285,6 +312,16 @@ export class Application {
      */
     public async start(): Promise<void> {
         await this.connectDatabase();
+
+        // Initialize Message Bus (RabbitMQ or In-Memory based on config)
+        // Must be done BEFORE dependencies because event handlers use the adapter
+        try {
+            await initializeMessageBus();
+            console.log('✅ Message bus initialized');
+        } catch (error) {
+            console.warn('⚠️ Message bus initialization failed, using in-memory fallback:', error);
+        }
+
         this.initializeDependencies();
         this.initializeMiddleware();
         this.initializeRoutes();
@@ -303,6 +340,7 @@ export class Application {
             console.log(`🚀 Nestra server running on http://localhost:${this.port}`);
             console.log(`📚 Environment: ${process.env.NODE_ENV ?? 'development'}`);
             console.log('🔌 WebSocket available at /ws');
+            console.log(`📨 Message Bus: ${process.env.USE_RABBITMQ === 'true' ? 'RabbitMQ' : 'In-Memory'}`);
         });
     }
 
@@ -311,6 +349,10 @@ export class Application {
      */
     public async shutdown(): Promise<void> {
         console.log('🛑 Shutting down...');
+
+        // Shutdown message bus
+        await shutdownMessageBus();
+        console.log('✅ Message bus disconnected');
 
         // Shutdown worker pool
         const { shutdownOptimizationPool } = await import('./workers');

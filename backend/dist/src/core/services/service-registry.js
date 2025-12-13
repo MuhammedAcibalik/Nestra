@@ -9,6 +9,8 @@ exports.ServiceRegistry = void 0;
 exports.createOptimizationClient = createOptimizationClient;
 exports.createStockClient = createStockClient;
 exports.createOrderClient = createOrderClient;
+exports.createCuttingJobClient = createCuttingJobClient;
+exports.createStockQueryClient = createStockQueryClient;
 /**
  * In-Memory Service Registry
  * For monolith: direct function calls
@@ -97,6 +99,13 @@ function createOptimizationClient(registry) {
                 path: `/plans/${planId}/status`,
                 data: { status }
             });
+        },
+        async getApprovedPlans(filter) {
+            return registry.request('optimization', {
+                method: 'POST',
+                path: '/plans/approved',
+                data: filter ?? {}
+            });
         }
     };
 }
@@ -137,6 +146,35 @@ function createOrderClient(registry) {
                 method: 'PUT',
                 path: `/orders/${orderId}/status`,
                 data: { status }
+            });
+        }
+    };
+}
+/**
+ * CuttingJob Service Client
+ * Used by Optimization module
+ */
+function createCuttingJobClient(registry) {
+    return {
+        async getJobWithItems(jobId) {
+            return registry.request('cutting-job', {
+                method: 'GET',
+                path: `/cutting-jobs/${jobId}/with-items`
+            });
+        }
+    };
+}
+/**
+ * Stock Query Client
+ * Used by Optimization module for stock queries
+ */
+function createStockQueryClient(registry) {
+    return {
+        async getAvailableStock(params) {
+            return registry.request('stock', {
+                method: 'POST',
+                path: '/stock/query/available',
+                data: params
             });
         }
     };

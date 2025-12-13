@@ -2,10 +2,11 @@
  * Optimization Event Handlers
  * Handles events from other modules that require optimization operations
  * Following Event-Driven Architecture for loose coupling
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 
 import { IDomainEvent } from '../../core/interfaces';
-import { EventBus, EventTypes, DomainEvents, PlanStatusUpdateRequestedPayload } from '../../core/events';
+import { EventTypes, DomainEvents, PlanStatusUpdateRequestedPayload, getEventAdapter } from '../../core/events';
 import { IOptimizationRepository } from './optimization.repository';
 
 export class OptimizationEventHandler {
@@ -15,16 +16,16 @@ export class OptimizationEventHandler {
      * Register all event handlers
      */
     register(): void {
-        const eventBus = EventBus.getInstance();
+        const adapter = getEventAdapter();
 
         // Handle plan status update requests from other modules (e.g., Production)
-        eventBus.subscribe(EventTypes.PLAN_STATUS_UPDATE_REQUESTED, this.handlePlanStatusUpdateRequested.bind(this));
+        adapter.subscribe(EventTypes.PLAN_STATUS_UPDATE_REQUESTED, this.handlePlanStatusUpdateRequested.bind(this));
 
         // Handle production started - could trigger notifications
-        eventBus.subscribe(EventTypes.PRODUCTION_STARTED, this.handleProductionStarted.bind(this));
+        adapter.subscribe(EventTypes.PRODUCTION_STARTED, this.handleProductionStarted.bind(this));
 
         // Handle production completed - update plan status
-        eventBus.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
+        adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
         console.log('[EVENT] Optimization event handlers registered');
     }
@@ -34,7 +35,7 @@ export class OptimizationEventHandler {
      */
     private async handlePlanStatusUpdateRequested(event: IDomainEvent): Promise<void> {
         const payload = event.payload as unknown as PlanStatusUpdateRequestedPayload;
-        const eventBus = EventBus.getInstance();
+        const adapter = getEventAdapter();
 
         try {
             const plan = await this.repository.findPlanById(payload.planId);
@@ -47,7 +48,7 @@ export class OptimizationEventHandler {
             const oldStatus = plan.status;
             await this.repository.updatePlanStatus(payload.planId, payload.newStatus);
 
-            await eventBus.publish(DomainEvents.planStatusUpdated({
+            await adapter.publish(DomainEvents.planStatusUpdated({
                 planId: payload.planId,
                 oldStatus,
                 newStatus: payload.newStatus,
@@ -75,15 +76,5 @@ export class OptimizationEventHandler {
     private async handleProductionCompleted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { planId: string; actualWaste: number };
         console.log(`[OPTIMIZATION] Production completed for plan: ${payload.planId}, waste: ${payload.actualWaste}`);
-    }
-
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister(): void {
-        const eventBus = EventBus.getInstance();
-        eventBus.unsubscribe(EventTypes.PLAN_STATUS_UPDATE_REQUESTED);
-        eventBus.unsubscribe(EventTypes.PRODUCTION_STARTED);
-        eventBus.unsubscribe(EventTypes.PRODUCTION_COMPLETED);
     }
 }

@@ -2,6 +2,7 @@
 /**
  * Order Event Handlers
  * Handles events from other modules and emits order state changes
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderEventHandler = void 0;
@@ -15,13 +16,13 @@ class OrderEventHandler {
      * Register all event handlers
      */
     register() {
-        const eventBus = events_1.EventBus.getInstance();
+        const adapter = (0, events_1.getEventAdapter)();
         // Handle order status update requests
-        eventBus.subscribe(events_1.EventTypes.ORDER_STATUS_UPDATE_REQUESTED, this.handleStatusUpdateRequested.bind(this));
+        adapter.subscribe(events_1.EventTypes.ORDER_STATUS_UPDATE_REQUESTED, this.handleStatusUpdateRequested.bind(this));
         // Handle cutting job completed - may update order status
-        eventBus.subscribe(events_1.EventTypes.CUTTING_JOB_COMPLETED, this.handleCuttingJobCompleted.bind(this));
+        adapter.subscribe(events_1.EventTypes.CUTTING_JOB_COMPLETED, this.handleCuttingJobCompleted.bind(this));
         // Handle production completed - may complete order
-        eventBus.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
+        adapter.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
         console.log('[EVENT] Order event handlers registered');
     }
     /**
@@ -29,7 +30,7 @@ class OrderEventHandler {
      */
     async handleStatusUpdateRequested(event) {
         const payload = event.payload;
-        const eventBus = events_1.EventBus.getInstance();
+        const adapter = (0, events_1.getEventAdapter)();
         try {
             const order = await this.repository.findById(payload.orderId);
             if (!order) {
@@ -38,7 +39,7 @@ class OrderEventHandler {
             }
             const oldStatus = order.status;
             await this.repository.updateStatus(payload.orderId, payload.newStatus);
-            await eventBus.publish(events_1.DomainEvents.orderStatusUpdated({
+            await adapter.publish(events_1.DomainEvents.orderStatusUpdated({
                 orderId: payload.orderId,
                 oldStatus,
                 newStatus: payload.newStatus,
@@ -63,15 +64,6 @@ class OrderEventHandler {
     async handleProductionCompleted(event) {
         const payload = event.payload;
         console.log(`[ORDER] Production completed for plan: ${payload.planId}`);
-    }
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister() {
-        const eventBus = events_1.EventBus.getInstance();
-        eventBus.unsubscribe(events_1.EventTypes.ORDER_STATUS_UPDATE_REQUESTED);
-        eventBus.unsubscribe(events_1.EventTypes.CUTTING_JOB_COMPLETED);
-        eventBus.unsubscribe(events_1.EventTypes.PRODUCTION_COMPLETED);
     }
 }
 exports.OrderEventHandler = OrderEventHandler;

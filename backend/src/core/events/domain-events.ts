@@ -29,6 +29,7 @@ export const EventTypes = {
     CUTTING_JOB_COMPLETED: 'cutting-job.completed',
 
     // Optimization events
+    OPTIMIZATION_RUN_REQUESTED: 'optimization.run-requested',
     OPTIMIZATION_STARTED: 'optimization.started',
     OPTIMIZATION_COMPLETED: 'optimization.completed',
     OPTIMIZATION_FAILED: 'optimization.failed',

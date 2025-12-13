@@ -1,6 +1,7 @@
 import { OptimizationService } from '../optimization.service';
 import { IOptimizationRepository, ScenarioWithRelations } from '../optimization.repository';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { ICuttingJobServiceClient, IStockQueryClient } from '../../../core/services';
 
 
 // Mock the strategy registry class entirely
@@ -19,6 +20,8 @@ jest.mock('../optimization.strategy', () => {
 describe('OptimizationService', () => {
     let service: OptimizationService;
     let repository: MockProxy<IOptimizationRepository>;
+    let cuttingJobClient: MockProxy<ICuttingJobServiceClient>;
+    let stockQueryClient: MockProxy<IStockQueryClient>;
 
 
     const createMockScenario = (overrides: Partial<ScenarioWithRelations> = {}): ScenarioWithRelations => ({
@@ -39,7 +42,9 @@ describe('OptimizationService', () => {
 
     beforeEach(() => {
         repository = mock<IOptimizationRepository>();
-        service = new OptimizationService(repository);
+        cuttingJobClient = mock<ICuttingJobServiceClient>();
+        stockQueryClient = mock<IStockQueryClient>();
+        service = new OptimizationService(repository, cuttingJobClient, stockQueryClient);
     });
 
     describe('createScenario', () => {

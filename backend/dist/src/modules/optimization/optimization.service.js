@@ -3,20 +3,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OptimizationService = void 0;
 const interfaces_1 = require("../../core/interfaces");
 const optimization_engine_1 = require("./optimization.engine");
-const client_1 = require("@prisma/client");
 class OptimizationService {
     repository;
     engine;
-    constructor(repository, prisma) {
+    constructor(repository, cuttingJobClient, stockQueryClient) {
         this.repository = repository;
-        // Create engine with prisma client if provided
-        if (prisma) {
-            this.engine = new optimization_engine_1.OptimizationEngine(prisma);
-        }
-        else {
-            // Fallback - engine methods will fail gracefully
-            this.engine = new optimization_engine_1.OptimizationEngine(new client_1.PrismaClient());
-        }
+        this.engine = new optimization_engine_1.OptimizationEngine(cuttingJobClient, stockQueryClient, {
+            useWorkerThreads: true
+        });
+    }
+    /**
+     * Initialize worker pool - call at application startup
+     */
+    async initializeWorkers() {
+        await this.engine.initializeWorkers();
+    }
+    /**
+     * Get engine instance for consumer registration
+     */
+    getEngine() {
+        return this.engine;
     }
     async createScenario(data, userId) {
         try {

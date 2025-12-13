@@ -3,6 +3,7 @@
  * Stock Event Handlers
  * Handles events from other modules that require stock operations
  * Following Event-Driven Architecture for loose coupling
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockEventHandler = void 0;
@@ -16,13 +17,13 @@ class StockEventHandler {
      * Register all event handlers
      */
     register() {
-        const eventBus = events_1.EventBus.getInstance();
+        const adapter = (0, events_1.getEventAdapter)();
         // Handle stock consume requests from other modules (e.g., Production)
-        eventBus.subscribe(events_1.EventTypes.STOCK_CONSUME_REQUESTED, this.handleConsumeRequested.bind(this));
+        adapter.subscribe(events_1.EventTypes.STOCK_CONSUME_REQUESTED, this.handleConsumeRequested.bind(this));
         // Handle stock reserve requests from other modules (e.g., Optimization)
-        eventBus.subscribe(events_1.EventTypes.STOCK_RESERVE_REQUESTED, this.handleReserveRequested.bind(this));
+        adapter.subscribe(events_1.EventTypes.STOCK_RESERVE_REQUESTED, this.handleReserveRequested.bind(this));
         // Handle production completed - may trigger low stock alerts
-        eventBus.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
+        adapter.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
         console.log('[EVENT] Stock event handlers registered');
     }
     /**
@@ -31,12 +32,12 @@ class StockEventHandler {
      */
     async handleConsumeRequested(event) {
         const payload = event.payload;
-        const eventBus = events_1.EventBus.getInstance();
+        const adapter = (0, events_1.getEventAdapter)();
         try {
             // Get current stock
             const stock = await this.stockRepository.findById(payload.stockItemId);
             if (!stock) {
-                await eventBus.publish(events_1.DomainEvents.stockConsumeFailed({
+                await adapter.publish(events_1.DomainEvents.stockConsumeFailed({
                     stockItemId: payload.stockItemId,
                     quantity: payload.quantity,
                     reason: 'Stock item not found',
@@ -45,7 +46,7 @@ class StockEventHandler {
                 return;
             }
             if (stock.quantity < payload.quantity) {
-                await eventBus.publish(events_1.DomainEvents.stockConsumeFailed({
+                await adapter.publish(events_1.DomainEvents.stockConsumeFailed({
                     stockItemId: payload.stockItemId,
                     quantity: payload.quantity,
                     reason: `Insufficient stock: ${stock.quantity} available, ${payload.quantity} requested`,
@@ -64,7 +65,7 @@ class StockEventHandler {
             // Update quantity
             await this.stockRepository.updateQuantity(payload.stockItemId, -payload.quantity);
             // Publish success
-            await eventBus.publish(events_1.DomainEvents.stockConsumeCompleted({
+            await adapter.publish(events_1.DomainEvents.stockConsumeCompleted({
                 stockItemId: payload.stockItemId,
                 quantity: payload.quantity,
                 movementId: movement.id,
@@ -73,7 +74,7 @@ class StockEventHandler {
             // Check for low stock alert
             const updatedStock = await this.stockRepository.findById(payload.stockItemId);
             if (updatedStock && updatedStock.quantity <= 5) {
-                await eventBus.publish(events_1.DomainEvents.stockLowAlert({
+                await adapter.publish(events_1.DomainEvents.stockLowAlert({
                     stockItemId: updatedStock.id,
                     stockCode: updatedStock.code,
                     currentQuantity: updatedStock.quantity,
@@ -82,7 +83,7 @@ class StockEventHandler {
             }
         }
         catch (error) {
-            await eventBus.publish(events_1.DomainEvents.stockConsumeFailed({
+            await adapter.publish(events_1.DomainEvents.stockConsumeFailed({
                 stockItemId: payload.stockItemId,
                 quantity: payload.quantity,
                 reason: error instanceof Error ? error.message : 'Unknown error',
@@ -95,7 +96,7 @@ class StockEventHandler {
      */
     async handleReserveRequested(event) {
         const payload = event.payload;
-        const eventBus = events_1.EventBus.getInstance();
+        const adapter = (0, events_1.getEventAdapter)();
         try {
             const stock = await this.stockRepository.findById(payload.stockItemId);
             if (!stock) {
@@ -109,7 +110,7 @@ class StockEventHandler {
             }
             // Update reserved quantity
             await this.stockRepository.updateQuantity(payload.stockItemId, 0, payload.quantity);
-            await eventBus.publish(events_1.DomainEvents.stockReserveCompleted({
+            await adapter.publish(events_1.DomainEvents.stockReserveCompleted({
                 stockItemId: payload.stockItemId,
                 quantity: payload.quantity,
                 planId: payload.planId,
@@ -126,15 +127,6 @@ class StockEventHandler {
     async handleProductionCompleted(event) {
         // Log for monitoring
         console.log(`[STOCK] Production completed: ${event.aggregateId}`);
-    }
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister() {
-        const eventBus = events_1.EventBus.getInstance();
-        eventBus.unsubscribe(events_1.EventTypes.STOCK_CONSUME_REQUESTED);
-        eventBus.unsubscribe(events_1.EventTypes.STOCK_RESERVE_REQUESTED);
-        eventBus.unsubscribe(events_1.EventTypes.PRODUCTION_COMPLETED);
     }
 }
 exports.StockEventHandler = StockEventHandler;

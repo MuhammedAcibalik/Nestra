@@ -40,6 +40,13 @@ export class OptimizationService implements IOptimizationService {
         await this.engine.initializeWorkers();
     }
 
+    /**
+     * Get engine instance for consumer registration
+     */
+    getEngine(): OptimizationEngine {
+        return this.engine;
+    }
+
     async createScenario(data: ICreateScenarioInput, userId: string): Promise<IResult<IScenarioDto>> {
         try {
             if (!data.name || !data.cuttingJobId) {

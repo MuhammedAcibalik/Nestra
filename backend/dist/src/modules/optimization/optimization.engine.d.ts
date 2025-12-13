@@ -2,8 +2,13 @@
  * Optimization Engine
  * Bridge layer between cutting algorithms and database
  * Following SRP - Only handles algorithm execution and data transformation
+ * Following DIP - Uses service clients instead of direct database access
+ *
+ * NOW WITH PISCINA WORKER THREADS:
+ * - Data fetching: Main thread (async I/O)
+ * - Algorithm execution: Piscina pool (CPU-intensive)
  */
-import { PrismaClient } from '@prisma/client';
+import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
 export interface OptimizationInput {
     cuttingJobId: string;
     scenarioId: string;
@@ -37,18 +42,34 @@ export interface LayoutData {
     wastePercentage: number;
     layoutJson: string;
 }
+export interface IOptimizationEngineConfig {
+    useWorkerThreads?: boolean;
+}
 export declare class OptimizationEngine {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly cuttingJobClient;
+    private readonly stockQueryClient;
+    private pool;
+    private readonly useWorkerThreads;
+    constructor(cuttingJobClient: ICuttingJobServiceClient, stockQueryClient: IStockQueryClient, config?: IOptimizationEngineConfig);
+    /**
+     * Initialize Piscina pool (call once at startup)
+     */
+    initializeWorkers(): Promise<void>;
     /**
      * Main entry point - runs optimization for a cutting job
      */
     runOptimization(input: OptimizationInput): Promise<OptimizationOutput>;
+    /**
+     * Get pool statistics
+     */
+    getPoolStats(): import("../../workers").IOptimizationPoolStats | null;
     private run1DOptimization;
+    private run1DSync;
     private convertTo1DPieces;
     private convertTo1DStock;
     private convert1DResult;
     private run2DOptimization;
+    private run2DSync;
     private convertTo2DPieces;
     private convertTo2DStock;
     private convert2DResult;

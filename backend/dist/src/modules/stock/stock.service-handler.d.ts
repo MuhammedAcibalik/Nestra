@@ -9,6 +9,7 @@ export declare class StockServiceHandler implements IServiceHandler {
     private readonly repository;
     constructor(repository: IStockRepository);
     handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>>;
+    private getAvailableStock;
     private getStockById;
     private createMovement;
     private updateQuantity;

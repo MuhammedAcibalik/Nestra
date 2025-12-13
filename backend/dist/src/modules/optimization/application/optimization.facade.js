@@ -14,9 +14,9 @@ class OptimizationFacade {
     repository;
     engine;
     validator;
-    constructor(repository, prisma) {
+    constructor(repository, cuttingJobClient, stockQueryClient) {
         this.repository = repository;
-        this.engine = new optimization_engine_1.OptimizationEngine(prisma);
+        this.engine = new optimization_engine_1.OptimizationEngine(cuttingJobClient, stockQueryClient);
         this.validator = new optimization_validator_1.OptimizationValidator();
     }
     // ==================== SCENARIO OPERATIONS ====================

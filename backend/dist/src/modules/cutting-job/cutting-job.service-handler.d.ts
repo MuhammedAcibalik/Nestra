@@ -17,6 +17,7 @@ export declare class CuttingJobServiceHandler implements IServiceHandler {
     private readonly repository;
     constructor(repository: ICuttingJobRepository);
     handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>>;
+    private getJobWithItems;
     private getJobById;
     private getAllJobs;
     private getPendingJobs;

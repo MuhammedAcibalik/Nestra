@@ -18,6 +18,7 @@ export declare class ProductionService implements IProductionService {
     getProductionLogs(filter?: IProductionLogFilter): Promise<IResult<IProductionLogDto[]>>;
     /**
      * Consume stock via service client - no direct repository access
+     * Uses Promise.allSettled for partial failure handling
      */
     private consumeStockForPlan;
     private toDto;

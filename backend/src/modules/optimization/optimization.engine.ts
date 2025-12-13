@@ -4,9 +4,9 @@
  * Following SRP - Only handles algorithm execution and data transformation
  * Following DIP - Uses service clients instead of direct database access
  * 
- * NOW WITH WORKER THREADS:
+ * NOW WITH PISCINA WORKER THREADS:
  * - Data fetching: Main thread (async I/O)
- * - Algorithm execution: Worker thread (CPU-intensive)
+ * - Algorithm execution: Piscina pool (CPU-intensive)
  */
 
 import {
@@ -34,9 +34,8 @@ import {
     IStockItemForOptimization
 } from '../../core/services';
 import {
-    WorkerPool,
-    getOptimizationWorkerPool,
-    createTask,
+    OptimizationPool,
+    getOptimizationPool,
     IOptimization1DPayload,
     IOptimization2DPayload
 } from '../../workers';
@@ -88,7 +87,7 @@ export interface IOptimizationEngineConfig {
 // ==================== ENGINE CLASS ====================
 
 export class OptimizationEngine {
-    private workerPool: WorkerPool | null = null;
+    private pool: OptimizationPool | null = null;
     private readonly useWorkerThreads: boolean;
 
     constructor(
@@ -100,13 +99,13 @@ export class OptimizationEngine {
     }
 
     /**
-     * Initialize worker pool (call once at startup)
+     * Initialize Piscina pool (call once at startup)
      */
     async initializeWorkers(): Promise<void> {
-        if (this.useWorkerThreads && !this.workerPool) {
-            this.workerPool = getOptimizationWorkerPool();
-            await this.workerPool.initialize();
-            console.log('[OPTIMIZATION ENGINE] Worker pool initialized');
+        if (this.useWorkerThreads && !this.pool) {
+            this.pool = getOptimizationPool();
+            await this.pool.initialize();
+            console.log('[OPTIMIZATION ENGINE] Piscina pool initialized');
         }
     }
 
@@ -136,7 +135,7 @@ export class OptimizationEngine {
                 return { success: false, planData: this.emptyPlanData(), error: 'No available stock found' };
             }
 
-            // 4. Run appropriate algorithm (WORKER THREAD or FALLBACK)
+            // 4. Run appropriate algorithm (PISCINA POOL or FALLBACK)
             if (is1D) {
                 return this.run1DOptimization(cuttingJob, stock, input.parameters);
             } else {
@@ -149,6 +148,13 @@ export class OptimizationEngine {
                 error: error instanceof Error ? error.message : 'Unknown error'
             };
         }
+    }
+
+    /**
+     * Get pool statistics
+     */
+    getPoolStats() {
+        return this.pool?.getStats() ?? null;
     }
 
     // ==================== 1D OPTIMIZATION ====================
@@ -169,12 +175,14 @@ export class OptimizationEngine {
 
         let result: Optimization1DResult;
 
-        // Try worker thread first, fallback to main thread
-        if (this.workerPool && this.useWorkerThreads) {
+        // Try Piscina first, fallback to main thread
+        if (this.pool?.isReady() && this.useWorkerThreads) {
             try {
-                result = await this.execute1DInWorker(pieces, bars, options);
+                const payload: IOptimization1DPayload = { pieces, stockBars: bars, options };
+                result = await this.pool.run1D(payload) as Optimization1DResult;
+                console.log('[OPTIMIZATION ENGINE] 1D completed in Piscina worker');
             } catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Worker failed, falling back to main thread:', error);
+                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
                 result = this.run1DSync(pieces, bars, options);
             }
         } else {
@@ -185,24 +193,6 @@ export class OptimizationEngine {
             success: true,
             planData: this.convert1DResult(result, stock)
         };
-    }
-
-    private async execute1DInWorker(
-        pieces: CuttingPiece1D[],
-        bars: StockBar1D[],
-        options: Optimization1DOptions
-    ): Promise<Optimization1DResult> {
-        const payload: IOptimization1DPayload = { pieces, stockBars: bars, options };
-        const task = createTask('OPTIMIZATION_1D', payload);
-
-        const result = await this.workerPool!.execute<IOptimization1DPayload, Optimization1DResult>(task);
-
-        if (!result.success || !result.result) {
-            throw new Error(result.error ?? 'Worker returned no result');
-        }
-
-        console.log(`[OPTIMIZATION ENGINE] 1D completed in worker (${result.executionTime}ms)`);
-        return result.result;
     }
 
     private run1DSync(pieces: CuttingPiece1D[], bars: StockBar1D[], options: Optimization1DOptions): Optimization1DResult {
@@ -274,12 +264,14 @@ export class OptimizationEngine {
 
         let result: Optimization2DResult;
 
-        // Try worker thread first, fallback to main thread
-        if (this.workerPool && this.useWorkerThreads) {
+        // Try Piscina first, fallback to main thread
+        if (this.pool?.isReady() && this.useWorkerThreads) {
             try {
-                result = await this.execute2DInWorker(pieces, sheets, options);
+                const payload: IOptimization2DPayload = { pieces, stockSheets: sheets, options };
+                result = await this.pool.run2D(payload) as Optimization2DResult;
+                console.log('[OPTIMIZATION ENGINE] 2D completed in Piscina worker');
             } catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Worker failed, falling back to main thread:', error);
+                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
                 result = this.run2DSync(pieces, sheets, options);
             }
         } else {
@@ -290,24 +282,6 @@ export class OptimizationEngine {
             success: true,
             planData: this.convert2DResult(result, stock)
         };
-    }
-
-    private async execute2DInWorker(
-        pieces: CuttingPiece2D[],
-        sheets: StockSheet2D[],
-        options: Optimization2DOptions
-    ): Promise<Optimization2DResult> {
-        const payload: IOptimization2DPayload = { pieces, stockSheets: sheets, options };
-        const task = createTask('OPTIMIZATION_2D', payload);
-
-        const result = await this.workerPool!.execute<IOptimization2DPayload, Optimization2DResult>(task);
-
-        if (!result.success || !result.result) {
-            throw new Error(result.error ?? 'Worker returned no result');
-        }
-
-        console.log(`[OPTIMIZATION ENGINE] 2D completed in worker (${result.executionTime}ms)`);
-        return result.result;
     }
 
     private run2DSync(pieces: CuttingPiece2D[], sheets: StockSheet2D[], options: Optimization2DOptions): Optimization2DResult {
@@ -321,7 +295,7 @@ export class OptimizationEngine {
         return job.items.map(item => ({
             id: item.id,
             width: item.orderItem?.width ?? 0,
-            height: item.orderItem?.height ?? item.orderItem?.length ?? 0,
+            height: item.orderItem?.length ?? 0,
             quantity: item.quantity,
             orderItemId: item.orderItemId,
             canRotate: allowRotation
@@ -332,7 +306,7 @@ export class OptimizationEngine {
         return stock.map(s => ({
             id: s.id,
             width: s.width ?? 0,
-            height: s.height ?? s.length ?? 0,
+            height: s.length ?? 0,
             available: s.quantity,
             unitPrice: s.unitPrice ?? undefined
         }));
@@ -346,8 +320,10 @@ export class OptimizationEngine {
             wastePercentage: sheet.wastePercentage,
             layoutJson: JSON.stringify({
                 sheetId: sheet.stockId,
+                sheetWidth: sheet.stockWidth,
+                sheetHeight: sheet.stockHeight,
                 placements: sheet.placements,
-                wasteArea: sheet.wasteArea
+                waste: sheet.wasteArea
             })
         }));
 
@@ -365,37 +341,28 @@ export class OptimizationEngine {
 
     private async getCuttingJobWithItems(jobId: string): Promise<ICuttingJobWithItems | null> {
         const response = await this.cuttingJobClient.getJobWithItems(jobId);
-        if (!response.success || !response.data) {
-            return null;
-        }
-        return response.data;
+        return response.success ? response.data ?? null : null;
     }
 
     private async getAvailableStock(
         materialTypeId: string,
-        thickness: number,
+        thickness: number | null,
         is1D: boolean,
         params: OptimizationParameters
     ): Promise<IStockItemForOptimization[]> {
         const response = await this.stockQueryClient.getAvailableStock({
             materialTypeId,
-            thickness,
+            thickness: thickness ?? 0,
             stockType: is1D ? 'BAR_1D' : 'SHEET_2D',
             selectedStockIds: params.selectedStockIds
         });
-
-        if (!response.success || !response.data) {
-            return [];
-        }
-        return response.data;
+        return response.success ? response.data ?? [] : [];
     }
 
     private is1DJob(job: ICuttingJobWithItems): boolean {
-        // Check first item's geometry type
         if (job.items.length === 0) return true;
         const firstItem = job.items[0];
-        if (!firstItem.orderItem) return true;
-        return firstItem.orderItem.geometryType === 'BAR_1D';
+        return firstItem.orderItem?.geometryType === 'BAR_1D';
     }
 
     private emptyPlanData(): PlanData {

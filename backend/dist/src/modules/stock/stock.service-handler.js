@@ -28,6 +28,11 @@ class StockServiceHandler {
             const { delta } = data;
             return this.updateQuantity(stockId, delta);
         }
+        // Route: POST /stock/query/available (for Optimization)
+        if (method === 'POST' && path === '/stock/query/available') {
+            const params = data;
+            return this.getAvailableStock(params);
+        }
         return {
             success: false,
             error: {
@@ -35,6 +40,50 @@ class StockServiceHandler {
                 message: `Route not found: ${method} ${path}`
             }
         };
+    }
+    async getAvailableStock(params) {
+        try {
+            const allStock = await this.repository.findAll({
+                materialTypeId: params.materialTypeId,
+                stockType: params.stockType
+            });
+            // Filter by thickness and optionally by selected IDs
+            let filtered = allStock.filter(s => s.thickness === params.thickness);
+            if (params.selectedStockIds && params.selectedStockIds.length > 0) {
+                filtered = filtered.filter(s => params.selectedStockIds.includes(s.id));
+            }
+            // Sort by price (asc), then quantity (desc)
+            filtered.sort((a, b) => {
+                const priceA = a.unitPrice ?? Infinity;
+                const priceB = b.unitPrice ?? Infinity;
+                if (priceA !== priceB)
+                    return priceA - priceB;
+                return b.quantity - a.quantity;
+            });
+            return {
+                success: true,
+                data: filtered.map(s => ({
+                    id: s.id,
+                    code: s.code,
+                    name: s.name,
+                    stockType: s.stockType,
+                    length: s.length,
+                    width: s.width,
+                    height: s.height,
+                    quantity: s.quantity,
+                    unitPrice: s.unitPrice
+                }))
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'INTERNAL_ERROR',
+                    message: error instanceof Error ? error.message : 'Unknown error'
+                }
+            };
+        }
     }
     async getStockById(stockId) {
         try {

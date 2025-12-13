@@ -1,6 +1,7 @@
 /**
  * Order Event Handlers
  * Handles events from other modules and emits order state changes
+ * Uses EventAdapter for RabbitMQ/In-Memory abstraction
  */
 import { IOrderRepository } from './order.repository';
 export declare class OrderEventHandler {
@@ -22,9 +23,5 @@ export declare class OrderEventHandler {
      * Handle production completed
      */
     private handleProductionCompleted;
-    /**
-     * Unregister handlers (for testing)
-     */
-    unregister(): void;
 }
 //# sourceMappingURL=order.event-handler.d.ts.map

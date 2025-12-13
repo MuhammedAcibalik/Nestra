@@ -3,15 +3,15 @@
  * Main entry point for optimization operations
  * Following Facade Pattern - Simplifies complex subsystem
  */
-import { PrismaClient } from '@prisma/client';
 import { IResult } from '../../../core/interfaces';
 import { IScenarioDto, ICuttingPlanDto, IOptimizationResultDto, IPlanComparisonDto, IScenarioFilterDto, IPlanFilterDto } from '../interfaces';
+import { ICuttingJobServiceClient, IStockQueryClient } from '../../../core/services';
 import { IOptimizationRepository } from '../optimization.repository';
 export declare class OptimizationFacade {
     private readonly repository;
     private readonly engine;
     private readonly validator;
-    constructor(repository: IOptimizationRepository, prisma: PrismaClient);
+    constructor(repository: IOptimizationRepository, cuttingJobClient: ICuttingJobServiceClient, stockQueryClient: IStockQueryClient);
     createScenario(data: {
         name: string;
         cuttingJobId: string;

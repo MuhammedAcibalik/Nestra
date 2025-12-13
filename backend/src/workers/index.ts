@@ -1,6 +1,8 @@
 /**
  * Workers Module - Barrel Export
+ * Piscina-based implementation
  */
 
 export * from './pool';
-export * from './optimization';
+
+// Note: optimization worker is entry point for Piscina, not directly exported

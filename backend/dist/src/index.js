@@ -4,6 +4,39 @@
  * Following Dependency Inversion Principle (DIP)
  * All dependencies are wired up here at the composition root
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,6 +53,7 @@ const stock_1 = require("./modules/stock");
 const auth_1 = require("./modules/auth");
 const order_1 = require("./modules/order");
 const optimization_1 = require("./modules/optimization");
+const optimization_consumer_1 = require("./modules/optimization/optimization.consumer");
 const production_1 = require("./modules/production");
 const report_1 = require("./modules/report");
 const cutting_job_1 = require("./modules/cutting-job");
@@ -34,6 +68,9 @@ const websocket_1 = require("./websocket");
 // Middleware
 const errorHandler_1 = require("./middleware/errorHandler");
 const authMiddleware_1 = require("./middleware/authMiddleware");
+const metrics_middleware_1 = require("./middleware/metrics.middleware");
+// Monitoring
+const monitoring_1 = require("./core/monitoring");
 // Services (Microservice Infrastructure)
 const services_1 = require("./core/services");
 const optimization_service_handler_1 = require("./modules/optimization/optimization.service-handler");
@@ -43,10 +80,14 @@ const material_service_handler_1 = require("./modules/material/material.service-
 const machine_service_handler_1 = require("./modules/machine/machine.service-handler");
 const customer_service_handler_1 = require("./modules/customer/customer.service-handler");
 const cutting_job_service_handler_1 = require("./modules/cutting-job/cutting-job.service-handler");
+const auth_service_handler_1 = require("./modules/auth/auth.service-handler");
+const location_service_handler_1 = require("./modules/location/location.service-handler");
 // Event Handlers (Event-Driven Architecture)
 const stock_event_handler_1 = require("./modules/stock/stock.event-handler");
 const optimization_event_handler_1 = require("./modules/optimization/optimization.event-handler");
 const order_event_handler_1 = require("./modules/order/order.event-handler");
+// Messaging (RabbitMQ / In-Memory)
+const messaging_1 = require("./core/messaging");
 dotenv_1.default.config();
 /**
  * Application class - Single Responsibility: Application lifecycle management
@@ -122,16 +163,24 @@ class Application {
         // Register cutting-job service handler
         const cuttingJobServiceHandler = new cutting_job_service_handler_1.CuttingJobServiceHandler(cuttingJobRepository);
         serviceRegistry.register('cutting-job', cuttingJobServiceHandler);
+        // Register auth service handler
+        const authServiceHandler = new auth_service_handler_1.AuthServiceHandler(userRepository);
+        serviceRegistry.register('auth', authServiceHandler);
+        // Register location service handler
+        const locationServiceHandler = new location_service_handler_1.LocationServiceHandler(locationRepository);
+        serviceRegistry.register('location', locationServiceHandler);
         // Create service clients for cross-module access
         const optimizationClient = (0, services_1.createOptimizationClient)(serviceRegistry);
         const stockClient = (0, services_1.createStockClient)(serviceRegistry);
+        const cuttingJobClient = (0, services_1.createCuttingJobClient)(serviceRegistry);
+        const stockQueryClient = (0, services_1.createStockQueryClient)(serviceRegistry);
         // ==================== SERVICES ====================
         // Initialize services with dependencies (DIP)
         this.materialService = new material_1.MaterialService(materialRepository);
         this.stockService = new stock_1.StockService(stockRepository);
         this.authService = new auth_1.AuthService(userRepository, authConfig);
         this.orderService = new order_1.OrderService(orderRepository);
-        this.optimizationService = new optimization_1.OptimizationService(optimizationRepository, this.prisma);
+        this.optimizationService = new optimization_1.OptimizationService(optimizationRepository, cuttingJobClient, stockQueryClient);
         // ProductionService uses service clients instead of cross-module repositories
         this.productionService = new production_1.ProductionService(productionRepository, optimizationClient, stockClient);
         this.reportService = new report_1.ReportService(reportRepository);
@@ -149,6 +198,10 @@ class Application {
         optimizationEventHandler.register();
         const orderEventHandler = new order_event_handler_1.OrderEventHandler(orderRepository);
         orderEventHandler.register();
+        // ==================== RABBITMQ CONSUMERS ====================
+        // Register RabbitMQ consumers for async optimization requests
+        const optimizationConsumer = new optimization_consumer_1.OptimizationConsumer(this.optimizationService.getEngine());
+        optimizationConsumer.register();
     }
     /**
      * Initialize Express middleware
@@ -157,6 +210,19 @@ class Application {
         this.app.use((0, cors_1.default)());
         this.app.use(express_1.default.json());
         this.app.use(express_1.default.urlencoded({ extended: true }));
+        // Prometheus metrics middleware
+        this.app.use(metrics_middleware_1.metricsMiddleware);
+        // Metrics endpoint for Prometheus scraping
+        this.app.get('/metrics', async (_req, res) => {
+            try {
+                const metrics = await (0, monitoring_1.getMetrics)();
+                res.set('Content-Type', (0, monitoring_1.getMetricsContentType)());
+                res.send(metrics);
+            }
+            catch (error) {
+                res.status(500).send('Error collecting metrics');
+            }
+        });
     }
     /**
      * Initialize routes with dependency injection
@@ -233,16 +299,31 @@ class Application {
      */
     async start() {
         await this.connectDatabase();
+        // Initialize Message Bus (RabbitMQ or In-Memory based on config)
+        // Must be done BEFORE dependencies because event handlers use the adapter
+        try {
+            await (0, messaging_1.initializeMessageBus)();
+            console.log('✅ Message bus initialized');
+        }
+        catch (error) {
+            console.warn('⚠️ Message bus initialization failed, using in-memory fallback:', error);
+        }
         this.initializeDependencies();
         this.initializeMiddleware();
         this.initializeRoutes();
         this.initializeErrorHandling();
         // Initialize WebSocket
         websocket_1.websocketService.initialize(this.httpServer);
+        // Initialize Worker Pool for optimization calculations
+        if (this.optimizationService) {
+            await this.optimizationService.initializeWorkers();
+            console.log('✅ Worker pool initialized');
+        }
         this.httpServer.listen(this.port, () => {
             console.log(`🚀 Nestra server running on http://localhost:${this.port}`);
             console.log(`📚 Environment: ${process.env.NODE_ENV ?? 'development'}`);
             console.log('🔌 WebSocket available at /ws');
+            console.log(`📨 Message Bus: ${process.env.USE_RABBITMQ === 'true' ? 'RabbitMQ' : 'In-Memory'}`);
         });
     }
     /**
@@ -250,6 +331,13 @@ class Application {
      */
     async shutdown() {
         console.log('🛑 Shutting down...');
+        // Shutdown message bus
+        await (0, messaging_1.shutdownMessageBus)();
+        console.log('✅ Message bus disconnected');
+        // Shutdown worker pool
+        const { shutdownOptimizationPool } = await Promise.resolve().then(() => __importStar(require('./workers')));
+        await shutdownOptimizationPool();
+        console.log('✅ Worker pool terminated');
         await this.prisma.$disconnect();
         console.log('✅ Database disconnected');
     }

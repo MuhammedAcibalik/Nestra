@@ -1,6 +1,6 @@
 /**
- * Optimization Worker - Barrel Export
+ * Optimization Consumer - Barrel Export (excluding worker)
  */
 
-export * from './worker-handler';
 // Note: optimization.worker.ts is the entry point for workers, not imported here
+// It has its own named exports for Piscina

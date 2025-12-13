@@ -37,6 +37,17 @@ export class StockServiceHandler implements IServiceHandler {
             return this.updateQuantity(stockId, delta) as Promise<IServiceResponse<TRes>>;
         }
 
+        // Route: POST /stock/query/available (for Optimization)
+        if (method === 'POST' && path === '/stock/query/available') {
+            const params = data as {
+                materialTypeId: string;
+                thickness: number;
+                stockType: 'BAR_1D' | 'SHEET_2D';
+                selectedStockIds?: string[];
+            };
+            return this.getAvailableStock(params) as Promise<IServiceResponse<TRes>>;
+        }
+
         return {
             success: false,
             error: {
@@ -44,6 +55,58 @@ export class StockServiceHandler implements IServiceHandler {
                 message: `Route not found: ${method} ${path}`
             }
         };
+    }
+
+    private async getAvailableStock(params: {
+        materialTypeId: string;
+        thickness: number;
+        stockType: 'BAR_1D' | 'SHEET_2D';
+        selectedStockIds?: string[];
+    }): Promise<IServiceResponse<unknown>> {
+        try {
+            const allStock = await this.repository.findAll({
+                materialTypeId: params.materialTypeId,
+                stockType: params.stockType
+            });
+
+            // Filter by thickness and optionally by selected IDs
+            let filtered = allStock.filter(s => s.thickness === params.thickness);
+
+            if (params.selectedStockIds && params.selectedStockIds.length > 0) {
+                filtered = filtered.filter(s => params.selectedStockIds!.includes(s.id));
+            }
+
+            // Sort by price (asc), then quantity (desc)
+            filtered.sort((a, b) => {
+                const priceA = a.unitPrice ?? Infinity;
+                const priceB = b.unitPrice ?? Infinity;
+                if (priceA !== priceB) return priceA - priceB;
+                return b.quantity - a.quantity;
+            });
+
+            return {
+                success: true,
+                data: filtered.map(s => ({
+                    id: s.id,
+                    code: s.code,
+                    name: s.name,
+                    stockType: s.stockType,
+                    length: s.length,
+                    width: s.width,
+                    height: s.height,
+                    quantity: s.quantity,
+                    unitPrice: s.unitPrice
+                }))
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'INTERNAL_ERROR',
+                    message: error instanceof Error ? error.message : 'Unknown error'
+                }
+            };
+        }
     }
 
     private async getStockById(stockId: string): Promise<IServiceResponse<IStockSummary>> {

@@ -20,4 +20,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./event-bus"), exports);
 __exportStar(require("./domain-events"), exports);
 __exportStar(require("./event-subscriptions"), exports);
+__exportStar(require("./event-adapter"), exports);
 //# sourceMappingURL=index.js.map

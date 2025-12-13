@@ -13,6 +13,9 @@ export interface IProductionService {
 export interface IProductionPlanFilter {
     status?: string;
     machineId?: string;
+    scenarioId?: string;
+    fromDate?: Date;
+    toDate?: Date;
 }
 export interface IProductionLogFilter {
     status?: string;

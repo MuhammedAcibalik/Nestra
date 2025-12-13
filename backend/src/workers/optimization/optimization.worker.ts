@@ -1,47 +1,68 @@
 /**
- * Optimization Worker Entry Point
- * Runs in separate thread, receives tasks via parentPort
- * Following Microservice Pattern: Message Passing, Shared-Nothing
+ * Optimization Worker - Piscina Format
+ * Named exports for different optimization tasks
+ * Following Microservice Pattern: Shared-Nothing, Message Passing
  */
 
-import { parentPort, isMainThread } from 'node:worker_threads';
-import { IWorkerTask, IOptimization1DPayload, IOptimization2DPayload } from '../pool/worker-task';
-import { OptimizationWorkerHandler } from './worker-handler';
+import {
+    firstFitDecreasing,
+    bestFitDecreasing,
+    Optimization1DResult
+} from '../../algorithms/1d/cutting1d';
+import {
+    bottomLeftFill,
+    guillotineCutting,
+    Optimization2DResult
+} from '../../algorithms/2d/cutting2d';
+import { IOptimization1DPayload, IOptimization2DPayload } from '../pool/worker-task';
 
-// ==================== WORKER INITIALIZATION ====================
+// ==================== 1D OPTIMIZATION ====================
 
-if (isMainThread) {
-    throw new Error('This file should be run as a worker thread, not in main thread');
+/**
+ * Execute 1D cutting optimization
+ * Named task for Piscina
+ */
+export function optimize1D(payload: IOptimization1DPayload): Optimization1DResult {
+    const { pieces, stockBars, options } = payload;
+
+    console.log(`[WORKER] 1D Optimization: ${pieces.length} pieces, ${stockBars.length} bars`);
+
+    if (options.algorithm === 'BFD') {
+        return bestFitDecreasing(pieces, stockBars, options);
+    }
+    return firstFitDecreasing(pieces, stockBars, options);
 }
 
-if (!parentPort) {
-    throw new Error('parentPort is not available');
+// ==================== 2D OPTIMIZATION ====================
+
+/**
+ * Execute 2D cutting optimization
+ * Named task for Piscina
+ */
+export function optimize2D(payload: IOptimization2DPayload): Optimization2DResult {
+    const { pieces, stockSheets, options } = payload;
+
+    console.log(`[WORKER] 2D Optimization: ${pieces.length} pieces, ${stockSheets.length} sheets`);
+
+    if (options.algorithm === 'GUILLOTINE') {
+        return guillotineCutting(pieces, stockSheets, options);
+    }
+    return bottomLeftFill(pieces, stockSheets, options);
 }
 
-const handler = new OptimizationWorkerHandler();
+// ==================== DEFAULT EXPORT ====================
 
-console.log('[OPTIMIZATION WORKER] Started');
-
-// ==================== MESSAGE LISTENER ====================
-
-parentPort.on('message', (task: IWorkerTask<IOptimization1DPayload | IOptimization2DPayload>) => {
-    console.log(`[OPTIMIZATION WORKER] Received task: ${task.id} (${task.type})`);
-
-    const result = handler.handleTask(task);
-
-    console.log(`[OPTIMIZATION WORKER] Completed task: ${task.id} (${result.success ? 'success' : 'failed'}) in ${result.executionTime}ms`);
-
-    parentPort!.postMessage(result);
-});
-
-// ==================== ERROR HANDLING ====================
-
-process.on('uncaughtException', (error) => {
-    console.error('[OPTIMIZATION WORKER] Uncaught exception:', error);
-    process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-    console.error('[OPTIMIZATION WORKER] Unhandled rejection:', reason);
-    process.exit(1);
-});
+/**
+ * Default handler for generic tasks
+ * Dispatches to appropriate optimization based on type
+ */
+export default function handler(payload: { type: string; data: unknown }): unknown {
+    switch (payload.type) {
+        case 'OPTIMIZATION_1D':
+            return optimize1D(payload.data as IOptimization1DPayload);
+        case 'OPTIMIZATION_2D':
+            return optimize2D(payload.data as IOptimization2DPayload);
+        default:
+            throw new Error(`Unknown task type: ${payload.type}`);
+    }
+}

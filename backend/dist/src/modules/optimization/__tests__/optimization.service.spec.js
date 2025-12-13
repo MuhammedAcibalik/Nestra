@@ -15,6 +15,8 @@ jest.mock('../optimization.strategy', () => {
 describe('OptimizationService', () => {
     let service;
     let repository;
+    let cuttingJobClient;
+    let stockQueryClient;
     const createMockScenario = (overrides = {}) => ({
         id: 'sc-1',
         name: 'Test Scenario',
@@ -32,7 +34,9 @@ describe('OptimizationService', () => {
     });
     beforeEach(() => {
         repository = (0, jest_mock_extended_1.mock)();
-        service = new optimization_service_1.OptimizationService(repository);
+        cuttingJobClient = (0, jest_mock_extended_1.mock)();
+        stockQueryClient = (0, jest_mock_extended_1.mock)();
+        service = new optimization_service_1.OptimizationService(repository, cuttingJobClient, stockQueryClient);
     });
     describe('createScenario', () => {
         it('should create scenario successfully', async () => {
