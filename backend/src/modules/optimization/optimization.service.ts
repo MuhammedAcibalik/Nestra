@@ -17,22 +17,27 @@ import {
 } from '../../core/interfaces';
 import { IOptimizationRepository, ScenarioWithRelations, PlanWithRelations } from './optimization.repository';
 import { OptimizationEngine, OptimizationParameters } from './optimization.engine';
-import { PrismaClient, CuttingPlanStock } from '@prisma/client';
+import { CuttingPlanStock } from '@prisma/client';
+import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
 
 export class OptimizationService implements IOptimizationService {
     private readonly engine: OptimizationEngine;
 
     constructor(
         private readonly repository: IOptimizationRepository,
-        prisma?: PrismaClient
+        cuttingJobClient: ICuttingJobServiceClient,
+        stockQueryClient: IStockQueryClient
     ) {
-        // Create engine with prisma client if provided
-        if (prisma) {
-            this.engine = new OptimizationEngine(prisma);
-        } else {
-            // Fallback - engine methods will fail gracefully
-            this.engine = new OptimizationEngine(new PrismaClient());
-        }
+        this.engine = new OptimizationEngine(cuttingJobClient, stockQueryClient, {
+            useWorkerThreads: true
+        });
+    }
+
+    /**
+     * Initialize worker pool - call at application startup
+     */
+    async initializeWorkers(): Promise<void> {
+        await this.engine.initializeWorkers();
     }
 
     async createScenario(data: ICreateScenarioInput, userId: string): Promise<IResult<IScenarioDto>> {

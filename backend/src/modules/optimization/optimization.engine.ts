@@ -3,25 +3,29 @@
  * Bridge layer between cutting algorithms and database
  * Following SRP - Only handles algorithm execution and data transformation
  * Following DIP - Uses service clients instead of direct database access
+ * 
+ * NOW WITH WORKER THREADS:
+ * - Data fetching: Main thread (async I/O)
+ * - Algorithm execution: Worker thread (CPU-intensive)
  */
 
 import {
-    firstFitDecreasing,
-    bestFitDecreasing,
     CuttingPiece1D,
     StockBar1D,
     Optimization1DResult,
     Optimization1DOptions,
-    BarCuttingResult
+    BarCuttingResult,
+    firstFitDecreasing,
+    bestFitDecreasing
 } from '../../algorithms/1d/cutting1d';
 import {
-    bottomLeftFill,
-    guillotineCutting,
     CuttingPiece2D,
     StockSheet2D,
     Optimization2DResult,
     Optimization2DOptions,
-    SheetCuttingResult
+    SheetCuttingResult,
+    bottomLeftFill,
+    guillotineCutting
 } from '../../algorithms/2d/cutting2d';
 import {
     ICuttingJobServiceClient,
@@ -29,6 +33,13 @@ import {
     ICuttingJobWithItems,
     IStockItemForOptimization
 } from '../../core/services';
+import {
+    WorkerPool,
+    getOptimizationWorkerPool,
+    createTask,
+    IOptimization1DPayload,
+    IOptimization2DPayload
+} from '../../workers';
 
 // ==================== INTERFACES ====================
 
@@ -70,20 +81,41 @@ export interface LayoutData {
     layoutJson: string;
 }
 
+export interface IOptimizationEngineConfig {
+    useWorkerThreads?: boolean;
+}
+
 // ==================== ENGINE CLASS ====================
 
 export class OptimizationEngine {
+    private workerPool: WorkerPool | null = null;
+    private readonly useWorkerThreads: boolean;
+
     constructor(
         private readonly cuttingJobClient: ICuttingJobServiceClient,
-        private readonly stockQueryClient: IStockQueryClient
-    ) { }
+        private readonly stockQueryClient: IStockQueryClient,
+        config?: IOptimizationEngineConfig
+    ) {
+        this.useWorkerThreads = config?.useWorkerThreads ?? true;
+    }
+
+    /**
+     * Initialize worker pool (call once at startup)
+     */
+    async initializeWorkers(): Promise<void> {
+        if (this.useWorkerThreads && !this.workerPool) {
+            this.workerPool = getOptimizationWorkerPool();
+            await this.workerPool.initialize();
+            console.log('[OPTIMIZATION ENGINE] Worker pool initialized');
+        }
+    }
 
     /**
      * Main entry point - runs optimization for a cutting job
      */
     async runOptimization(input: OptimizationInput): Promise<OptimizationOutput> {
         try {
-            // 1. Get cutting job with items via service client
+            // 1. Get cutting job with items via service client (MAIN THREAD - async I/O)
             const cuttingJob = await this.getCuttingJobWithItems(input.cuttingJobId);
             if (!cuttingJob) {
                 return { success: false, planData: this.emptyPlanData(), error: 'Cutting job not found' };
@@ -92,7 +124,7 @@ export class OptimizationEngine {
             // 2. Determine if 1D or 2D based on geometry
             const is1D = this.is1DJob(cuttingJob);
 
-            // 3. Get available stock via service client
+            // 3. Get available stock via service client (MAIN THREAD - async I/O)
             const stock = await this.getAvailableStock(
                 cuttingJob.materialTypeId,
                 cuttingJob.thickness,
@@ -104,7 +136,7 @@ export class OptimizationEngine {
                 return { success: false, planData: this.emptyPlanData(), error: 'No available stock found' };
             }
 
-            // 4. Run appropriate algorithm
+            // 4. Run appropriate algorithm (WORKER THREAD or FALLBACK)
             if (is1D) {
                 return this.run1DOptimization(cuttingJob, stock, input.parameters);
             } else {
@@ -136,16 +168,48 @@ export class OptimizationEngine {
         };
 
         let result: Optimization1DResult;
-        if (params.algorithm === '1D_BFD') {
-            result = bestFitDecreasing(pieces, bars, options);
+
+        // Try worker thread first, fallback to main thread
+        if (this.workerPool && this.useWorkerThreads) {
+            try {
+                result = await this.execute1DInWorker(pieces, bars, options);
+            } catch (error) {
+                console.warn('[OPTIMIZATION ENGINE] Worker failed, falling back to main thread:', error);
+                result = this.run1DSync(pieces, bars, options);
+            }
         } else {
-            result = firstFitDecreasing(pieces, bars, options);
+            result = this.run1DSync(pieces, bars, options);
         }
 
         return {
             success: true,
             planData: this.convert1DResult(result, stock)
         };
+    }
+
+    private async execute1DInWorker(
+        pieces: CuttingPiece1D[],
+        bars: StockBar1D[],
+        options: Optimization1DOptions
+    ): Promise<Optimization1DResult> {
+        const payload: IOptimization1DPayload = { pieces, stockBars: bars, options };
+        const task = createTask('OPTIMIZATION_1D', payload);
+
+        const result = await this.workerPool!.execute<IOptimization1DPayload, Optimization1DResult>(task);
+
+        if (!result.success || !result.result) {
+            throw new Error(result.error ?? 'Worker returned no result');
+        }
+
+        console.log(`[OPTIMIZATION ENGINE] 1D completed in worker (${result.executionTime}ms)`);
+        return result.result;
+    }
+
+    private run1DSync(pieces: CuttingPiece1D[], bars: StockBar1D[], options: Optimization1DOptions): Optimization1DResult {
+        if (options.algorithm === 'BFD') {
+            return bestFitDecreasing(pieces, bars, options);
+        }
+        return firstFitDecreasing(pieces, bars, options);
     }
 
     private convertTo1DPieces(job: ICuttingJobWithItems): CuttingPiece1D[] {
@@ -209,16 +273,48 @@ export class OptimizationEngine {
         };
 
         let result: Optimization2DResult;
-        if (params.algorithm === '2D_GUILLOTINE') {
-            result = guillotineCutting(pieces, sheets, options);
+
+        // Try worker thread first, fallback to main thread
+        if (this.workerPool && this.useWorkerThreads) {
+            try {
+                result = await this.execute2DInWorker(pieces, sheets, options);
+            } catch (error) {
+                console.warn('[OPTIMIZATION ENGINE] Worker failed, falling back to main thread:', error);
+                result = this.run2DSync(pieces, sheets, options);
+            }
         } else {
-            result = bottomLeftFill(pieces, sheets, options);
+            result = this.run2DSync(pieces, sheets, options);
         }
 
         return {
             success: true,
             planData: this.convert2DResult(result, stock)
         };
+    }
+
+    private async execute2DInWorker(
+        pieces: CuttingPiece2D[],
+        sheets: StockSheet2D[],
+        options: Optimization2DOptions
+    ): Promise<Optimization2DResult> {
+        const payload: IOptimization2DPayload = { pieces, stockSheets: sheets, options };
+        const task = createTask('OPTIMIZATION_2D', payload);
+
+        const result = await this.workerPool!.execute<IOptimization2DPayload, Optimization2DResult>(task);
+
+        if (!result.success || !result.result) {
+            throw new Error(result.error ?? 'Worker returned no result');
+        }
+
+        console.log(`[OPTIMIZATION ENGINE] 2D completed in worker (${result.executionTime}ms)`);
+        return result.result;
+    }
+
+    private run2DSync(pieces: CuttingPiece2D[], sheets: StockSheet2D[], options: Optimization2DOptions): Optimization2DResult {
+        if (options.algorithm === 'GUILLOTINE') {
+            return guillotineCutting(pieces, sheets, options);
+        }
+        return bottomLeftFill(pieces, sheets, options);
     }
 
     private convertTo2DPieces(job: ICuttingJobWithItems, allowRotation: boolean): CuttingPiece2D[] {

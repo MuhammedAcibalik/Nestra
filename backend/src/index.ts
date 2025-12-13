@@ -293,6 +293,12 @@ export class Application {
         // Initialize WebSocket
         websocketService.initialize(this.httpServer);
 
+        // Initialize Worker Pool for optimization calculations
+        if (this.optimizationService) {
+            await this.optimizationService.initializeWorkers();
+            console.log('✅ Worker pool initialized');
+        }
+
         this.httpServer.listen(this.port, () => {
             console.log(`🚀 Nestra server running on http://localhost:${this.port}`);
             console.log(`📚 Environment: ${process.env.NODE_ENV ?? 'development'}`);
@@ -305,6 +311,12 @@ export class Application {
      */
     public async shutdown(): Promise<void> {
         console.log('🛑 Shutting down...');
+
+        // Shutdown worker pool
+        const { shutdownOptimizationPool } = await import('./workers');
+        await shutdownOptimizationPool();
+        console.log('✅ Worker pool terminated');
+
         await this.prisma.$disconnect();
         console.log('✅ Database disconnected');
     }
