@@ -32,6 +32,9 @@ import { LocationRepository, LocationService, LocationController } from './modul
 import { ExportRepository, ExportController } from './modules/export';
 import { DashboardRepository, DashboardService, DashboardController } from './modules/dashboard';
 
+// Health
+import { createHealthController } from './controllers/health.controller';
+
 // WebSocket
 import { websocketService } from './websocket';
 
@@ -39,12 +42,21 @@ import { websocketService } from './websocket';
 import { errorHandler } from './middleware/errorHandler';
 import { createAuthMiddleware } from './middleware/authMiddleware';
 import { metricsMiddleware } from './middleware/metrics.middleware';
+import { defaultRateLimiter, authRateLimiter, optimizationRateLimiter } from './middleware/rate-limit.middleware';
+import { requestIdMiddleware } from './middleware/request-id.middleware';
+import { securityHeadersMiddleware } from './middleware/security-headers.middleware';
+import { compressionMiddleware } from './middleware/compression.middleware';
+import { defaultTimeout, optimizationTimeout } from './middleware/timeout.middleware';
+import { requestLoggingMiddleware } from './middleware/request-logging.middleware';
 
 // Monitoring
 import { getMetrics, getMetricsContentType } from './core/monitoring';
 
 // Interfaces
 import { IAuthService } from './core/interfaces';
+
+// Config
+import { getConfig } from './core/config';
 
 // Services (Microservice Infrastructure)
 import { ServiceRegistry, createOptimizationClient, createStockClient, createCuttingJobClient, createStockQueryClient } from './core/services';
@@ -62,6 +74,10 @@ import { LocationServiceHandler } from './modules/location/location.service-hand
 import { StockEventHandler } from './modules/stock/stock.event-handler';
 import { OptimizationEventHandler } from './modules/optimization/optimization.event-handler';
 import { OrderEventHandler } from './modules/order/order.event-handler';
+import { ProductionEventHandler } from './modules/production/production.event-handler';
+import { MaterialEventHandler } from './modules/material/material.event-handler';
+import { MachineEventHandler } from './modules/machine/machine.event-handler';
+import { CuttingJobEventHandler } from './modules/cutting-job/cutting-job.event-handler';
 
 // Messaging (RabbitMQ / In-Memory)
 import { initializeMessageBus, shutdownMessageBus } from './core/messaging';
@@ -102,10 +118,11 @@ export class Application {
      * Initialize all dependencies - Composition Root
      */
     private initializeDependencies(): void {
-        // Auth configuration
+        // Auth configuration - uses centralized config (JWT_SECRET required)
+        const config = getConfig();
         const authConfig: IAuthConfig = {
-            jwtSecret: process.env.JWT_SECRET ?? 'your-secret-key',
-            jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+            jwtSecret: config.jwt.secret,
+            jwtExpiresIn: config.jwt.expiresIn,
             saltRounds: 10
         };
 
@@ -201,6 +218,18 @@ export class Application {
         const orderEventHandler = new OrderEventHandler(orderRepository);
         orderEventHandler.register();
 
+        const productionEventHandler = new ProductionEventHandler(productionRepository);
+        productionEventHandler.register();
+
+        const materialEventHandler = new MaterialEventHandler(materialRepository);
+        materialEventHandler.register();
+
+        const machineEventHandler = new MachineEventHandler(machineRepository);
+        machineEventHandler.register();
+
+        const cuttingJobEventHandler = new CuttingJobEventHandler(cuttingJobRepository);
+        cuttingJobEventHandler.register();
+
         // ==================== RABBITMQ CONSUMERS ====================
         // Register RabbitMQ consumers for async optimization requests
         const optimizationConsumer = new OptimizationConsumer(this.optimizationService.getEngine());
@@ -211,9 +240,30 @@ export class Application {
      * Initialize Express middleware
      */
     private initializeMiddleware(): void {
+        // Security headers first
+        this.app.use(securityHeadersMiddleware);
+
+        // Request ID for tracing
+        this.app.use(requestIdMiddleware);
+
+        // Compression (before other middleware)
+        this.app.use(compressionMiddleware);
+
+        // CORS
         this.app.use(cors());
-        this.app.use(express.json());
-        this.app.use(express.urlencoded({ extended: true }));
+
+        // Body parsing
+        this.app.use(express.json({ limit: '10mb' }));
+        this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+        // Request logging
+        this.app.use(requestLoggingMiddleware);
+
+        // Global rate limiting
+        this.app.use(defaultRateLimiter);
+
+        // Default timeout
+        this.app.use(defaultTimeout);
 
         // Prometheus metrics middleware
         this.app.use(metricsMiddleware);
@@ -225,6 +275,7 @@ export class Application {
                 res.set('Content-Type', getMetricsContentType());
                 res.send(metrics);
             } catch (error) {
+                console.error('[METRICS] Error collecting metrics:', error);
                 res.status(500).send('Error collecting metrics');
             }
         });
@@ -259,23 +310,18 @@ export class Application {
         // Create auth middleware with proper type
         const authMiddleware = createAuthMiddleware(this.authService as IAuthService);
 
-        // Health check (public)
-        this.app.get('/health', (_req, res) => {
-            res.json({
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-                version: '1.0.0'
-            });
-        });
+        // Health check endpoints (public)
+        const healthController = createHealthController(this.prisma);
+        this.app.use(healthController.getRouter());
 
-        // Public routes
-        this.app.use('/api/auth', authController.router);
+        // Public routes (with stricter rate limiting)
+        this.app.use('/api/auth', authRateLimiter, authController.router);
 
         // Protected routes
         this.app.use('/api/materials', authMiddleware, materialController.router);
         this.app.use('/api/stock', authMiddleware, stockController.router);
         this.app.use('/api/orders', authMiddleware, orderController.router);
-        this.app.use('/api/optimization', authMiddleware, optimizationController.router);
+        this.app.use('/api/optimization', authMiddleware, optimizationRateLimiter, optimizationTimeout, optimizationController.router);
         this.app.use('/api/production', authMiddleware, productionController.router);
         this.app.use('/api/reports', authMiddleware, reportController.router);
         this.app.use('/api/cutting-jobs', authMiddleware, cuttingJobController.router);

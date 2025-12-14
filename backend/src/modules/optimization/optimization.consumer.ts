@@ -6,7 +6,7 @@
 
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, getEventAdapter } from '../../core/events';
-import { OptimizationEngine, OptimizationInput } from './optimization.engine';
+import { OptimizationEngine, OptimizationInput, OptimizationAlgorithm } from './optimization.engine';
 
 // ==================== PAYLOAD TYPES ====================
 
@@ -100,7 +100,7 @@ export class OptimizationConsumer {
     /**
      * Map algorithm string to typed enum
      */
-    private mapAlgorithm(algo?: string): '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE' | undefined {
+    private mapAlgorithm(algo?: string): OptimizationAlgorithm | undefined {
         switch (algo?.toUpperCase()) {
             case '1D_FFD': return '1D_FFD';
             case '1D_BFD': return '1D_BFD';

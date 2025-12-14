@@ -37,7 +37,8 @@ class OptimizationModuleAdapter {
                 timestamp: new Date()
             };
         }
-        catch {
+        catch (error) {
+            console.debug('[OPTIMIZATION] Health check failed:', error);
             return {
                 module: this.moduleName,
                 status: 'unhealthy',

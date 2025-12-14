@@ -9,13 +9,17 @@
  * - Algorithm execution: Piscina pool (CPU-intensive)
  */
 import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
+/**
+ * Supported optimization algorithms
+ */
+export type OptimizationAlgorithm = '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE';
 export interface OptimizationInput {
     cuttingJobId: string;
     scenarioId: string;
     parameters: OptimizationParameters;
 }
 export interface OptimizationParameters {
-    algorithm?: '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE';
+    algorithm?: OptimizationAlgorithm;
     kerf?: number;
     minUsableWaste?: number;
     allowRotation?: boolean;

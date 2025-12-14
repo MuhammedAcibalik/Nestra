@@ -88,7 +88,8 @@ export class ImportController {
                 } else {
                     mapping = {};
                 }
-            } catch {
+            } catch (parseError: unknown) {
+                logger.debug('Mapping parse failed:', parseError instanceof Error ? { message: parseError.message } : {});
                 res.status(400).json({
                     success: false,
                     error: {

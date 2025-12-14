@@ -69,7 +69,8 @@ export class StockModuleAdapter implements IStockContract {
                 status: 'healthy',
                 timestamp: new Date()
             };
-        } catch {
+        } catch (error) {
+            console.debug('[STOCK] Health check failed:', error);
             return {
                 module: this.moduleName,
                 status: 'unhealthy',

@@ -17,7 +17,8 @@ function requestIdMiddleware(req, _res, next) {
     const requestId = req.headers['x-request-id'] ?? (0, uuid_1.v4)();
     req.requestId = requestId;
     // Create request-scoped logger
-    const userId = req.user?.id;
+    const authReq = req;
+    const userId = authReq.user?.id;
     req.log = (0, logger_1.createRequestLogger)(requestId, userId);
     next();
 }

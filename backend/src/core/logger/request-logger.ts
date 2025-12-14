@@ -17,6 +17,26 @@ declare global {
     }
 }
 
+// Interface for authenticated request with user
+interface IAuthenticatedRequest extends Request {
+    user?: {
+        id: string;
+        email?: string;
+        role?: string;
+    };
+}
+
+// Interface for request data with optional body
+interface IRequestData {
+    [key: string]: unknown;
+    method: string;
+    url: string;
+    ip: string | undefined;
+    userAgent: string | string[] | undefined;
+    contentLength: string | undefined;
+    body?: Record<string, unknown>;
+}
+
 /**
  * Request ID middleware - adds unique ID to each request
  */
@@ -26,7 +46,8 @@ export function requestIdMiddleware(req: Request, _res: Response, next: NextFunc
     req.requestId = requestId;
 
     // Create request-scoped logger
-    const userId = (req as any).user?.id;
+    const authReq = req as IAuthenticatedRequest;
+    const userId = authReq.user?.id;
     req.log = createRequestLogger(requestId, userId) as typeof logger;
 
     next();
@@ -39,7 +60,7 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
     const startTime = Date.now();
 
     // Log request start
-    const requestData = {
+    const requestData: IRequestData = {
         method: req.method,
         url: req.originalUrl,
         ip: req.ip,
@@ -50,7 +71,7 @@ export function requestLoggingMiddleware(req: Request, res: Response, next: Next
     // For non-GET requests, log body (sanitized)
     if (req.method !== 'GET' && req.body && Object.keys(req.body).length > 0) {
         const sanitizedBody = sanitizeBody(req.body);
-        (requestData as any).body = sanitizedBody;
+        requestData.body = sanitizedBody;
     }
 
     logger.debug('Incoming request', requestData);

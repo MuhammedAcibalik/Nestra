@@ -40,6 +40,13 @@ import {
     IOptimization2DPayload
 } from '../../workers';
 
+// ==================== TYPE ALIASES ====================
+
+/**
+ * Supported optimization algorithms
+ */
+export type OptimizationAlgorithm = '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE';
+
 // ==================== INTERFACES ====================
 
 export interface OptimizationInput {
@@ -49,7 +56,7 @@ export interface OptimizationInput {
 }
 
 export interface OptimizationParameters {
-    algorithm?: '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE';
+    algorithm?: OptimizationAlgorithm;
     kerf?: number;
     minUsableWaste?: number;
     allowRotation?: boolean;

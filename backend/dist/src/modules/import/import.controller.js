@@ -86,7 +86,8 @@ class ImportController {
                     mapping = {};
                 }
             }
-            catch {
+            catch (parseError) {
+                logger.debug('Mapping parse failed:', parseError instanceof Error ? { message: parseError.message } : {});
                 res.status(400).json({
                     success: false,
                     error: {

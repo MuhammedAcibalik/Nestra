@@ -30,10 +30,10 @@ function validate(schema, target = 'body') {
                 req.body = parsed;
             }
             else if (target === 'query') {
-                req.query = parsed;
+                Object.assign(req, { query: parsed });
             }
             else if (target === 'params') {
-                req.params = parsed;
+                Object.assign(req, { params: parsed });
             }
             next();
         }
@@ -78,7 +78,7 @@ function validateAll(options) {
         try {
             if (options.query) {
                 const parsed = options.query.parse(req.query);
-                req.query = parsed;
+                Object.assign(req, { query: parsed });
             }
         }
         catch (error) {
@@ -92,7 +92,7 @@ function validateAll(options) {
         try {
             if (options.params) {
                 const parsed = options.params.parse(req.params);
-                req.params = parsed;
+                Object.assign(req, { params: parsed });
             }
         }
         catch (error) {

@@ -63,12 +63,20 @@ const customer_1 = require("./modules/customer");
 const location_1 = require("./modules/location");
 const export_1 = require("./modules/export");
 const dashboard_1 = require("./modules/dashboard");
+// Health
+const health_controller_1 = require("./controllers/health.controller");
 // WebSocket
 const websocket_1 = require("./websocket");
 // Middleware
 const errorHandler_1 = require("./middleware/errorHandler");
 const authMiddleware_1 = require("./middleware/authMiddleware");
 const metrics_middleware_1 = require("./middleware/metrics.middleware");
+const rate_limit_middleware_1 = require("./middleware/rate-limit.middleware");
+const request_id_middleware_1 = require("./middleware/request-id.middleware");
+const security_headers_middleware_1 = require("./middleware/security-headers.middleware");
+const compression_middleware_1 = require("./middleware/compression.middleware");
+const timeout_middleware_1 = require("./middleware/timeout.middleware");
+const request_logging_middleware_1 = require("./middleware/request-logging.middleware");
 // Monitoring
 const monitoring_1 = require("./core/monitoring");
 // Services (Microservice Infrastructure)
@@ -86,6 +94,10 @@ const location_service_handler_1 = require("./modules/location/location.service-
 const stock_event_handler_1 = require("./modules/stock/stock.event-handler");
 const optimization_event_handler_1 = require("./modules/optimization/optimization.event-handler");
 const order_event_handler_1 = require("./modules/order/order.event-handler");
+const production_event_handler_1 = require("./modules/production/production.event-handler");
+const material_event_handler_1 = require("./modules/material/material.event-handler");
+const machine_event_handler_1 = require("./modules/machine/machine.event-handler");
+const cutting_job_event_handler_1 = require("./modules/cutting-job/cutting-job.event-handler");
 // Messaging (RabbitMQ / In-Memory)
 const messaging_1 = require("./core/messaging");
 dotenv_1.default.config();
@@ -198,6 +210,14 @@ class Application {
         optimizationEventHandler.register();
         const orderEventHandler = new order_event_handler_1.OrderEventHandler(orderRepository);
         orderEventHandler.register();
+        const productionEventHandler = new production_event_handler_1.ProductionEventHandler(productionRepository);
+        productionEventHandler.register();
+        const materialEventHandler = new material_event_handler_1.MaterialEventHandler(materialRepository);
+        materialEventHandler.register();
+        const machineEventHandler = new machine_event_handler_1.MachineEventHandler(machineRepository);
+        machineEventHandler.register();
+        const cuttingJobEventHandler = new cutting_job_event_handler_1.CuttingJobEventHandler(cuttingJobRepository);
+        cuttingJobEventHandler.register();
         // ==================== RABBITMQ CONSUMERS ====================
         // Register RabbitMQ consumers for async optimization requests
         const optimizationConsumer = new optimization_consumer_1.OptimizationConsumer(this.optimizationService.getEngine());
@@ -207,9 +227,23 @@ class Application {
      * Initialize Express middleware
      */
     initializeMiddleware() {
+        // Security headers first
+        this.app.use(security_headers_middleware_1.securityHeadersMiddleware);
+        // Request ID for tracing
+        this.app.use(request_id_middleware_1.requestIdMiddleware);
+        // Compression (before other middleware)
+        this.app.use(compression_middleware_1.compressionMiddleware);
+        // CORS
         this.app.use((0, cors_1.default)());
-        this.app.use(express_1.default.json());
-        this.app.use(express_1.default.urlencoded({ extended: true }));
+        // Body parsing
+        this.app.use(express_1.default.json({ limit: '10mb' }));
+        this.app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
+        // Request logging
+        this.app.use(request_logging_middleware_1.requestLoggingMiddleware);
+        // Global rate limiting
+        this.app.use(rate_limit_middleware_1.defaultRateLimiter);
+        // Default timeout
+        this.app.use(timeout_middleware_1.defaultTimeout);
         // Prometheus metrics middleware
         this.app.use(metrics_middleware_1.metricsMiddleware);
         // Metrics endpoint for Prometheus scraping
@@ -220,6 +254,7 @@ class Application {
                 res.send(metrics);
             }
             catch (error) {
+                console.error('[METRICS] Error collecting metrics:', error);
                 res.status(500).send('Error collecting metrics');
             }
         });
@@ -250,21 +285,16 @@ class Application {
         const dashboardController = new dashboard_1.DashboardController(dashboardService);
         // Create auth middleware with proper type
         const authMiddleware = (0, authMiddleware_1.createAuthMiddleware)(this.authService);
-        // Health check (public)
-        this.app.get('/health', (_req, res) => {
-            res.json({
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-                version: '1.0.0'
-            });
-        });
-        // Public routes
-        this.app.use('/api/auth', authController.router);
+        // Health check endpoints (public)
+        const healthController = (0, health_controller_1.createHealthController)(this.prisma);
+        this.app.use(healthController.getRouter());
+        // Public routes (with stricter rate limiting)
+        this.app.use('/api/auth', rate_limit_middleware_1.authRateLimiter, authController.router);
         // Protected routes
         this.app.use('/api/materials', authMiddleware, materialController.router);
         this.app.use('/api/stock', authMiddleware, stockController.router);
         this.app.use('/api/orders', authMiddleware, orderController.router);
-        this.app.use('/api/optimization', authMiddleware, optimizationController.router);
+        this.app.use('/api/optimization', authMiddleware, rate_limit_middleware_1.optimizationRateLimiter, timeout_middleware_1.optimizationTimeout, optimizationController.router);
         this.app.use('/api/production', authMiddleware, productionController.router);
         this.app.use('/api/reports', authMiddleware, reportController.router);
         this.app.use('/api/cutting-jobs', authMiddleware, cuttingJobController.router);

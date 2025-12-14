@@ -276,7 +276,8 @@ class OptimizationFacade {
             try {
                 return JSON.parse(data);
             }
-            catch {
+            catch (error) {
+                console.debug('[OPTIMIZATION] Layout data parse failed:', error);
                 return { type: '1D', stockLength: 0, cuts: [] };
             }
         }

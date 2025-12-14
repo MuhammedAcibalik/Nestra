@@ -4,6 +4,11 @@
  * High-level modules should not depend on low-level modules
  */
 import { IEntity, IPaginatedResult, IPaginationOptions } from './index';
+type PrismaQueryValue = string | number | boolean | null | undefined | Date | PrismaQueryObject | PrismaQueryValue[];
+interface PrismaQueryObject {
+    [key: string]: PrismaQueryValue;
+}
+type PrismaQuery = Record<string, PrismaQueryValue>;
 export interface IBaseRepository<T extends IEntity, CreateInput, UpdateInput> {
     findById(id: string): Promise<T | null>;
     findOne(filter: Partial<T>): Promise<T | null>;
@@ -34,16 +39,17 @@ export interface IUnitOfWork {
  */
 export interface ISpecification<T> {
     isSatisfiedBy(entity: T): boolean;
-    toQuery(): Record<string, any>;
+    toQuery(): PrismaQuery;
     and(other: ISpecification<T>): ISpecification<T>;
     or(other: ISpecification<T>): ISpecification<T>;
     not(): ISpecification<T>;
 }
 export declare abstract class CompositeSpecification<T> implements ISpecification<T> {
     abstract isSatisfiedBy(entity: T): boolean;
-    abstract toQuery(): Record<string, any>;
+    abstract toQuery(): PrismaQuery;
     and(other: ISpecification<T>): ISpecification<T>;
     or(other: ISpecification<T>): ISpecification<T>;
     not(): ISpecification<T>;
 }
+export {};
 //# sourceMappingURL=repository.interface.d.ts.map

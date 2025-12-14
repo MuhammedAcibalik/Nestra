@@ -171,7 +171,8 @@ export function createHealthCheck(moduleName: string, checkFn?: () => Promise<bo
                 status: isHealthy ? 'healthy' : 'degraded',
                 timestamp: new Date()
             };
-        } catch {
+        } catch (error) {
+            console.debug(`[HEALTH] Module ${moduleName} health check failed:`, error);
             return {
                 module: moduleName,
                 status: 'unhealthy',

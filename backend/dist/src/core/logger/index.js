@@ -17,6 +17,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createLogger = exports.getLogger = void 0;
 __exportStar(require("./logger"), exports);
 __exportStar(require("./request-logger"), exports);
+var structured_logger_1 = require("./structured-logger");
+Object.defineProperty(exports, "getLogger", { enumerable: true, get: function () { return structured_logger_1.getLogger; } });
+Object.defineProperty(exports, "createLogger", { enumerable: true, get: function () { return structured_logger_1.createLogger; } });
 //# sourceMappingURL=index.js.map

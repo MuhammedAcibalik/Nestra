@@ -15,7 +15,7 @@ import {
     IPlanFilterDto
 } from '../interfaces';
 // Use existing engine
-import { OptimizationEngine } from '../optimization.engine';
+import { OptimizationEngine, OptimizationAlgorithm } from '../optimization.engine';
 import { OptimizationValidator } from './optimization.validator';
 import { websocketService } from '../../../websocket';
 import { ICuttingJobServiceClient, IStockQueryClient } from '../../../core/services';
@@ -126,7 +126,7 @@ export class OptimizationFacade {
             const output = await this.engine.runOptimization({
                 cuttingJobId: scenario.cuttingJobId,
                 scenarioId,
-                parameters: params as { algorithm?: '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE' }
+                parameters: params as { algorithm?: OptimizationAlgorithm }
             });
 
             if (!output.success || !output.planData) {
@@ -326,7 +326,8 @@ export class OptimizationFacade {
         if (typeof data === 'string') {
             try {
                 return JSON.parse(data);
-            } catch {
+            } catch (error) {
+                console.debug('[OPTIMIZATION] Layout data parse failed:', error);
                 return { type: '1D', stockLength: 0, cuts: [] };
             }
         }

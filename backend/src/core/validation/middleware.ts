@@ -52,9 +52,9 @@ export function validate<T>(
             if (target === 'body') {
                 req.body = parsed;
             } else if (target === 'query') {
-                (req as any).query = parsed;
+                Object.assign(req, { query: parsed });
             } else if (target === 'params') {
-                (req as any).params = parsed;
+                Object.assign(req, { params: parsed });
             }
 
             next();
@@ -106,7 +106,7 @@ export function validateAll<B = unknown, Q = unknown, P = unknown>(options: {
         try {
             if (options.query) {
                 const parsed = options.query.parse(req.query);
-                (req as any).query = parsed;
+                Object.assign(req, { query: parsed });
             }
         } catch (error) {
             if (error instanceof ZodError) {
@@ -120,7 +120,7 @@ export function validateAll<B = unknown, Q = unknown, P = unknown>(options: {
         try {
             if (options.params) {
                 const parsed = options.params.parse(req.params);
-                (req as any).params = parsed;
+                Object.assign(req, { params: parsed });
             }
         } catch (error) {
             if (error instanceof ZodError) {

@@ -100,7 +100,8 @@ class AuthService {
             const decoded = jsonwebtoken_1.default.verify(token, this.config.jwtSecret);
             return (0, interfaces_1.success)(decoded);
         }
-        catch {
+        catch (error) {
+            console.debug('[AUTH] Token validation failed:', error);
             return (0, interfaces_1.failure)({
                 code: 'INVALID_TOKEN',
                 message: 'Geçersiz veya süresi dolmuş token'

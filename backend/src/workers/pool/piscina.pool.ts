@@ -49,6 +49,29 @@ export const defaultPiscinaConfig: Required<IPiscinaConfig> = {
     concurrentTasksPerWorker: 1 // One task per worker for CPU-intensive work
 };
 
+// ==================== TASK TRACKING ====================
+
+export type TaskPhase = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+
+export interface IOptimizationTask {
+    readonly id: string;
+    readonly type: '1D' | '2D';
+    readonly payload: unknown;
+    readonly timeout: number;
+    readonly createdAt: Date;
+}
+
+export interface ITaskProgress {
+    readonly taskId: string;
+    readonly phase: TaskPhase;
+    readonly progress: number;  // 0-100
+    readonly message?: string;
+    readonly startedAt?: Date;
+    readonly completedAt?: Date;
+}
+
+export type TaskProgressCallback = (progress: ITaskProgress) => void;
+
 // ==================== POOL MANAGER ====================
 
 export class OptimizationPool {
@@ -56,6 +79,11 @@ export class OptimizationPool {
     private pool: Piscina | null = null;
     private readonly config: Required<IPiscinaConfig>;
     private initialized = false;
+
+    // Task tracking for cancellation and progress
+    private readonly activeTasks: Map<string, AbortController> = new Map();
+    private readonly taskProgress: Map<string, ITaskProgress> = new Map();
+    private progressCallback: TaskProgressCallback | null = null;
 
     private constructor(config: IPiscinaConfig = {}) {
         this.config = {
@@ -108,6 +136,114 @@ export class OptimizationPool {
     async run2D<T>(payload: T, signal?: AbortSignal): Promise<unknown> {
         this.ensureInitialized();
         return this.pool!.run(payload, { name: 'optimize2D', signal });
+    }
+
+    /**
+     * Run optimization with full task tracking, timeout, and cancellation support
+     */
+    async runWithTracking(task: IOptimizationTask): Promise<unknown> {
+        this.ensureInitialized();
+
+        const controller = new AbortController();
+        this.activeTasks.set(task.id, controller);
+
+        // Initialize progress tracking
+        this.updateProgress(task.id, {
+            taskId: task.id,
+            phase: 'queued',
+            progress: 0,
+            startedAt: new Date()
+        });
+
+        // Set timeout
+        const timeoutId = setTimeout(() => {
+            this.updateProgress(task.id, { phase: 'timeout', progress: 0 });
+            controller.abort();
+        }, task.timeout);
+
+        try {
+            this.updateProgress(task.id, { phase: 'running', progress: 10 });
+
+            const result = task.type === '1D'
+                ? await this.run1D(task.payload, controller.signal)
+                : await this.run2D(task.payload, controller.signal);
+
+            this.updateProgress(task.id, {
+                phase: 'completed',
+                progress: 100,
+                completedAt: new Date()
+            });
+
+            return result;
+
+        } catch (error) {
+            const phase: TaskPhase = controller.signal.aborted ? 'cancelled' : 'failed';
+            this.updateProgress(task.id, {
+                phase,
+                progress: 0,
+                message: error instanceof Error ? error.message : 'Unknown error',
+                completedAt: new Date()
+            });
+            throw error;
+
+        } finally {
+            clearTimeout(timeoutId);
+            this.activeTasks.delete(task.id);
+        }
+    }
+
+    /**
+     * Cancel a running task by ID
+     * @returns true if task was found and cancelled
+     */
+    cancelTask(taskId: string): boolean {
+        const controller = this.activeTasks.get(taskId);
+        if (controller) {
+            controller.abort();
+            this.updateProgress(taskId, { phase: 'cancelled', progress: 0 });
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get progress for a specific task
+     */
+    getTaskProgress(taskId: string): ITaskProgress | undefined {
+        return this.taskProgress.get(taskId);
+    }
+
+    /**
+     * Get all active task IDs
+     */
+    getActiveTasks(): string[] {
+        return Array.from(this.activeTasks.keys());
+    }
+
+    /**
+     * Set callback for progress updates (for WebSocket broadcasting)
+     */
+    setProgressCallback(callback: TaskProgressCallback | null): void {
+        this.progressCallback = callback;
+    }
+
+    /**
+     * Update and broadcast task progress
+     */
+    private updateProgress(taskId: string, update: Partial<ITaskProgress>): void {
+        const current = this.taskProgress.get(taskId) ?? {
+            taskId,
+            phase: 'queued' as TaskPhase,
+            progress: 0
+        };
+
+        const updated: ITaskProgress = { ...current, ...update };
+        this.taskProgress.set(taskId, updated);
+
+        // Notify callback if set (for WebSocket updates)
+        if (this.progressCallback) {
+            this.progressCallback(updated);
+        }
     }
 
     /**

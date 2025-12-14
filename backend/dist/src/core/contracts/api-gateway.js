@@ -148,7 +148,8 @@ function createHealthCheck(moduleName, checkFn) {
                 timestamp: new Date()
             };
         }
-        catch {
+        catch (error) {
+            console.debug(`[HEALTH] Module ${moduleName} health check failed:`, error);
             return {
                 module: moduleName,
                 status: 'unhealthy',

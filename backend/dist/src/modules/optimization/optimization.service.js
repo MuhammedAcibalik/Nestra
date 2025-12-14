@@ -288,7 +288,8 @@ class OptimizationService {
                 const parsed = JSON.parse(data);
                 return parsed;
             }
-            catch {
+            catch (error) {
+                console.debug('[OPTIMIZATION] Layout data parse failed:', error);
                 return { type: '1D', stockLength: 0, cuts: [] };
             }
         }

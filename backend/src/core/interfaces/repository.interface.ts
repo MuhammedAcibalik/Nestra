@@ -6,6 +6,11 @@
 
 import { IEntity, IPaginatedResult, IPaginationOptions } from './index';
 
+// Prisma-compatible query type
+type PrismaQueryValue = string | number | boolean | null | undefined | Date | PrismaQueryObject | PrismaQueryValue[];
+interface PrismaQueryObject { [key: string]: PrismaQueryValue }
+type PrismaQuery = Record<string, PrismaQueryValue>;
+
 export interface IBaseRepository<T extends IEntity, CreateInput, UpdateInput> {
     findById(id: string): Promise<T | null>;
     findOne(filter: Partial<T>): Promise<T | null>;
@@ -38,7 +43,7 @@ export interface IUnitOfWork {
  */
 export interface ISpecification<T> {
     isSatisfiedBy(entity: T): boolean;
-    toQuery(): Record<string, any>;
+    toQuery(): PrismaQuery;
     and(other: ISpecification<T>): ISpecification<T>;
     or(other: ISpecification<T>): ISpecification<T>;
     not(): ISpecification<T>;
@@ -46,7 +51,7 @@ export interface ISpecification<T> {
 
 export abstract class CompositeSpecification<T> implements ISpecification<T> {
     abstract isSatisfiedBy(entity: T): boolean;
-    abstract toQuery(): Record<string, any>;
+    abstract toQuery(): PrismaQuery;
 
     and(other: ISpecification<T>): ISpecification<T> {
         return new AndSpecification(this, other);
@@ -70,7 +75,7 @@ class AndSpecification<T> extends CompositeSpecification<T> {
         return this.left.isSatisfiedBy(entity) && this.right.isSatisfiedBy(entity);
     }
 
-    toQuery(): Record<string, any> {
+    toQuery(): PrismaQuery {
         return { AND: [this.left.toQuery(), this.right.toQuery()] };
     }
 }
@@ -84,7 +89,7 @@ class OrSpecification<T> extends CompositeSpecification<T> {
         return this.left.isSatisfiedBy(entity) || this.right.isSatisfiedBy(entity);
     }
 
-    toQuery(): Record<string, any> {
+    toQuery(): PrismaQuery {
         return { OR: [this.left.toQuery(), this.right.toQuery()] };
     }
 }
@@ -98,7 +103,8 @@ class NotSpecification<T> extends CompositeSpecification<T> {
         return !this.spec.isSatisfiedBy(entity);
     }
 
-    toQuery(): Record<string, any> {
+    toQuery(): PrismaQuery {
         return { NOT: this.spec.toQuery() };
     }
 }
+

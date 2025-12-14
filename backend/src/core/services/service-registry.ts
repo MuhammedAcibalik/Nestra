@@ -34,14 +34,39 @@ export interface IServiceHandler {
  * For microservices: replace with HTTP/gRPC calls
  */
 export class ServiceRegistry implements IServiceRegistry, IServiceClient {
-    private static instance: ServiceRegistry;
+    private static instance: ServiceRegistry | null = null;
     private readonly services: Map<string, IServiceHandler> = new Map();
 
-    private constructor() { }
+    /**
+     * Constructor is public to allow explicit instance creation for testing
+     * For production, use getInstance() for singleton behavior
+     */
+    constructor() { }
 
+    /**
+     * Get singleton instance (production use)
+     */
     public static getInstance(): ServiceRegistry {
         ServiceRegistry.instance ??= new ServiceRegistry();
         return ServiceRegistry.instance;
+    }
+
+    /**
+     * Create a new isolated instance (testing use)
+     * Does not affect the singleton instance
+     */
+    public static createTestInstance(): ServiceRegistry {
+        return new ServiceRegistry();
+    }
+
+    /**
+     * Reset singleton instance (test cleanup)
+     */
+    public static resetInstance(): void {
+        if (ServiceRegistry.instance) {
+            ServiceRegistry.instance.services.clear();
+        }
+        ServiceRegistry.instance = null;
     }
 
     register(serviceName: string, handler: IServiceHandler): void {
@@ -94,14 +119,7 @@ export class ServiceRegistry implements IServiceRegistry, IServiceClient {
         }
     }
 
-    /**
-     * Reset for testing
-     */
-    public static reset(): void {
-        if (ServiceRegistry.instance) {
-            ServiceRegistry.instance.services.clear();
-        }
-    }
+    // NOTE: reset() functionality moved to resetInstance() static method
 }
 
 // ==================== SERVICE CLIENTS ====================

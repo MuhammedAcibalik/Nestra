@@ -338,7 +338,8 @@ export class OptimizationService implements IOptimizationService {
             try {
                 const parsed = JSON.parse(data);
                 return parsed as I1DLayoutData | I2DLayoutData;
-            } catch {
+            } catch (error) {
+                console.debug('[OPTIMIZATION] Layout data parse failed:', error);
                 return { type: '1D', stockLength: 0, cuts: [] };
             }
         }

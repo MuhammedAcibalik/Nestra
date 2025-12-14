@@ -124,7 +124,8 @@ export class AuthService implements IAuthService {
         try {
             const decoded = jwt.verify(token, this.config.jwtSecret) as ITokenPayload;
             return success(decoded);
-        } catch {
+        } catch (error) {
+            console.debug('[AUTH] Token validation failed:', error);
             return failure({
                 code: 'INVALID_TOKEN',
                 message: 'Geçersiz veya süresi dolmuş token'
