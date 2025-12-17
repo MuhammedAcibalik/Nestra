@@ -1,10 +1,14 @@
 /**
  * Location Repository
- * Following SRP - Only handles Location data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Location } from '@prisma/client';
+import { Database } from '../../db';
+import { locations } from '../../db/schema';
+import { eq, asc, ilike, or } from 'drizzle-orm';
 
+// Type definitions
+export type Location = typeof locations.$inferSelect;
 export type LocationWithRelations = Location & {
     _count?: { stockItems: number; machines: number };
 };
@@ -35,63 +39,61 @@ export interface ILocationRepository {
 }
 
 export class LocationRepository implements ILocationRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<LocationWithRelations | null> {
-        return this.prisma.location.findUnique({
-            where: { id },
-            include: {
-                _count: { select: { stockItems: true, machines: true } }
-            }
+        const result = await this.db.query.locations.findFirst({
+            where: eq(locations.id, id)
         });
+        return result ?? null;
     }
 
     async findByName(name: string): Promise<Location | null> {
-        return this.prisma.location.findUnique({ where: { name } });
+        const result = await this.db.query.locations.findFirst({
+            where: eq(locations.name, name)
+        });
+        return result ?? null;
     }
 
     async findAll(filter?: ILocationFilter): Promise<LocationWithRelations[]> {
-        const where = filter?.search
-            ? {
-                OR: [
-                    { name: { contains: filter.search, mode: 'insensitive' as const } },
-                    { description: { contains: filter.search, mode: 'insensitive' as const } },
-                    { address: { contains: filter.search, mode: 'insensitive' as const } }
-                ]
-            }
-            : {};
+        if (filter?.search) {
+            return this.db.select().from(locations)
+                .where(or(
+                    ilike(locations.name, `%${filter.search}%`),
+                    ilike(locations.description, `%${filter.search}%`),
+                    ilike(locations.address, `%${filter.search}%`)
+                ))
+                .orderBy(asc(locations.name));
+        }
 
-        return this.prisma.location.findMany({
-            where,
-            include: {
-                _count: { select: { stockItems: true, machines: true } }
-            },
-            orderBy: { name: 'asc' }
+        return this.db.query.locations.findMany({
+            orderBy: [asc(locations.name)]
         });
     }
 
     async create(data: ICreateLocationInput): Promise<Location> {
-        return this.prisma.location.create({
-            data: {
-                name: data.name,
-                description: data.description,
-                address: data.address
-            }
-        });
+        const [result] = await this.db.insert(locations).values({
+            name: data.name,
+            description: data.description,
+            address: data.address
+        }).returning();
+        return result;
     }
 
     async update(id: string, data: IUpdateLocationInput): Promise<Location> {
-        return this.prisma.location.update({
-            where: { id },
-            data: {
+        const [result] = await this.db.update(locations)
+            .set({
                 name: data.name,
                 description: data.description,
-                address: data.address
-            }
-        });
+                address: data.address,
+                updatedAt: new Date()
+            })
+            .where(eq(locations.id, id))
+            .returning();
+        return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.location.delete({ where: { id } });
+        await this.db.delete(locations).where(eq(locations.id, id));
     }
 }

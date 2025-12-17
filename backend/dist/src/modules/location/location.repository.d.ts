@@ -1,8 +1,10 @@
 /**
  * Location Repository
- * Following SRP - Only handles Location data access
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, Location } from '@prisma/client';
+import { Database } from '../../db';
+import { locations } from '../../db/schema';
+export type Location = typeof locations.$inferSelect;
 export type LocationWithRelations = Location & {
     _count?: {
         stockItems: number;
@@ -31,8 +33,8 @@ export interface ILocationRepository {
     delete(id: string): Promise<void>;
 }
 export declare class LocationRepository implements ILocationRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    constructor(db: Database);
     findById(id: string): Promise<LocationWithRelations | null>;
     findByName(name: string): Promise<Location | null>;
     findAll(filter?: ILocationFilter): Promise<LocationWithRelations[]>;

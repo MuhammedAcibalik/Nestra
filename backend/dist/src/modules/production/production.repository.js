@@ -1,95 +1,144 @@
 "use strict";
 /**
  * Production Repository
- * Following SRP - Only handles production data access
+ * Migrated to Drizzle ORM
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionRepository = void 0;
+const schema_1 = require("../../db/schema");
+const drizzle_orm_1 = require("drizzle-orm");
 class ProductionRepository {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    db;
+    constructor(db) {
+        this.db = db;
     }
     async findById(id) {
-        return this.prisma.productionLog.findUnique({
-            where: { id },
-            include: {
-                cuttingPlan: {
-                    select: {
-                        id: true,
-                        planNumber: true,
-                        scenario: { select: { name: true } }
-                    }
-                },
-                operator: { select: { firstName: true, lastName: true } },
-                _count: { select: { stockMovements: true } }
+        const result = await this.db.query.productionLogs.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id),
+            with: {
+                cuttingPlan: true,
+                operator: true
             }
         });
+        return result ?? null;
+    }
+    async findByPlanId(planId) {
+        const result = await this.db.query.productionLogs.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.productionLogs.cuttingPlanId, planId),
+            with: {
+                cuttingPlan: true,
+                operator: true
+            }
+        });
+        return result ?? null;
     }
     async findAll(filter) {
-        const where = {};
-        if (filter?.status)
-            where.status = filter.status;
-        if (filter?.operatorId)
-            where.operatorId = filter.operatorId;
-        if (filter?.startDate || filter?.endDate) {
-            where.startedAt = {};
-            if (filter.startDate)
-                where.startedAt.gte = filter.startDate;
-            if (filter.endDate)
-                where.startedAt.lte = filter.endDate;
+        const conditions = [];
+        if (filter?.status) {
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.status, filter.status));
         }
-        return this.prisma.productionLog.findMany({
-            where: where,
-            include: {
-                cuttingPlan: {
-                    select: {
-                        id: true,
-                        planNumber: true,
-                        scenario: { select: { name: true } }
-                    }
-                },
-                operator: { select: { firstName: true, lastName: true } },
-                _count: { select: { stockMovements: true } }
+        if (filter?.cuttingPlanId)
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.cuttingPlanId, filter.cuttingPlanId));
+        if (filter?.operatorId)
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.operatorId, filter.operatorId));
+        return this.db.query.productionLogs.findMany({
+            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            with: {
+                cuttingPlan: true,
+                operator: true
             },
-            orderBy: { startedAt: 'desc' }
+            orderBy: [(0, drizzle_orm_1.desc)(schema_1.productionLogs.createdAt)]
         });
     }
     async create(planId, operatorId) {
-        return this.prisma.productionLog.create({
-            data: {
-                cuttingPlanId: planId,
-                operatorId,
-                status: 'STARTED',
-                startedAt: new Date()
-            }
-        });
+        const [result] = await this.db.insert(schema_1.productionLogs).values({
+            cuttingPlanId: planId,
+            operatorId: operatorId,
+            startedAt: new Date()
+        }).returning();
+        return result;
     }
     async update(id, data) {
-        return this.prisma.productionLog.update({
-            where: { id },
-            data: {
-                notes: data.notes,
-                issues: data.issues
-            }
+        const [result] = await this.db.update(schema_1.productionLogs)
+            .set({
+            actualWaste: data.actualWaste,
+            actualTime: data.actualTime,
+            status: data.status,
+            completedAt: data.completedAt,
+            notes: data.notes,
+            issues: data.issues,
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id))
+            .returning();
+        return result;
+    }
+    async complete(logId, data) {
+        const [result] = await this.db.update(schema_1.productionLogs)
+            .set({
+            actualWaste: data.actualWaste,
+            actualTime: data.actualTime,
+            notes: data.notes,
+            issues: data.issues,
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.productionLogs.id, logId))
+            .returning();
+        return result;
+    }
+    // ==================== DOWNTIME METHODS ====================
+    async createDowntime(input) {
+        const [result] = await this.db.insert(schema_1.downtimeLogs).values({
+            productionLogId: input.productionLogId,
+            machineId: input.machineId,
+            reason: input.reason,
+            notes: input.notes,
+            startedAt: new Date()
+        }).returning();
+        return result;
+    }
+    async updateDowntime(id, endedAt, durationMinutes) {
+        const [result] = await this.db.update(schema_1.downtimeLogs)
+            .set({
+            endedAt,
+            durationMinutes
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.downtimeLogs.id, id))
+            .returning();
+        return result;
+    }
+    async findDowntimesByLogId(productionLogId) {
+        return this.db.query.downtimeLogs.findMany({
+            where: (0, drizzle_orm_1.eq)(schema_1.downtimeLogs.productionLogId, productionLogId),
+            with: {
+                machine: true
+            },
+            orderBy: [(0, drizzle_orm_1.desc)(schema_1.downtimeLogs.startedAt)]
         });
     }
-    async complete(id, data) {
-        return this.prisma.productionLog.update({
-            where: { id },
-            data: {
-                status: 'COMPLETED',
-                actualWaste: data.actualWaste,
-                actualTime: data.actualTime,
-                notes: data.notes,
-                completedAt: new Date()
-            }
-        });
+    // ==================== QUALITY CHECK METHODS ====================
+    async createQualityCheck(input) {
+        const [result] = await this.db.insert(schema_1.qualityChecks).values({
+            productionLogId: input.productionLogId,
+            result: input.result,
+            passedCount: input.passedCount,
+            failedCount: input.failedCount,
+            defectTypes: input.defectTypes,
+            inspectorId: input.inspectorId,
+            notes: input.notes,
+            checkedAt: new Date()
+        }).returning();
+        return result;
     }
-    async findByPlanId(planId) {
-        return this.prisma.productionLog.findFirst({
-            where: { cuttingPlanId: planId },
-            orderBy: { startedAt: 'desc' }
+    async findQualityChecksByLogId(productionLogId) {
+        return this.db.query.qualityChecks.findMany({
+            where: (0, drizzle_orm_1.eq)(schema_1.qualityChecks.productionLogId, productionLogId),
+            with: {
+                inspector: true
+            },
+            orderBy: [(0, drizzle_orm_1.desc)(schema_1.qualityChecks.checkedAt)]
         });
     }
 }

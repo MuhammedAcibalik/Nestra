@@ -17,6 +17,11 @@ module.exports = {
         }]
     },
 
+    // Transform ESM modules from node_modules
+    transformIgnorePatterns: [
+        'node_modules/(?!(xlsx)/)'
+    ],
+
     // Global Test Setup
     setupFilesAfterEnv: ['<rootDir>/test/jest-setup.ts'],
 

@@ -127,14 +127,18 @@ class ExportController {
         const plan = await this.repository.findPlanById(planId);
         if (!plan)
             return null;
-        // Get material type name
-        const materialType = await this.repository.findMaterialTypeById(plan.scenario.cuttingJob.materialTypeId);
+        // Get material type name if materialTypeId is available
+        let materialTypeName = 'Bilinmiyor';
+        if (plan.materialTypeId) {
+            const materialType = await this.repository.findMaterialTypeById(plan.materialTypeId);
+            materialTypeName = materialType?.name ?? 'Bilinmiyor';
+        }
         const layouts = this.transformLayouts(plan);
         return {
             planNumber: plan.planNumber,
-            scenarioName: plan.scenario.name,
-            materialType: materialType?.name ?? 'Bilinmiyor',
-            thickness: plan.scenario.cuttingJob.thickness,
+            scenarioName: plan.scenarioName ?? '',
+            materialType: materialTypeName,
+            thickness: plan.thickness ?? 0,
             totalWaste: plan.totalWaste,
             wastePercentage: plan.wastePercentage,
             stockUsedCount: plan.stockUsedCount,
@@ -147,13 +151,12 @@ class ExportController {
      */
     transformLayouts(plan) {
         return plan.stockItems.map(ps => {
-            const stock = ps.stockItem;
-            const is2D = stock.stockType === 'SHEET_2D';
-            const dimensions = is2D
-                ? `${stock.width ?? 0} x ${stock.height ?? 0} mm`
-                : `${stock.length ?? 0} mm`;
             // Parse layout data for pieces
             const layoutData = ps.layoutData;
+            const is2D = layoutData?.stockType === 'SHEET_2D';
+            const dimensions = is2D
+                ? `${layoutData?.width ?? 0} x ${layoutData?.height ?? 0} mm`
+                : `${layoutData?.length ?? 0} mm`;
             const pieces = (layoutData?.pieces ?? []).map(p => ({
                 code: p.code,
                 dimensions: is2D ? `${p.width ?? 0} x ${p.height ?? 0}` : `${p.length ?? 0}`,
@@ -161,7 +164,7 @@ class ExportController {
             }));
             return {
                 sequence: ps.sequence,
-                stockCode: stock.code,
+                stockCode: layoutData?.stockCode ?? ps.stockItemId,
                 stockDimensions: dimensions,
                 waste: ps.waste,
                 wastePercentage: ps.wastePercentage,

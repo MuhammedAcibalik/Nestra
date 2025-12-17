@@ -34,8 +34,10 @@ export declare function calculateArea(rect: IRectangle): number;
  * @param height - Original height
  * @param canRotate - Whether piece can be rotated
  * @param allowRotation - Global rotation setting
+ * @param grainDirection - Grain direction constraint (optional)
+ * @param respectGrainDirection - Whether to enforce grain direction (optional)
  */
-export declare function getOrientations(width: number, height: number, canRotate: boolean, allowRotation: boolean): IOrientation[];
+export declare function getOrientations(width: number, height: number, canRotate: boolean, allowRotation: boolean, grainDirection?: 'HORIZONTAL' | 'VERTICAL' | 'NONE', respectGrainDirection?: boolean): IOrientation[];
 /**
  * Generate candidate positions from existing placements (for Bottom-Left)
  */

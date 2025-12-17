@@ -19,9 +19,17 @@ var WebSocketEvents;
     WebSocketEvents["PRODUCTION_STARTED"] = "production:started";
     WebSocketEvents["PRODUCTION_UPDATED"] = "production:updated";
     WebSocketEvents["PRODUCTION_COMPLETED"] = "production:completed";
+    WebSocketEvents["PRODUCTION_PAUSED"] = "production:paused";
+    // Downtime events
+    WebSocketEvents["DOWNTIME_STARTED"] = "downtime:started";
+    WebSocketEvents["DOWNTIME_ENDED"] = "downtime:ended";
     // Stock events
     WebSocketEvents["STOCK_LOW"] = "stock:low";
+    WebSocketEvents["STOCK_CRITICAL"] = "stock:critical";
     WebSocketEvents["STOCK_UPDATED"] = "stock:updated";
+    WebSocketEvents["STOCK_REPLENISHED"] = "stock:replenished";
+    // Quality events
+    WebSocketEvents["QUALITY_ISSUE"] = "quality:issue";
     // Job events
     WebSocketEvents["CUTTING_JOB_CREATED"] = "cutting-job:created";
     WebSocketEvents["CUTTING_JOB_STATUS_CHANGED"] = "cutting-job:status-changed";

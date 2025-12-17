@@ -10,6 +10,12 @@ export interface IOrderService {
     deleteOrder(id: string): Promise<IResult<void>>;
     addOrderItem(orderId: string, data: ICreateOrderItemInput): Promise<IResult<IOrderItemDto>>;
     importFromFile(file: Buffer, mapping: IColumnMapping, userId: string): Promise<IResult<IOrderDto>>;
+    getTemplates(): Promise<IResult<IOrderTemplateDto[]>>;
+    getTemplateById(id: string): Promise<IResult<IOrderTemplateDto>>;
+    createTemplate(data: ICreateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
+    updateTemplate(id: string, data: IUpdateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
+    deleteTemplate(id: string): Promise<IResult<void>>;
+    createOrderFromTemplate(templateId: string, overrides: Partial<ICreateOrderInput>, userId: string): Promise<IResult<IOrderDto>>;
 }
 export interface IOrderFilter {
     status?: string;
@@ -83,5 +89,56 @@ export interface ICustomerDto {
     name: string;
     email?: string;
     phone?: string;
+}
+export interface IOrderTemplateDto {
+    id: string;
+    name: string;
+    description?: string;
+    defaultCustomerId?: string;
+    defaultPriority: number;
+    items: ITemplateItemDto[];
+    itemCount: number;
+    usageCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+export interface ITemplateItemDto {
+    id: string;
+    itemCode?: string;
+    itemName?: string;
+    geometryType: string;
+    length?: number;
+    width?: number;
+    height?: number;
+    materialTypeId: string;
+    thickness: number;
+    quantity: number;
+    canRotate: boolean;
+}
+export interface ICreateTemplateInput {
+    name: string;
+    description?: string;
+    defaultCustomerId?: string;
+    defaultPriority?: number;
+    items: ICreateTemplateItemInput[];
+}
+export interface ICreateTemplateItemInput {
+    itemCode?: string;
+    itemName?: string;
+    geometryType: string;
+    length?: number;
+    width?: number;
+    height?: number;
+    materialTypeId: string;
+    thickness: number;
+    quantity: number;
+    canRotate?: boolean;
+}
+export interface IUpdateTemplateInput {
+    name?: string;
+    description?: string;
+    defaultCustomerId?: string;
+    defaultPriority?: number;
+    items?: ICreateTemplateItemInput[];
 }
 //# sourceMappingURL=order.interface.d.ts.map

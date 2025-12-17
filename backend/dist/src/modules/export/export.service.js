@@ -43,6 +43,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.exportService = exports.ExportService = void 0;
 const pdfkit_1 = __importDefault(require("pdfkit"));
 const XLSX = __importStar(require("xlsx"));
+const layout_svg_generator_1 = require("./layout-svg-generator");
+const gcode_generator_1 = require("./gcode-generator");
+const barcode_generator_1 = require("./barcode-generator");
 const LABELS = {
     tr: {
         title: 'Kesim Planı Raporu',
@@ -215,6 +218,84 @@ class ExportService {
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Tüm Planlar');
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         return buffer;
+    }
+    /**
+     * Export a single layout to SVG visualization
+     */
+    exportLayoutToSvg(layout, sheetDimensions) {
+        // Convert ILayoutExportData to ILayoutSheet format
+        const layoutSheet = {
+            sheetWidth: sheetDimensions.width,
+            sheetHeight: sheetDimensions.height,
+            pieces: layout.pieces.map((piece, index) => ({
+                pieceId: `piece_${index}`,
+                orderItemId: piece.code ?? `item_${index}`,
+                x: piece.position?.x ?? 0,
+                y: piece.position?.y ?? 0,
+                width: this.parseDimensionWidth(piece.dimensions),
+                height: this.parseDimensionHeight(piece.dimensions),
+                rotated: false,
+                label: piece.code ?? `P${index + 1}`
+            })),
+            waste: layout.waste,
+            wastePercentage: layout.wastePercentage
+        };
+        return (0, layout_svg_generator_1.generateLayoutSvg)(layoutSheet);
+    }
+    /**
+     * Parse width from dimensions string (e.g., "500x300" -> 500)
+     */
+    parseDimensionWidth(dimensions) {
+        const match = dimensions.match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1]) : 100;
+    }
+    /**
+     * Parse height from dimensions string (e.g., "500x300" -> 300)
+     */
+    parseDimensionHeight(dimensions) {
+        const match = dimensions.match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[2]) : 100;
+    }
+    // ==================== G-CODE EXPORT ====================
+    /**
+     * Export cutting plan to G-code for CNC machines
+     */
+    exportPlanToGcode(plan, options) {
+        const generator = new gcode_generator_1.GcodeGenerator(options);
+        const outputs = [];
+        for (const layout of plan.layouts) {
+            const sheet = {
+                sheetId: `sheet-${layout.sequence}`,
+                sheetCode: layout.stockCode || `SHEET-${layout.sequence}`,
+                sheetWidth: this.parseDimensionWidth(layout.stockDimensions),
+                sheetHeight: this.parseDimensionHeight(layout.stockDimensions),
+                paths: layout.pieces.map((piece, idx) => ({
+                    pieceId: `piece-${idx}`,
+                    pieceCode: piece.code,
+                    startX: piece.position?.x ?? 0,
+                    startY: piece.position?.y ?? 0,
+                    width: this.parseDimensionWidth(piece.dimensions),
+                    height: this.parseDimensionHeight(piece.dimensions)
+                }))
+            };
+            outputs.push(generator.generateForSheet(sheet));
+        }
+        return outputs;
+    }
+    // ==================== BARCODE/QR EXPORT ====================
+    /**
+     * Generate piece labels with barcodes
+     */
+    generatePieceLabels(pieces, options) {
+        const generator = new barcode_generator_1.BarcodeGenerator();
+        return pieces.map(piece => generator.generateLabel(piece, options));
+    }
+    /**
+     * Generate a single barcode
+     */
+    generateBarcode(data, options) {
+        const generator = new barcode_generator_1.BarcodeGenerator();
+        return generator.generateBarcode(data, options);
     }
 }
 exports.ExportService = ExportService;

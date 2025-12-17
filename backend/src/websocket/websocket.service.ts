@@ -5,6 +5,7 @@
 
 import { Server as HttpServer } from 'node:http';
 import { Server as SocketServer, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import {
     WebSocketEvents,
     IOptimizationStartedPayload,
@@ -19,6 +20,26 @@ import {
     ICuttingJobCreatedPayload,
     ICuttingJobStatusChangedPayload
 } from './events';
+
+/** Decoded JWT token payload */
+interface IJwtPayload {
+    userId: string;
+    email: string;
+    roleId?: string;
+    roleName?: string;
+    iat?: number;
+    exp?: number;
+}
+
+/** Socket with user data attached */
+interface IAuthenticatedSocket extends Socket {
+    data: {
+        userId?: string;
+        email?: string;
+        roleName?: string;
+        authenticated: boolean;
+    };
+}
 
 export interface IWebSocketService {
     initialize(httpServer: HttpServer): void;
@@ -45,7 +66,12 @@ export interface IWebSocketService {
 
 class WebSocketService implements IWebSocketService {
     private io: SocketServer | null = null;
-    private readonly connectedClients: Map<string, Socket> = new Map();
+    private readonly connectedClients: Map<string, IAuthenticatedSocket> = new Map();
+    private readonly jwtSecret: string;
+
+    constructor() {
+        this.jwtSecret = process.env.JWT_SECRET ?? 'nestra-secret-key';
+    }
 
     initialize(httpServer: HttpServer): void {
         this.io = new SocketServer(httpServer, {
@@ -57,14 +83,41 @@ class WebSocketService implements IWebSocketService {
         });
 
         this.io.on(WebSocketEvents.CONNECTION, (socket: Socket) => {
-            console.log(`[WebSocket] Client connected: ${socket.id}`);
-            this.connectedClients.set(socket.id, socket);
+            const authSocket = socket as IAuthenticatedSocket;
+            authSocket.data = { authenticated: false };
 
-            // Handle authentication (if needed in future)
+            console.log(`[WebSocket] Client connected: ${socket.id}`);
+            this.connectedClients.set(socket.id, authSocket);
+
+            // Handle JWT authentication
             socket.on('authenticate', (token: string) => {
-                // TODO: Validate JWT token and associate with user
-                console.log(`[WebSocket] Client ${socket.id} attempting auth with token`);
-                socket.emit('authenticated', { success: true });
+                try {
+                    const decoded = jwt.verify(token, this.jwtSecret) as IJwtPayload;
+
+                    // Attach user info to socket
+                    authSocket.data = {
+                        userId: decoded.userId,
+                        email: decoded.email,
+                        roleName: decoded.roleName,
+                        authenticated: true
+                    };
+
+                    // Join user-specific room for targeted events
+                    socket.join(`user:${decoded.userId}`);
+
+                    console.log(`[WebSocket] Client ${socket.id} authenticated as ${decoded.email}`);
+                    socket.emit('authenticated', {
+                        success: true,
+                        userId: decoded.userId,
+                        email: decoded.email
+                    });
+                } catch (error) {
+                    console.warn(`[WebSocket] Authentication failed for ${socket.id}:`, error instanceof Error ? error.message : 'Unknown error');
+                    socket.emit('authenticated', {
+                        success: false,
+                        error: 'Invalid or expired token'
+                    });
+                }
             });
 
             socket.on(WebSocketEvents.DISCONNECT, () => {
@@ -75,11 +128,12 @@ class WebSocketService implements IWebSocketService {
             // Send welcome message
             socket.emit('welcome', {
                 message: 'Connected to Nestra WebSocket',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                requiresAuth: true
             });
         });
 
-        console.log('[WebSocket] Service initialized');
+        console.log('[WebSocket] Service initialized with JWT authentication');
     }
 
     private emit<T>(event: WebSocketEvents, payload: T): void {

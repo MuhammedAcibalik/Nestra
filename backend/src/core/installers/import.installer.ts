@@ -9,9 +9,9 @@ export const importInstaller: IModuleInstaller = {
     name: 'import',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, authMiddleware } = context;
+        const { db, authMiddleware } = context;
 
-        const repository = new ImportRepository(prisma);
+        const repository = new ImportRepository(db);
         const service = new ImportService(repository);
         const controller = new ImportController(service);
 

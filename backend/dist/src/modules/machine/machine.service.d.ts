@@ -2,9 +2,8 @@
  * Machine Service
  * Following SOLID principles with proper types
  */
-import { MachineType } from '@prisma/client';
 import { IResult } from '../../core/interfaces';
-import { IMachineRepository, IMachineFilter, ICreateMachineInput, IUpdateMachineInput, IAddCompatibilityInput } from './machine.repository';
+import { IMachineRepository, MachineType, IMachineFilter, ICreateMachineInput, IUpdateMachineInput, IAddCompatibilityInput } from './machine.repository';
 export interface IMachineDto {
     id: string;
     code: string;

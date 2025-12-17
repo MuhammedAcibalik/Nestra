@@ -9,9 +9,9 @@ export const reportInstaller: IModuleInstaller = {
     name: 'report',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, authMiddleware } = context;
+        const { db, authMiddleware } = context;
 
-        const repository = new ReportRepository(prisma);
+        const repository = new ReportRepository(db);
         const service = new ReportService(repository);
         const controller = new ReportController(service);
 

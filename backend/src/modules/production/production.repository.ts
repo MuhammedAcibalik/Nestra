@@ -1,138 +1,236 @@
 /**
  * Production Repository
- * Following SRP - Only handles production data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Prisma, ProductionLog } from '@prisma/client';
-import { IProductionLogFilter } from '../../core/interfaces';
+import { Database } from '../../db';
+import { productionLogs, downtimeLogs, qualityChecks, DowntimeReason, QcResult } from '../../db/schema';
+import { eq, desc, and } from 'drizzle-orm';
+
+// Type definitions
+export type ProductionLog = typeof productionLogs.$inferSelect;
+export type DowntimeLog = typeof downtimeLogs.$inferSelect;
+export type QualityCheck = typeof qualityChecks.$inferSelect;
 
 export type ProductionLogWithRelations = ProductionLog & {
-    cuttingPlan?: {
-        id: string;
-        planNumber: string;
-        scenario?: { name: string };
-    };
-    operator?: { firstName: string; lastName: string };
-    _count?: { stockMovements: number };
+    cuttingPlan?: { id: string; planNumber: string };
+    operator?: { id: string; firstName: string; lastName: string };
 };
 
-interface ProductionUpdateInput {
-    notes?: string;
-    issues?: ProductionIssue[];
-}
+export type DowntimeLogWithRelations = DowntimeLog & {
+    machine?: { id: string; name: string; code: string } | null;
+};
 
-interface ProductionCompleteInput {
-    actualWaste: number;
-    actualTime: number;
-    notes?: string;
-}
+export type QualityCheckWithRelations = QualityCheck & {
+    inspector?: { id: string; firstName: string; lastName: string } | null;
+};
 
-interface ProductionIssue {
-    description: string;
-    severity: string;
-}
-
-interface ProductionLogWhereInput {
+export interface IProductionFilter {
     status?: string;
+    cuttingPlanId?: string;
     operatorId?: string;
-    startedAt?: { gte?: Date; lte?: Date };
+}
+
+export interface ICreateProductionLogInput {
+    cuttingPlanId: string;
+    operatorId: string;
+    notes?: string;
+}
+
+export interface IUpdateProductionLogInput {
+    actualWaste?: number;
+    actualTime?: number;
+    status?: string;
+    completedAt?: Date;
+    notes?: string;
+    issues?: Record<string, unknown>;
+}
+
+export interface ICompleteProductionInput {
+    actualWaste?: number;
+    actualTime?: number;
+    notes?: string;
+    issues?: Record<string, unknown>;
+}
+
+export interface ICreateDowntimeInput {
+    productionLogId: string;
+    machineId?: string;
+    reason: DowntimeReason;
+    notes?: string;
+}
+
+export interface ICreateQualityCheckInput {
+    productionLogId: string;
+    result: QcResult;
+    passedCount: number;
+    failedCount: number;
+    defectTypes?: string[];
+    inspectorId?: string;
+    notes?: string;
 }
 
 export interface IProductionRepository {
     findById(id: string): Promise<ProductionLogWithRelations | null>;
-    findAll(filter?: IProductionLogFilter): Promise<ProductionLogWithRelations[]>;
+    findByPlanId(planId: string): Promise<ProductionLogWithRelations | null>;
+    findAll(filter?: IProductionFilter): Promise<ProductionLogWithRelations[]>;
     create(planId: string, operatorId: string): Promise<ProductionLog>;
-    update(id: string, data: ProductionUpdateInput): Promise<ProductionLog>;
-    complete(id: string, data: ProductionCompleteInput): Promise<ProductionLog>;
-    findByPlanId(planId: string): Promise<ProductionLog | null>;
+    update(id: string, data: IUpdateProductionLogInput): Promise<ProductionLog>;
+    complete(logId: string, data: ICompleteProductionInput): Promise<ProductionLog>;
+
+    // Downtime methods
+    createDowntime(input: ICreateDowntimeInput): Promise<DowntimeLog>;
+    updateDowntime(id: string, endedAt: Date, durationMinutes: number): Promise<DowntimeLog>;
+    findDowntimesByLogId(productionLogId: string): Promise<DowntimeLogWithRelations[]>;
+
+    // Quality check methods
+    createQualityCheck(input: ICreateQualityCheckInput): Promise<QualityCheck>;
+    findQualityChecksByLogId(productionLogId: string): Promise<QualityCheckWithRelations[]>;
 }
 
 export class ProductionRepository implements IProductionRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<ProductionLogWithRelations | null> {
-        return this.prisma.productionLog.findUnique({
-            where: { id },
-            include: {
-                cuttingPlan: {
-                    select: {
-                        id: true,
-                        planNumber: true,
-                        scenario: { select: { name: true } }
-                    }
-                },
-                operator: { select: { firstName: true, lastName: true } },
-                _count: { select: { stockMovements: true } }
+        const result = await this.db.query.productionLogs.findFirst({
+            where: eq(productionLogs.id, id),
+            with: {
+                cuttingPlan: true,
+                operator: true
             }
         });
+        return result ?? null;
     }
 
-    async findAll(filter?: IProductionLogFilter): Promise<ProductionLogWithRelations[]> {
-        const where: ProductionLogWhereInput = {};
+    async findByPlanId(planId: string): Promise<ProductionLogWithRelations | null> {
+        const result = await this.db.query.productionLogs.findFirst({
+            where: eq(productionLogs.cuttingPlanId, planId),
+            with: {
+                cuttingPlan: true,
+                operator: true
+            }
+        });
+        return result ?? null;
+    }
 
-        if (filter?.status) where.status = filter.status;
-        if (filter?.operatorId) where.operatorId = filter.operatorId;
-        if (filter?.startDate || filter?.endDate) {
-            where.startedAt = {};
-            if (filter.startDate) where.startedAt.gte = filter.startDate;
-            if (filter.endDate) where.startedAt.lte = filter.endDate;
+    async findAll(filter?: IProductionFilter): Promise<ProductionLogWithRelations[]> {
+        const conditions = [];
+
+        if (filter?.status) {
+            conditions.push(eq(productionLogs.status, filter.status as 'STARTED' | 'PAUSED' | 'COMPLETED' | 'CANCELLED'));
         }
+        if (filter?.cuttingPlanId) conditions.push(eq(productionLogs.cuttingPlanId, filter.cuttingPlanId));
+        if (filter?.operatorId) conditions.push(eq(productionLogs.operatorId, filter.operatorId));
 
-        return this.prisma.productionLog.findMany({
-            where: where as Prisma.ProductionLogWhereInput,
-            include: {
-                cuttingPlan: {
-                    select: {
-                        id: true,
-                        planNumber: true,
-                        scenario: { select: { name: true } }
-                    }
-                },
-                operator: { select: { firstName: true, lastName: true } },
-                _count: { select: { stockMovements: true } }
+        return this.db.query.productionLogs.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                cuttingPlan: true,
+                operator: true
             },
-            orderBy: { startedAt: 'desc' }
+            orderBy: [desc(productionLogs.createdAt)]
         });
     }
 
     async create(planId: string, operatorId: string): Promise<ProductionLog> {
-        return this.prisma.productionLog.create({
-            data: {
-                cuttingPlanId: planId,
-                operatorId,
-                status: 'STARTED',
-                startedAt: new Date()
-            }
-        });
+        const [result] = await this.db.insert(productionLogs).values({
+            cuttingPlanId: planId,
+            operatorId: operatorId,
+            startedAt: new Date()
+        }).returning();
+        return result;
     }
 
-    async update(id: string, data: ProductionUpdateInput): Promise<ProductionLog> {
-        return this.prisma.productionLog.update({
-            where: { id },
-            data: {
+    async update(id: string, data: IUpdateProductionLogInput): Promise<ProductionLog> {
+        const [result] = await this.db.update(productionLogs)
+            .set({
+                actualWaste: data.actualWaste,
+                actualTime: data.actualTime,
+                status: data.status as 'STARTED' | 'PAUSED' | 'COMPLETED' | 'CANCELLED',
+                completedAt: data.completedAt,
                 notes: data.notes,
-                issues: data.issues as object[] | undefined
-            }
-        });
+                issues: data.issues,
+                updatedAt: new Date()
+            })
+            .where(eq(productionLogs.id, id))
+            .returning();
+        return result;
     }
 
-    async complete(id: string, data: ProductionCompleteInput): Promise<ProductionLog> {
-        return this.prisma.productionLog.update({
-            where: { id },
-            data: {
-                status: 'COMPLETED',
+    async complete(logId: string, data: ICompleteProductionInput): Promise<ProductionLog> {
+        const [result] = await this.db.update(productionLogs)
+            .set({
                 actualWaste: data.actualWaste,
                 actualTime: data.actualTime,
                 notes: data.notes,
-                completedAt: new Date()
-            }
+                issues: data.issues,
+                status: 'COMPLETED',
+                completedAt: new Date(),
+                updatedAt: new Date()
+            })
+            .where(eq(productionLogs.id, logId))
+            .returning();
+        return result;
+    }
+
+    // ==================== DOWNTIME METHODS ====================
+
+    async createDowntime(input: ICreateDowntimeInput): Promise<DowntimeLog> {
+        const [result] = await this.db.insert(downtimeLogs).values({
+            productionLogId: input.productionLogId,
+            machineId: input.machineId,
+            reason: input.reason,
+            notes: input.notes,
+            startedAt: new Date()
+        }).returning();
+        return result;
+    }
+
+    async updateDowntime(id: string, endedAt: Date, durationMinutes: number): Promise<DowntimeLog> {
+        const [result] = await this.db.update(downtimeLogs)
+            .set({
+                endedAt,
+                durationMinutes
+            })
+            .where(eq(downtimeLogs.id, id))
+            .returning();
+        return result;
+    }
+
+    async findDowntimesByLogId(productionLogId: string): Promise<DowntimeLogWithRelations[]> {
+        return this.db.query.downtimeLogs.findMany({
+            where: eq(downtimeLogs.productionLogId, productionLogId),
+            with: {
+                machine: true
+            },
+            orderBy: [desc(downtimeLogs.startedAt)]
         });
     }
 
-    async findByPlanId(planId: string): Promise<ProductionLog | null> {
-        return this.prisma.productionLog.findFirst({
-            where: { cuttingPlanId: planId },
-            orderBy: { startedAt: 'desc' }
+    // ==================== QUALITY CHECK METHODS ====================
+
+    async createQualityCheck(input: ICreateQualityCheckInput): Promise<QualityCheck> {
+        const [result] = await this.db.insert(qualityChecks).values({
+            productionLogId: input.productionLogId,
+            result: input.result,
+            passedCount: input.passedCount,
+            failedCount: input.failedCount,
+            defectTypes: input.defectTypes,
+            inspectorId: input.inspectorId,
+            notes: input.notes,
+            checkedAt: new Date()
+        }).returning();
+        return result;
+    }
+
+    async findQualityChecksByLogId(productionLogId: string): Promise<QualityCheckWithRelations[]> {
+        return this.db.query.qualityChecks.findMany({
+            where: eq(qualityChecks.productionLogId, productionLogId),
+            with: {
+                inspector: true
+            },
+            orderBy: [desc(qualityChecks.checkedAt)]
         });
     }
 }
+

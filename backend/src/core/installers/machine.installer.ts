@@ -11,9 +11,9 @@ export const machineInstaller: IModuleInstaller = {
     name: 'machine',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new MachineRepository(prisma);
+        const repository = new MachineRepository(db);
 
         const serviceHandler = new MachineServiceHandler(repository);
         registry.register('machine', serviceHandler);

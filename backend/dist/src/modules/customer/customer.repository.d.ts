@@ -1,8 +1,10 @@
 /**
  * Customer Repository
- * Following SRP - Only handles Customer data access
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, Customer } from '@prisma/client';
+import { Database } from '../../db';
+import { customers } from '../../db/schema';
+export type Customer = typeof customers.$inferSelect;
 export type CustomerWithRelations = Customer & {
     _count?: {
         orders: number;
@@ -18,7 +20,6 @@ export interface ICreateCustomerInput {
     phone?: string;
     address?: string;
     taxId?: string;
-    customFields?: Record<string, unknown>;
 }
 export interface IUpdateCustomerInput {
     name?: string;
@@ -26,7 +27,6 @@ export interface IUpdateCustomerInput {
     phone?: string;
     address?: string;
     taxId?: string;
-    customFields?: Record<string, unknown>;
 }
 export interface ICustomerRepository {
     findById(id: string): Promise<CustomerWithRelations | null>;
@@ -37,11 +37,11 @@ export interface ICustomerRepository {
     delete(id: string): Promise<void>;
 }
 export declare class CustomerRepository implements ICustomerRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
-    findById(id: string): Promise<CustomerWithRelations | null>;
+    private readonly db;
+    constructor(db: Database);
+    findById(id: string): Promise<Customer | null>;
     findByCode(code: string): Promise<Customer | null>;
-    findAll(filter?: ICustomerFilter): Promise<CustomerWithRelations[]>;
+    findAll(filter?: ICustomerFilter): Promise<Customer[]>;
     create(data: ICreateCustomerInput): Promise<Customer>;
     update(id: string, data: IUpdateCustomerInput): Promise<Customer>;
     delete(id: string): Promise<void>;

@@ -12,10 +12,10 @@ export const authInstaller: IModuleInstaller = {
     name: 'auth',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry } = context;
+        const { db, registry } = context;
         const config = getConfig();
 
-        const repository = new UserRepository(prisma);
+        const repository = new UserRepository(db);
 
         // Auth config from centralized configuration
         const authConfig: IAuthConfig = {

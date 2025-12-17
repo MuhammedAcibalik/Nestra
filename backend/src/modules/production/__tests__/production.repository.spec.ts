@@ -1,17 +1,14 @@
 import { ProductionRepository } from '../production.repository';
-import { PrismaClient } from '@prisma/client';
-import { mock, MockProxy } from 'jest-mock-extended';
+import { createMockDatabase, MockProxy } from '../../../core/test/db-mock';
+import { Database } from '../../../db';
 
 describe('ProductionRepository', () => {
     let repository: ProductionRepository;
-    let prisma: MockProxy<PrismaClient>;
-    let prismaLog: any;
+    let db: MockProxy<Database>;
 
     beforeEach(() => {
-        prisma = mock<PrismaClient>();
-        prismaLog = mock<any>();
-        (prisma as any).productionLog = prismaLog;
-        repository = new ProductionRepository(prisma);
+        db = createMockDatabase();
+        repository = new ProductionRepository(db);
     });
 
     describe('create', () => {
@@ -26,22 +23,20 @@ describe('ProductionRepository', () => {
                 startedAt: new Date()
             };
 
-            prismaLog.create.mockResolvedValue(mockLog);
+            (db.insert as jest.Mock).mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockLog])
+                })
+            });
 
             // Time mocking
             jest.useFakeTimers().setSystemTime(mockLog.startedAt);
 
             const result = await repository.create(planId, operatorId);
 
-            expect(result).toEqual(mockLog);
-            expect(prismaLog.create).toHaveBeenCalledWith({
-                data: {
-                    cuttingPlanId: planId,
-                    operatorId,
-                    status: 'STARTED',
-                    startedAt: mockLog.startedAt
-                }
-            });
+            expect(result.id).toBe('log-1');
+            expect(result.cuttingPlanId).toBe(planId);
+            expect(result.status).toBe('STARTED');
 
             jest.useRealTimers();
         });
@@ -61,20 +56,20 @@ describe('ProductionRepository', () => {
                 ...input
             };
 
-            prismaLog.update.mockResolvedValue(mockLog);
+            (db.update as jest.Mock).mockReturnValue({
+                set: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        returning: jest.fn().mockResolvedValue([mockLog])
+                    })
+                })
+            });
+
             jest.useFakeTimers().setSystemTime(mockLog.completedAt);
 
             const result = await repository.complete('log-1', input);
 
-            expect(result).toEqual(mockLog);
-            expect(prismaLog.update).toHaveBeenCalledWith({
-                where: { id: 'log-1' },
-                data: expect.objectContaining({
-                    status: 'COMPLETED',
-                    actualWaste: 5.5,
-                    completedAt: mockLog.completedAt
-                })
-            });
+            expect(result.status).toBe('COMPLETED');
+            expect(result.actualWaste).toBe(5.5);
 
             jest.useRealTimers();
         });

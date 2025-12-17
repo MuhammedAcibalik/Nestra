@@ -47,13 +47,12 @@ class CuttingJobService {
     }
     async createJob(data) {
         try {
-            // Get order items to determine quantities using repository
-            const orderItems = await this.repository.getOrderItemsByIds(data.orderItemIds);
-            const items = orderItems.map(item => ({
-                orderItemId: item.id,
-                quantity: item.quantity
-            }));
-            const job = await this.repository.create(data.materialTypeId, data.thickness, items);
+            // Create the job with order item IDs
+            const job = await this.repository.create({
+                materialTypeId: data.materialTypeId,
+                thickness: data.thickness,
+                orderItemIds: data.orderItemIds
+            });
             const fullJob = await this.repository.findById(job.id);
             // Publish cutting job created event
             const eventBus = events_1.EventBus.getInstance();
@@ -62,7 +61,7 @@ class CuttingJobService {
                 jobNumber: job.jobNumber,
                 materialTypeId: data.materialTypeId,
                 thickness: data.thickness,
-                itemCount: items.length
+                itemCount: data.orderItemIds?.length ?? 0
             }));
             return (0, interfaces_1.success)(this.toDto(fullJob));
         }
@@ -178,7 +177,11 @@ class CuttingJobService {
                 }
                 else {
                     // Create new job
-                    const job = await this.repository.create(materialTypeId, thickness, items.map(i => ({ orderItemId: i.id, quantity: i.quantity })));
+                    const job = await this.repository.create({
+                        materialTypeId,
+                        thickness,
+                        orderItemIds: items.map(i => i.id)
+                    });
                     const fullJob = await this.repository.findById(job.id);
                     createdJobs.push(this.toDto(fullJob));
                 }
@@ -279,6 +282,200 @@ class CuttingJobService {
             return error.message;
         }
         return String(error);
+    }
+    // ==================== JOB MERGING ====================
+    /**
+     * Merge multiple jobs into one
+     * All items from source jobs will be moved to target job
+     * Source jobs will be deleted after merge
+     */
+    async mergeJobs(sourceJobIds, targetJobId) {
+        try {
+            if (sourceJobIds.length < 2) {
+                return (0, interfaces_1.failure)({
+                    code: 'INVALID_MERGE',
+                    message: 'En az 2 iş birleştirilmeli',
+                    details: { count: sourceJobIds.length }
+                });
+            }
+            // Get all source jobs
+            const sourceJobs = [];
+            for (const jobId of sourceJobIds) {
+                const job = await this.repository.findById(jobId);
+                if (!job) {
+                    return (0, interfaces_1.failure)({
+                        code: 'JOB_NOT_FOUND',
+                        message: `İş bulunamadı: ${jobId}`,
+                        details: { jobId }
+                    });
+                }
+                if (job.status !== 'PENDING') {
+                    return (0, interfaces_1.failure)({
+                        code: 'INVALID_STATUS',
+                        message: 'Sadece bekleyen işler birleştirilebilir',
+                        details: { jobId, status: job.status }
+                    });
+                }
+                sourceJobs.push(job);
+            }
+            // Validate same material type and thickness
+            const firstJob = sourceJobs[0];
+            for (const job of sourceJobs) {
+                if (job.materialTypeId !== firstJob.materialTypeId) {
+                    return (0, interfaces_1.failure)({
+                        code: 'MATERIAL_MISMATCH',
+                        message: 'Tüm işler aynı malzeme tipinde olmalı',
+                        details: { expected: firstJob.materialTypeId, found: job.materialTypeId }
+                    });
+                }
+                if (job.thickness !== firstJob.thickness) {
+                    return (0, interfaces_1.failure)({
+                        code: 'THICKNESS_MISMATCH',
+                        message: 'Tüm işler aynı kalınlıkta olmalı',
+                        details: { expected: firstJob.thickness, found: job.thickness }
+                    });
+                }
+            }
+            // Determine target job (use provided or first source)
+            const targetId = targetJobId ?? sourceJobIds[0];
+            const targetJob = sourceJobs.find(j => j.id === targetId);
+            if (!targetJob) {
+                return (0, interfaces_1.failure)({
+                    code: 'TARGET_NOT_FOUND',
+                    message: 'Hedef iş bulunamadı',
+                    details: { targetId }
+                });
+            }
+            // Collect all items from other source jobs
+            const itemsToMove = [];
+            const jobsToDelete = [];
+            for (const job of sourceJobs) {
+                if (job.id === targetId)
+                    continue;
+                if (job.items) {
+                    for (const item of job.items) {
+                        itemsToMove.push({
+                            orderItemId: item.orderItemId,
+                            quantity: item.quantity
+                        });
+                    }
+                }
+                jobsToDelete.push(job.id);
+            }
+            // Add items to target job
+            for (const item of itemsToMove) {
+                await this.repository.addItem(targetId, { orderItemId: item.orderItemId, quantity: item.quantity });
+            }
+            // Delete source jobs (except target)
+            for (const jobId of jobsToDelete) {
+                await this.repository.delete(jobId);
+            }
+            // Fetch updated target job
+            const mergedJob = await this.repository.findById(targetId);
+            if (!mergedJob) {
+                return (0, interfaces_1.failure)({
+                    code: 'MERGE_ERROR',
+                    message: 'Birleştirme sonrası iş bulunamadı'
+                });
+            }
+            console.log('[CuttingJob] Merged jobs:', { targetId, mergedFrom: jobsToDelete });
+            return (0, interfaces_1.success)(this.toDto(mergedJob));
+        }
+        catch (error) {
+            return (0, interfaces_1.failure)({
+                code: 'MERGE_ERROR',
+                message: 'İş birleştirme hatası',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+    // ==================== JOB SPLITTING ====================
+    /**
+     * Split a job by moving specified items to a new job
+     * Returns the newly created job
+     */
+    async splitJob(jobId, itemsToSplit) {
+        try {
+            if (itemsToSplit.length === 0) {
+                return (0, interfaces_1.failure)({
+                    code: 'INVALID_SPLIT',
+                    message: 'Bölünecek en az bir öğe belirtilmeli'
+                });
+            }
+            // Get source job
+            const sourceJob = await this.repository.findById(jobId);
+            if (!sourceJob) {
+                return (0, interfaces_1.failure)({
+                    code: 'JOB_NOT_FOUND',
+                    message: 'İş bulunamadı',
+                    details: { jobId }
+                });
+            }
+            if (sourceJob.status !== 'PENDING') {
+                return (0, interfaces_1.failure)({
+                    code: 'INVALID_STATUS',
+                    message: 'Sadece bekleyen işler bölünebilir',
+                    details: { status: sourceJob.status }
+                });
+            }
+            // Validate items exist and quantities
+            const sourceItems = sourceJob.items ?? [];
+            for (const splitItem of itemsToSplit) {
+                const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId);
+                if (!sourceItem) {
+                    return (0, interfaces_1.failure)({
+                        code: 'ITEM_NOT_FOUND',
+                        message: `Öğe bulunamadı: ${splitItem.itemId}`,
+                        details: { itemId: splitItem.itemId }
+                    });
+                }
+                if (splitItem.quantity > sourceItem.quantity) {
+                    return (0, interfaces_1.failure)({
+                        code: 'INVALID_QUANTITY',
+                        message: 'Bölünecek miktar mevcut miktardan fazla olamaz',
+                        details: { itemId: splitItem.itemId, available: sourceItem.quantity, requested: splitItem.quantity }
+                    });
+                }
+            }
+            // Create new job with same material type and thickness
+            const newJob = await this.repository.create({
+                materialTypeId: sourceJob.materialTypeId,
+                thickness: sourceJob.thickness
+            });
+            // Move items to new job
+            for (const splitItem of itemsToSplit) {
+                const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId);
+                // Add to new job
+                await this.repository.addItem(newJob.id, { orderItemId: sourceItem.orderItemId, quantity: splitItem.quantity });
+                // Reduce or remove from source job
+                const remainingQty = sourceItem.quantity - splitItem.quantity;
+                if (remainingQty <= 0) {
+                    await this.repository.removeItem(jobId, sourceItem.orderItemId);
+                }
+                else {
+                    // Update quantity in source job (reduce by split amount)
+                    await this.repository.removeItem(jobId, sourceItem.orderItemId);
+                    await this.repository.addItem(jobId, { orderItemId: sourceItem.orderItemId, quantity: remainingQty });
+                }
+            }
+            // Fetch the new job with items
+            const createdJob = await this.repository.findById(newJob.id);
+            if (!createdJob) {
+                return (0, interfaces_1.failure)({
+                    code: 'SPLIT_ERROR',
+                    message: 'Bölme sonrası yeni iş bulunamadı'
+                });
+            }
+            console.log('[CuttingJob] Split job:', { newJobId: newJob.id, splitFrom: jobId });
+            return (0, interfaces_1.success)(this.toDto(createdJob));
+        }
+        catch (error) {
+            return (0, interfaces_1.failure)({
+                code: 'SPLIT_ERROR',
+                message: 'İş bölme hatası',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
     }
 }
 exports.CuttingJobService = CuttingJobService;

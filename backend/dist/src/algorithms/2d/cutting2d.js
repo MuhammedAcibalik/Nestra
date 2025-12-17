@@ -20,7 +20,8 @@ function expandPieces(pieces) {
                 height: piece.height,
                 orderItemId: piece.orderItemId,
                 originalId: piece.id,
-                canRotate: piece.canRotate
+                canRotate: piece.canRotate,
+                grainDirection: piece.grainDirection
             });
         }
     }
@@ -60,12 +61,20 @@ function canPlace(rect, sheetDims, placements, kerf) {
 }
 /**
  * Helper: Get possible orientations for a piece
+ * Respects grainDirection when respectGrainDirection is true
  */
-function getOrientations(piece, allowRotation) {
+function getOrientations(piece, allowRotation, respectGrainDirection) {
     const orientations = [{ w: piece.width, h: piece.height, rotated: false }];
-    if (allowRotation && piece.canRotate && piece.width !== piece.height) {
-        orientations.push({ w: piece.height, h: piece.width, rotated: true });
+    // Basic checks for rotation
+    if (!allowRotation || !piece.canRotate || piece.width === piece.height) {
+        return orientations;
     }
+    // Check grain direction constraint
+    if (respectGrainDirection && piece.grainDirection && piece.grainDirection !== 'NONE') {
+        // Cannot rotate when grain direction matters
+        return orientations;
+    }
+    orientations.push({ w: piece.height, h: piece.width, rotated: true });
     return orientations;
 }
 /**

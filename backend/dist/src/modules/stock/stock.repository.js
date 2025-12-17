@@ -1,123 +1,133 @@
 "use strict";
 /**
  * Stock Repository
- * Following SRP - Only handles stock data access
+ * Migrated to Drizzle ORM
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockRepository = void 0;
+const schema_1 = require("../../db/schema");
+const drizzle_orm_1 = require("drizzle-orm");
 class StockRepository {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    db;
+    constructor(db) {
+        this.db = db;
     }
     async findById(id) {
-        return this.prisma.stockItem.findUnique({
-            where: { id },
-            include: {
-                materialType: { select: { id: true, name: true } },
-                thicknessRange: { select: { id: true, name: true } },
-                location: { select: { id: true, name: true } }
+        const result = await this.db.query.stockItems.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.stockItems.id, id),
+            with: {
+                materialType: true,
+                thicknessRange: true,
+                location: true
             }
         });
+        return result ?? null;
     }
     async findAll(filter) {
-        const where = {};
+        const conditions = [];
         if (filter?.materialTypeId)
-            where.materialTypeId = filter.materialTypeId;
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.stockItems.materialTypeId, filter.materialTypeId));
         if (filter?.stockType)
-            where.stockType = filter.stockType;
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.stockItems.stockType, filter.stockType));
         if (filter?.locationId)
-            where.locationId = filter.locationId;
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.stockItems.locationId, filter.locationId));
         if (filter?.minQuantity !== undefined)
-            where.quantity = { gte: filter.minQuantity };
-        return this.prisma.stockItem.findMany({
-            where,
-            include: {
-                materialType: { select: { id: true, name: true } },
-                thicknessRange: { select: { id: true, name: true } },
-                location: { select: { id: true, name: true } }
+            conditions.push((0, drizzle_orm_1.gte)(schema_1.stockItems.quantity, filter.minQuantity));
+        return this.db.query.stockItems.findMany({
+            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            with: {
+                materialType: true,
+                thicknessRange: true,
+                location: true
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: [(0, drizzle_orm_1.desc)(schema_1.stockItems.createdAt)]
         });
     }
     async findByCode(code) {
-        return this.prisma.stockItem.findUnique({ where: { code } });
+        const result = await this.db.query.stockItems.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.stockItems.code, code)
+        });
+        return result ?? null;
     }
     async create(data) {
-        return this.prisma.stockItem.create({
-            data: {
-                code: data.code,
-                name: data.name,
-                materialTypeId: data.materialTypeId,
-                thicknessRangeId: data.thicknessRangeId,
-                thickness: data.thickness,
-                stockType: data.stockType,
-                length: data.length,
-                width: data.width,
-                height: data.height,
-                quantity: data.quantity,
-                unitPrice: data.unitPrice,
-                locationId: data.locationId
-            }
-        });
+        const [result] = await this.db.insert(schema_1.stockItems).values({
+            code: data.code,
+            name: data.name,
+            materialTypeId: data.materialTypeId,
+            thicknessRangeId: data.thicknessRangeId,
+            thickness: data.thickness,
+            stockType: data.stockType,
+            length: data.length,
+            width: data.width,
+            height: data.height,
+            quantity: data.quantity,
+            unitPrice: data.unitPrice,
+            locationId: data.locationId
+        }).returning();
+        return result;
     }
     async update(id, data) {
-        return this.prisma.stockItem.update({
-            where: { id },
-            data: {
-                code: data.code,
-                name: data.name,
-                thickness: data.thickness,
-                stockType: data.stockType,
-                length: data.length,
-                width: data.width,
-                height: data.height,
-                quantity: data.quantity,
-                unitPrice: data.unitPrice
-            }
-        });
+        const [result] = await this.db.update(schema_1.stockItems)
+            .set({
+            code: data.code,
+            name: data.name,
+            thickness: data.thickness,
+            stockType: data.stockType,
+            length: data.length,
+            width: data.width,
+            height: data.height,
+            quantity: data.quantity,
+            unitPrice: data.unitPrice,
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.stockItems.id, id))
+            .returning();
+        return result;
     }
     async delete(id) {
-        await this.prisma.stockItem.delete({ where: { id } });
+        await this.db.delete(schema_1.stockItems).where((0, drizzle_orm_1.eq)(schema_1.stockItems.id, id));
     }
     async updateQuantity(id, quantityDelta, reservedDelta = 0) {
-        return this.prisma.stockItem.update({
-            where: { id },
-            data: {
-                quantity: { increment: quantityDelta },
-                reservedQty: { increment: reservedDelta }
-            }
+        // Get current values
+        const current = await this.db.query.stockItems.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.stockItems.id, id)
         });
+        if (!current)
+            throw new Error('Stock item not found');
+        const [result] = await this.db.update(schema_1.stockItems)
+            .set({
+            quantity: current.quantity + quantityDelta,
+            reservedQty: current.reservedQty + reservedDelta,
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.stockItems.id, id))
+            .returning();
+        return result;
     }
     async createMovement(data) {
-        return this.prisma.stockMovement.create({
-            data: {
-                stockItemId: data.stockItemId,
-                movementType: data.movementType,
-                quantity: data.quantity,
-                notes: data.notes,
-                productionLogId: data.productionLogId
-            }
-        });
+        const [result] = await this.db.insert(schema_1.stockMovements).values({
+            stockItemId: data.stockItemId,
+            movementType: data.movementType,
+            quantity: data.quantity,
+            notes: data.notes,
+            productionLogId: data.productionLogId
+        }).returning();
+        return result;
     }
     async getMovements(filter) {
-        const where = {};
+        const conditions = [];
         if (filter?.stockItemId)
-            where.stockItemId = filter.stockItemId;
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.stockMovements.stockItemId, filter.stockItemId));
         if (filter?.movementType)
-            where.movementType = filter.movementType;
-        if (filter?.startDate || filter?.endDate) {
-            where.createdAt = {};
-            if (filter.startDate)
-                where.createdAt.gte = filter.startDate;
-            if (filter.endDate)
-                where.createdAt.lte = filter.endDate;
-        }
-        return this.prisma.stockMovement.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take: 100
-        });
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.stockMovements.movementType, filter.movementType));
+        if (filter?.startDate)
+            conditions.push((0, drizzle_orm_1.gte)(schema_1.stockMovements.createdAt, filter.startDate));
+        if (filter?.endDate)
+            conditions.push((0, drizzle_orm_1.lte)(schema_1.stockMovements.createdAt, filter.endDate));
+        return this.db.select().from(schema_1.stockMovements)
+            .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined)
+            .orderBy((0, drizzle_orm_1.desc)(schema_1.stockMovements.createdAt))
+            .limit(100);
     }
 }
 exports.StockRepository = StockRepository;

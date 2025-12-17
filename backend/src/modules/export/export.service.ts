@@ -5,6 +5,9 @@
 
 import PDFDocument from 'pdfkit';
 import * as XLSX from 'xlsx';
+import { generateLayoutSvg, ILayoutSheet } from './layout-svg-generator';
+import { GcodeGenerator, ICuttingSheet, IGcodeOptions, IGcodeOutput } from './gcode-generator';
+import { BarcodeGenerator, IBarcodeOptions, IBarcodeOutput, ILabelData } from './barcode-generator';
 
 export interface ICuttingPlanExportData {
     planNumber: string;
@@ -37,13 +40,24 @@ export interface IPieceExportData {
 export interface IExportOptions {
     includeLayouts?: boolean;
     includePieceDetails?: boolean;
+    includeVisualLayout?: boolean;
     language?: 'tr' | 'en';
+}
+
+/** G-code export options (extends machine options) */
+export interface IGcodeExportOptions extends Partial<IGcodeOptions> {
+    /** Generate separate files per sheet */
+    separateFiles?: boolean;
 }
 
 export interface IExportService {
     exportPlanToPdf(plan: ICuttingPlanExportData, options?: IExportOptions): Promise<Buffer>;
     exportPlanToExcel(plan: ICuttingPlanExportData, options?: IExportOptions): Promise<Buffer>;
     exportMultiplePlansToExcel(plans: ICuttingPlanExportData[], options?: IExportOptions): Promise<Buffer>;
+    exportLayoutToSvg(layout: ILayoutExportData, sheetDimensions: { width: number; height: number }): string;
+    exportPlanToGcode(plan: ICuttingPlanExportData, options?: IGcodeExportOptions): IGcodeOutput[];
+    generatePieceLabels(pieces: ILabelData[], options?: Partial<IBarcodeOptions>): string[];
+    generateBarcode(data: string, options?: Partial<IBarcodeOptions>): IBarcodeOutput;
 }
 
 const LABELS = {
@@ -245,6 +259,100 @@ export class ExportService implements IExportService {
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         return buffer;
     }
+
+    /**
+     * Export a single layout to SVG visualization
+     */
+    exportLayoutToSvg(
+        layout: ILayoutExportData,
+        sheetDimensions: { width: number; height: number }
+    ): string {
+        // Convert ILayoutExportData to ILayoutSheet format
+        const layoutSheet: ILayoutSheet = {
+            sheetWidth: sheetDimensions.width,
+            sheetHeight: sheetDimensions.height,
+            pieces: layout.pieces.map((piece, index) => ({
+                pieceId: `piece_${index}`,
+                orderItemId: piece.code ?? `item_${index}`,
+                x: piece.position?.x ?? 0,
+                y: piece.position?.y ?? 0,
+                width: this.parseDimensionWidth(piece.dimensions),
+                height: this.parseDimensionHeight(piece.dimensions),
+                rotated: false,
+                label: piece.code ?? `P${index + 1}`
+            })),
+            waste: layout.waste,
+            wastePercentage: layout.wastePercentage
+        };
+
+        return generateLayoutSvg(layoutSheet);
+    }
+
+    /**
+     * Parse width from dimensions string (e.g., "500x300" -> 500)
+     */
+    private parseDimensionWidth(dimensions: string): number {
+        const match = dimensions.match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1]) : 100;
+    }
+
+    /**
+     * Parse height from dimensions string (e.g., "500x300" -> 300)
+     */
+    private parseDimensionHeight(dimensions: string): number {
+        const match = dimensions.match(/(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)/);
+        return match ? parseFloat(match[2]) : 100;
+    }
+
+    // ==================== G-CODE EXPORT ====================
+
+    /**
+     * Export cutting plan to G-code for CNC machines
+     */
+    exportPlanToGcode(plan: ICuttingPlanExportData, options?: IGcodeExportOptions): IGcodeOutput[] {
+        const generator = new GcodeGenerator(options);
+        const outputs: IGcodeOutput[] = [];
+
+        for (const layout of plan.layouts) {
+            const sheet: ICuttingSheet = {
+                sheetId: `sheet-${layout.sequence}`,
+                sheetCode: layout.stockCode || `SHEET-${layout.sequence}`,
+                sheetWidth: this.parseDimensionWidth(layout.stockDimensions),
+                sheetHeight: this.parseDimensionHeight(layout.stockDimensions),
+                paths: layout.pieces.map((piece, idx) => ({
+                    pieceId: `piece-${idx}`,
+                    pieceCode: piece.code,
+                    startX: piece.position?.x ?? 0,
+                    startY: piece.position?.y ?? 0,
+                    width: this.parseDimensionWidth(piece.dimensions),
+                    height: this.parseDimensionHeight(piece.dimensions)
+                }))
+            };
+
+            outputs.push(generator.generateForSheet(sheet));
+        }
+
+        return outputs;
+    }
+
+    // ==================== BARCODE/QR EXPORT ====================
+
+    /**
+     * Generate piece labels with barcodes
+     */
+    generatePieceLabels(pieces: ILabelData[], options?: Partial<IBarcodeOptions>): string[] {
+        const generator = new BarcodeGenerator();
+        return pieces.map(piece => generator.generateLabel(piece, options));
+    }
+
+    /**
+     * Generate a single barcode
+     */
+    generateBarcode(data: string, options?: Partial<IBarcodeOptions>): IBarcodeOutput {
+        const generator = new BarcodeGenerator();
+        return generator.generateBarcode(data, options);
+    }
 }
 
 export const exportService = new ExportService();
+

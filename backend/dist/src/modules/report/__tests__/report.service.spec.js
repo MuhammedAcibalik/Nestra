@@ -13,20 +13,24 @@ describe('ReportService', () => {
         it('should calculate waste summary and grouping correctly', async () => {
             const mockWasteData = [
                 {
-                    planId: 'p1',
-                    planNumber: 'PN-001',
+                    date: new Date('2023-01-01'),
+                    createdAt: new Date('2023-01-01'),
+                    materialTypeName: 'MDF',
+                    totalWaste: 10,
                     plannedWaste: 10,
                     actualWaste: 12,
                     wastePercentage: 5,
-                    createdAt: new Date('2023-01-01')
+                    planCount: 1
                 },
                 {
-                    planId: 'p2',
-                    planNumber: 'PN-002',
+                    date: new Date('2023-01-02'),
+                    createdAt: new Date('2023-01-02'),
+                    materialTypeName: 'MDF',
+                    totalWaste: 20,
                     plannedWaste: 20,
-                    actualWaste: 20, // No variance
+                    actualWaste: 20,
                     wastePercentage: 10,
-                    createdAt: new Date('2023-01-02')
+                    planCount: 1
                 }
             ];
             repository.getWasteData.mockResolvedValue(mockWasteData);
@@ -50,16 +54,20 @@ describe('ReportService', () => {
             const mockEfficiencyData = [
                 {
                     materialTypeId: 'm1',
+                    materialTypeName: 'Material 1',
                     materialName: 'Material 1',
                     planCount: 10,
                     avgEfficiency: 90,
+                    totalWaste: 100,
                     totalStockUsed: 100
                 },
                 {
                     materialTypeId: 'm2',
+                    materialTypeName: 'Material 2',
                     materialName: 'Material 2',
                     planCount: 5,
                     avgEfficiency: 80,
+                    totalWaste: 50,
                     totalStockUsed: 50
                 }
             ];
@@ -81,7 +89,9 @@ describe('ReportService', () => {
                     customerCode: 'CUST001',
                     customerName: 'Cust 1',
                     orderCount: 5,
-                    itemCount: 20
+                    totalItems: 20,
+                    itemCount: 20,
+                    completedPlans: 3
                 }];
             repository.getCustomerData.mockResolvedValue(mockData);
             const result = await service.getCustomerReport({});

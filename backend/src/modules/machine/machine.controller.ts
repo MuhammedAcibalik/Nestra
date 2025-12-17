@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { IMachineService } from './machine.service';
-import { MachineType } from '@prisma/client';
+import { MachineType } from './machine.repository';
 
 export class MachineController {
     public readonly router: Router;

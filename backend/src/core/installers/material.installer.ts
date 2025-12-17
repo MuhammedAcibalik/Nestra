@@ -12,10 +12,10 @@ export const materialInstaller: IModuleInstaller = {
     name: 'material',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
         // Repository layer
-        const repository = new MaterialRepository(prisma);
+        const repository = new MaterialRepository(db);
 
         // Service handler for inter-module communication
         const serviceHandler = new MaterialServiceHandler(repository);

@@ -19,9 +19,9 @@ export const optimizationInstaller: IModuleInstaller = {
     name: 'optimization',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new OptimizationRepository(prisma);
+        const repository = new OptimizationRepository(db);
 
         // Service handler registration
         const serviceHandler = new OptimizationServiceHandler(repository);

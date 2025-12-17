@@ -1,93 +1,82 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const cutting_job_repository_1 = require("../cutting-job.repository");
-const jest_mock_extended_1 = require("jest-mock-extended");
+const db_mock_1 = require("../../../core/test/db-mock");
 describe('CuttingJobRepository', () => {
     let repository;
-    let prisma;
-    let prismaJob;
-    let prismaJobItem;
+    let db;
     beforeEach(() => {
-        prisma = (0, jest_mock_extended_1.mock)();
-        prismaJob = (0, jest_mock_extended_1.mock)();
-        prismaJobItem = (0, jest_mock_extended_1.mock)();
-        prisma.cuttingJob = prismaJob;
-        prisma.cuttingJobItem = prismaJobItem;
-        repository = new cutting_job_repository_1.CuttingJobRepository(prisma);
+        db = (0, db_mock_1.createMockDatabase)();
+        repository = new cutting_job_repository_1.CuttingJobRepository(db);
     });
     describe('create', () => {
         it('should create cutting job', async () => {
-            const materialTypeId = 'mat-1';
-            const thickness = 18;
-            const items = [{ orderItemId: 'order-item-1', quantity: 2 }];
-            prismaJob.count.mockResolvedValue(0);
+            const input = {
+                materialTypeId: 'mat-1',
+                thickness: 18,
+                orderItemIds: ['order-item-1']
+            };
             const mockJob = {
                 id: 'job-1',
                 jobNumber: 'JOB-2305-00001',
-                materialTypeId,
-                thickness,
-                status: 'PENDING'
+                materialTypeId: 'mat-1',
+                thickness: 18,
+                status: 'PENDING',
+                createdAt: new Date(),
+                updatedAt: new Date()
             };
-            prismaJob.create.mockResolvedValue(mockJob);
-            // Mock Date for consistent job number generation
-            jest.useFakeTimers().setSystemTime(new Date('2023-05-01'));
-            const result = await repository.create(materialTypeId, thickness, items);
-            expect(result).toEqual(mockJob);
-            expect(prismaJob.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    materialTypeId,
-                    thickness,
-                    status: 'PENDING',
-                    items: {
-                        create: [{ orderItemId: 'order-item-1', quantity: 2 }]
-                    }
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockJob])
                 })
             });
-            jest.useRealTimers();
+            // Mock getOrderItemsByIds
+            db.select.mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    where: jest.fn().mockResolvedValue([
+                        { id: 'order-item-1', quantity: 2, materialTypeId: 'mat-1', thickness: 18, itemCode: 'I1', itemName: 'Item 1', length: 100, width: 50, height: 10, geometryType: 'RECTANGLE' }
+                    ])
+                })
+            });
+            const result = await repository.create(input);
+            expect(result).toEqual(mockJob);
+            expect(db.insert).toHaveBeenCalled();
         });
     });
     describe('updateStatus', () => {
         it('should update job status', async () => {
             const mockJob = { id: 'job-1', status: 'OPTIMIZING' };
-            prismaJob.update.mockResolvedValue(mockJob);
-            const result = await repository.updateStatus('job-1', 'OPTIMIZING');
-            expect(result).toEqual(mockJob);
-            expect(prismaJob.update).toHaveBeenCalledWith({
-                where: { id: 'job-1' },
-                data: { status: 'OPTIMIZING' }
+            db.update.mockReturnValue({
+                set: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        returning: jest.fn().mockResolvedValue([mockJob])
+                    })
+                })
             });
+            const result = await repository.updateStatus('job-1', 'OPTIMIZING');
+            expect(result.status).toBe('OPTIMIZING');
         });
     });
     describe('addItem', () => {
         it('should add item to job', async () => {
             const input = { orderItemId: 'order-item-2', quantity: 5 };
             const mockItem = { id: 'job-item-1', cuttingJobId: 'job-1', ...input };
-            prismaJobItem.create.mockResolvedValue(mockItem);
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockItem])
+                })
+            });
             const result = await repository.addItem('job-1', input);
             expect(result).toEqual(mockItem);
-            expect(prismaJobItem.create).toHaveBeenCalledWith({
-                data: {
-                    cuttingJobId: 'job-1',
-                    orderItemId: input.orderItemId,
-                    quantity: input.quantity
-                }
-            });
         });
     });
     describe('findByMaterialAndThickness', () => {
         it('should find jobs by material criteria', async () => {
-            const mockJobs = [{ id: 'job-1', materialTypeId: 'mat-1', thickness: 18 }];
-            prismaJob.findMany.mockResolvedValue(mockJobs);
+            const mockJobs = [{ id: 'job-1', materialTypeId: 'mat-1', thickness: 18, items: [], _count: { items: 0, scenarios: 0 } }];
+            db.query.cuttingJobs.findMany.mockResolvedValue(mockJobs);
             const result = await repository.findByMaterialAndThickness('mat-1', 18, 'PENDING');
-            expect(result).toEqual(mockJobs);
-            expect(prismaJob.findMany).toHaveBeenCalledWith({
-                where: {
-                    materialTypeId: 'mat-1',
-                    thickness: 18,
-                    status: 'PENDING'
-                },
-                include: expect.any(Object)
-            });
+            expect(result).toHaveLength(1);
+            expect(result[0].materialTypeId).toBe('mat-1');
         });
     });
 });

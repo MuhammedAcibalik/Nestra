@@ -9,9 +9,9 @@ export const exportInstaller: IModuleInstaller = {
     name: 'export',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, authMiddleware } = context;
+        const { db, authMiddleware } = context;
 
-        const repository = new ExportRepository(prisma);
+        const repository = new ExportRepository(db);
         const controller = new ExportController(repository);
 
         return {

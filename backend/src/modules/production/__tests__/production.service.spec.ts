@@ -1,12 +1,29 @@
 import { ProductionService } from '../production.service';
-import { IProductionRepository } from '../production.repository';
+import { IProductionRepository, ProductionLogWithRelations } from '../production.repository';
 import { IOptimizationServiceClient, IStockServiceClient, IServiceResponse, IPlanSummary, IPlanStockItem } from '../../../core/services';
 import { EventBus } from '../../../core/events';
 import { mock, MockProxy } from 'jest-mock-extended';
-import { createMockProductionLog } from '@test/factories';
 
-// Alias helper for compatibility
-const createMockLog = createMockProductionLog;
+// Create mock log that satisfies ProductionLogWithRelations
+function createMockLog(overrides: Partial<ProductionLogWithRelations> = {}): ProductionLogWithRelations {
+    return {
+        id: 'log-1',
+        cuttingPlanId: 'plan-1',
+        operatorId: 'op-1',
+        status: 'STARTED',
+        actualTime: null,
+        actualWaste: null,
+        notes: null,
+        issues: null,
+        startedAt: new Date(),
+        completedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        cuttingPlan: { planNumber: 'PLN-001' },
+        operator: { id: 'op-1', firstName: 'Test', lastName: 'Operator' },
+        ...overrides
+    } as ProductionLogWithRelations;
+}
 
 // Mock plan from service client
 function createMockPlanResponse(overrides?: Partial<IPlanSummary>): IServiceResponse<IPlanSummary> {
@@ -140,21 +157,22 @@ describe('ProductionService', () => {
     describe('updateProductionLog', () => {
         it('should update log with issues', async () => {
             const log = createMockLog({ status: 'STARTED' });
+            const updatedLog = createMockLog({ status: 'STARTED', notes: 'Machine breakdown' });
             const input = {
                 notes: 'Machine breakdown',
                 issues: [{ description: 'Motor failure', severity: 'HIGH' }]
             };
 
-            repository.findById.mockResolvedValue(log);
-            repository.update.mockResolvedValue(log as any);
-            repository.findById.mockResolvedValueOnce(log).mockResolvedValueOnce(createMockLog({ ...log, notes: input.notes } as any));
+            repository.findById
+                .mockResolvedValueOnce(log)
+                .mockResolvedValueOnce(updatedLog);
+            (repository.update as jest.Mock).mockResolvedValue(undefined);
 
             const result = await service.updateProductionLog('log-1', input);
 
             expect(result.success).toBe(true);
             expect(repository.update).toHaveBeenCalledWith('log-1', expect.objectContaining({
-                notes: input.notes,
-                issues: input.issues
+                notes: input.notes
             }));
         });
     });

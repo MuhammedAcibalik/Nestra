@@ -7,7 +7,7 @@
  *
  * Properly typed without any usage
  */
-import { IStockService, IStockItemDto, IStockMovementDto, IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter, IResult, IEventPublisher } from '../../core/interfaces';
+import { IStockService, IStockItemDto, IStockMovementDto, IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter, IResult, IEventPublisher, ILowStockAlert, IRegisterWasteInput } from '../../core/interfaces';
 import { IStockRepository } from './stock.repository';
 export declare class StockService implements IStockService {
     private readonly stockRepository;
@@ -24,5 +24,19 @@ export declare class StockService implements IStockService {
     private validateCreateInput;
     private publishEvent;
     private getErrorMessage;
+    /**
+     * Check all stock items and notify for low stock
+     * Returns list of generated alerts
+     */
+    checkAndNotifyLowStock(): Promise<IResult<ILowStockAlert[]>>;
+    /**
+     * Get all low stock items based on threshold
+     */
+    getLowStockItems(threshold?: number): Promise<IResult<IStockItemDto[]>>;
+    /**
+     * Register waste piece from cutting as new stock item
+     * Automatically creates stock entry with WASTE_REUSE movement
+     */
+    registerWastePiece(data: IRegisterWasteInput): Promise<IResult<IStockItemDto>>;
 }
 //# sourceMappingURL=stock.service.d.ts.map

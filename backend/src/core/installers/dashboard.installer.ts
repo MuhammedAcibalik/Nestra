@@ -9,9 +9,9 @@ export const dashboardInstaller: IModuleInstaller = {
     name: 'dashboard',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, authMiddleware } = context;
+        const { db, authMiddleware } = context;
 
-        const repository = new DashboardRepository(prisma);
+        const repository = new DashboardRepository(db);
         const service = new DashboardService(repository);
         const controller = new DashboardController(service);
 

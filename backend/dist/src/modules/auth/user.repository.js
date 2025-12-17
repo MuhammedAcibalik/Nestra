@@ -1,39 +1,53 @@
 "use strict";
+/**
+ * User Repository
+ * Migrated to Drizzle ORM
+ */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserRepository = void 0;
+const schema_1 = require("../../db/schema");
+const drizzle_orm_1 = require("drizzle-orm");
 class UserRepository {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    db;
+    constructor(db) {
+        this.db = db;
     }
     async findById(id) {
-        return this.prisma.user.findUnique({ where: { id } });
+        const result = await this.db.query.users.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.users.id, id)
+        });
+        return result ?? null;
     }
     async findByEmail(email) {
-        return this.prisma.user.findUnique({
-            where: { email },
-            include: { role: true }
+        const result = await this.db.query.users.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.users.email, email),
+            with: { role: true }
         });
+        return result ?? null;
     }
     async create(data) {
-        return this.prisma.user.create({
-            data: {
-                email: data.email,
-                password: data.password,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                role: {
-                    connect: { name: 'OPERATOR' }
-                }
-            },
-            include: { role: true }
+        // Find default role
+        const defaultRole = await this.db.query.roles.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.roles.name, 'OPERATOR')
         });
+        if (!defaultRole) {
+            throw new Error('Default role OPERATOR not found');
+        }
+        const [user] = await this.db.insert(schema_1.users).values({
+            email: data.email,
+            password: data.password,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            roleId: defaultRole.id
+        }).returning();
+        return { ...user, role: defaultRole };
     }
     async update(id, data) {
-        return this.prisma.user.update({
-            where: { id },
-            data
-        });
+        const [result] = await this.db.update(schema_1.users)
+            .set({ ...data, updatedAt: new Date() })
+            .where((0, drizzle_orm_1.eq)(schema_1.users.id, id))
+            .returning();
+        return result;
     }
 }
 exports.UserRepository = UserRepository;

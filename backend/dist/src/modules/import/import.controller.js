@@ -63,7 +63,7 @@ class ImportController {
                 return;
             }
             // Get user ID from auth
-            const userId = req.user?.id;
+            const userId = req.user?.id ?? req.user?.userId;
             if (!userId) {
                 res.status(401).json({
                     success: false,

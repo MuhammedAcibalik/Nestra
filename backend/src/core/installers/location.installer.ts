@@ -10,9 +10,9 @@ export const locationInstaller: IModuleInstaller = {
     name: 'location',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new LocationRepository(prisma);
+        const repository = new LocationRepository(db);
 
         const serviceHandler = new LocationServiceHandler(repository);
         registry.register('location', serviceHandler);

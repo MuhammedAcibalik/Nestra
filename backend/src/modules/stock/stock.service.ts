@@ -22,7 +22,9 @@ import {
     failure,
     IDomainEvent,
     IEventPublisher,
-    IMaterialDto
+    IMaterialDto,
+    ILowStockAlert,
+    IRegisterWasteInput
 } from '../../core/interfaces';
 import { IStockRepository, StockItemWithRelations } from './stock.repository';
 
@@ -315,4 +317,146 @@ export class StockService implements IStockService {
         }
         return String(error);
     }
+
+    // ==================== STOCK ALERTS ====================
+
+    /**
+     * Check all stock items and notify for low stock
+     * Returns list of generated alerts
+     */
+    async checkAndNotifyLowStock(): Promise<IResult<ILowStockAlert[]>> {
+        try {
+            const items = await this.stockRepository.findAll();
+            const alerts: ILowStockAlert[] = [];
+            const DEFAULT_MIN_QTY = 5; // Default minimum quantity threshold
+
+            for (const item of items) {
+                const minQty = DEFAULT_MIN_QTY; // Could be per-item config
+                let alertLevel: 'WARNING' | 'CRITICAL' | 'OUT_OF_STOCK' | null = null;
+
+                if (item.quantity <= 0) {
+                    alertLevel = 'OUT_OF_STOCK';
+                } else if (item.quantity <= minQty) {
+                    alertLevel = 'CRITICAL';
+                } else if (item.quantity <= minQty * 1.5) {
+                    alertLevel = 'WARNING';
+                }
+
+                if (alertLevel) {
+                    const alert: ILowStockAlert = {
+                        stockItemId: item.id,
+                        stockCode: item.code,
+                        stockName: item.name,
+                        materialTypeName: item.materialType?.name ?? 'Unknown',
+                        currentQuantity: item.quantity,
+                        minQuantity: minQty,
+                        alertLevel,
+                        notifiedAt: new Date()
+                    };
+                    alerts.push(alert);
+
+                    // Publish event for each alert
+                    await this.publishEvent('StockLowAlert', item.id, {
+                        alertLevel,
+                        currentQuantity: item.quantity,
+                        minQuantity: minQty
+                    });
+
+                    console.log(`[Stock] ${alertLevel} alert: ${item.code} (${item.quantity}/${minQty})`);
+                }
+            }
+
+            return success(alerts);
+        } catch (error) {
+            return failure({
+                code: 'STOCK_ALERT_ERROR',
+                message: 'Stok uyarı kontrolü sırasında hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    /**
+     * Get all low stock items based on threshold
+     */
+    async getLowStockItems(threshold = 5): Promise<IResult<IStockItemDto[]>> {
+        try {
+            const items = await this.stockRepository.findAll({ minQuantity: threshold });
+            const lowItems = items.filter(item => item.quantity <= threshold);
+            return success(lowItems.map(item => this.toDto(item)));
+        } catch (error) {
+            return failure({
+                code: 'STOCK_FETCH_ERROR',
+                message: 'Düşük stok kalemleri getirilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    // ==================== WASTE PIECE REGISTRATION ====================
+
+    /**
+     * Register waste piece from cutting as new stock item
+     * Automatically creates stock entry with WASTE_REUSE movement
+     */
+    async registerWastePiece(data: IRegisterWasteInput): Promise<IResult<IStockItemDto>> {
+        try {
+            // Get source stock to inherit material type and thickness
+            const sourceStock = await this.stockRepository.findById(data.sourceStockItemId);
+            if (!sourceStock) {
+                return failure({
+                    code: 'SOURCE_NOT_FOUND',
+                    message: 'Kaynak stok kalemi bulunamadı'
+                });
+            }
+
+            // Generate unique waste code
+            const wasteCode = `FIRE-${sourceStock.code}-${Date.now().toString(36).toUpperCase()}`;
+
+            // Determine stock type based on dimensions
+            const stockType = (data.length && !data.width && !data.height) ? 'BAR_1D' : 'SHEET_2D';
+
+            // Create new stock item for waste
+            const wasteItem = await this.stockRepository.create({
+                code: wasteCode,
+                name: `Fire: ${sourceStock.name}`,
+                materialTypeId: sourceStock.materialTypeId,
+                thickness: sourceStock.thickness,
+                stockType: stockType as 'BAR_1D' | 'SHEET_2D',
+                length: data.length,
+                width: data.width,
+                height: data.height,
+                quantity: data.quantity,
+                isFromWaste: true
+            });
+
+            // Create WASTE_REUSE movement
+            await this.stockRepository.createMovement({
+                stockItemId: wasteItem.id,
+                movementType: 'WASTE_REUSE',
+                quantity: data.quantity,
+                notes: data.notes ?? `Fire parçası kaydı (Kaynak: ${sourceStock.code})`,
+                productionLogId: data.productionLogId
+            });
+
+            await this.publishEvent('WastePieceRegistered', wasteItem.id, {
+                sourceStockId: data.sourceStockItemId,
+                sourceCode: sourceStock.code,
+                wasteCode,
+                quantity: data.quantity
+            });
+
+            console.log(`[Stock] Waste piece registered: ${wasteCode} from ${sourceStock.code}`);
+
+            const fullItem = await this.stockRepository.findById(wasteItem.id);
+            return success(this.toDto(fullItem!));
+        } catch (error) {
+            return failure({
+                code: 'WASTE_REGISTER_ERROR',
+                message: 'Fire parçası kaydedilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
 }
+

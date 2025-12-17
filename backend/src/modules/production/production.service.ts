@@ -11,6 +11,12 @@ import {
     IProductionLogFilter,
     IUpdateProductionInput,
     ICompleteProductionInput,
+    IMachineWorkFilter,
+    IMachineWorkSummary,
+    ICreateDowntimeInput,
+    IDowntimeLogDto,
+    ICreateQualityCheckInput,
+    IQualityCheckDto,
     ICuttingPlanDto,
     IResult,
     success,
@@ -20,7 +26,7 @@ import {
     IOptimizationServiceClient,
     IStockServiceClient
 } from '../../core/services';
-import { IProductionRepository, ProductionLogWithRelations } from './production.repository';
+import { IProductionRepository, ProductionLogWithRelations, DowntimeLogWithRelations, QualityCheckWithRelations } from './production.repository';
 import { EventBus, DomainEvents } from '../../core/events';
 
 export class ProductionService implements IProductionService {
@@ -145,7 +151,7 @@ export class ProductionService implements IProductionService {
 
             await this.repository.update(logId, {
                 notes: data.notes,
-                issues: data.issues
+                issues: data.issues ? { items: data.issues } : undefined
             });
 
             const updatedLog = await this.repository.findById(logId);
@@ -216,6 +222,68 @@ export class ProductionService implements IProductionService {
             return failure({
                 code: 'LOGS_FETCH_ERROR',
                 message: 'Üretim kayıtları getirilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    async getMachineWorkSummary(_filter?: IMachineWorkFilter): Promise<IResult<IMachineWorkSummary[]>> {
+        try {
+            // Get all completed production logs
+            const logs = await this.repository.findAll({ status: 'COMPLETED' });
+
+            // Group by machine - for now, we'll aggregate by the plan's assigned machine
+            // This requires data from the cutting plan which has machineId
+            const machineWorkMap = new Map<string, {
+                machineId: string;
+                machineName: string;
+                machineCode: string;
+                totalMinutes: number;
+                logCount: number;
+            }>();
+
+            for (const log of logs) {
+                if (!log.actualTime) continue;
+
+                // Get machine info from the cutting plan (via optimization client)
+                const planId = log.cuttingPlanId;
+                const planResult = await this.optimizationClient.getPlanById(planId);
+
+                if (!planResult.success || !planResult.data?.assignedMachineId) continue;
+
+                const machineId = planResult.data.assignedMachineId;
+                const existing = machineWorkMap.get(machineId);
+
+                if (existing) {
+                    existing.totalMinutes += log.actualTime;
+                    existing.logCount += 1;
+                } else {
+                    machineWorkMap.set(machineId, {
+                        machineId,
+                        machineName: planResult.data.assignedMachineName ?? 'Unknown',
+                        machineCode: planResult.data.assignedMachineCode ?? machineId,
+                        totalMinutes: log.actualTime,
+                        logCount: 1
+                    });
+                }
+            }
+
+            // Convert to result array
+            const summaries: IMachineWorkSummary[] = Array.from(machineWorkMap.values()).map(entry => ({
+                machineId: entry.machineId,
+                machineName: entry.machineName,
+                machineCode: entry.machineCode,
+                totalWorkMinutes: entry.totalMinutes,
+                totalWorkHours: Math.round((entry.totalMinutes / 60) * 100) / 100,
+                completedLogs: entry.logCount,
+                avgTimePerLog: entry.logCount > 0 ? Math.round(entry.totalMinutes / entry.logCount) : 0
+            }));
+
+            return success(summaries);
+        } catch (error) {
+            return failure({
+                code: 'MACHINE_WORK_SUMMARY_ERROR',
+                message: 'Makine çalışma özeti hesaplanırken hata oluştu',
                 details: { error: this.getErrorMessage(error) }
             });
         }
@@ -312,5 +380,113 @@ export class ProductionService implements IProductionService {
             return error.message;
         }
         return String(error);
+    }
+
+    // ==================== DOWNTIME METHODS ====================
+
+    async recordDowntime(input: ICreateDowntimeInput): Promise<IResult<IDowntimeLogDto>> {
+        try {
+            const downtime = await this.repository.createDowntime(input);
+            return success(this.toDowntimeDto({ ...downtime, machine: null }));
+        } catch (error) {
+            return failure({
+                code: 'DOWNTIME_RECORD_ERROR',
+                message: 'Duruş kaydı oluşturulurken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    async endDowntime(downtimeId: string): Promise<IResult<IDowntimeLogDto>> {
+        try {
+            const endedAt = new Date();
+            // Get original downtime to calculate duration
+            const downtimes = await this.repository.findDowntimesByLogId('');
+            const original = downtimes.find((d) => d.id === downtimeId);
+            const durationMinutes = original
+                ? (endedAt.getTime() - original.startedAt.getTime()) / 60000
+                : 0;
+
+            const updated = await this.repository.updateDowntime(downtimeId, endedAt, durationMinutes);
+            return success(this.toDowntimeDto({ ...updated, machine: null }));
+        } catch (error) {
+            return failure({
+                code: 'DOWNTIME_END_ERROR',
+                message: 'Duruş kaydı sonlandırılırken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    async getProductionDowntimes(logId: string): Promise<IResult<IDowntimeLogDto[]>> {
+        try {
+            const downtimes = await this.repository.findDowntimesByLogId(logId);
+            return success(downtimes.map((d) => this.toDowntimeDto(d)));
+        } catch (error) {
+            return failure({
+                code: 'DOWNTIME_FETCH_ERROR',
+                message: 'Duruş kayıtları getirilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    private toDowntimeDto(log: DowntimeLogWithRelations): IDowntimeLogDto {
+        return {
+            id: log.id,
+            productionLogId: log.productionLogId,
+            machineId: log.machineId ?? undefined,
+            machineName: log.machine?.name ?? undefined,
+            reason: log.reason,
+            startedAt: log.startedAt,
+            endedAt: log.endedAt ?? undefined,
+            durationMinutes: log.durationMinutes ?? undefined,
+            notes: log.notes ?? undefined
+        };
+    }
+
+    // ==================== QUALITY CHECK METHODS ====================
+
+    async recordQualityCheck(input: ICreateQualityCheckInput): Promise<IResult<IQualityCheckDto>> {
+        try {
+            const qc = await this.repository.createQualityCheck(input);
+            return success(this.toQualityCheckDto({ ...qc, inspector: null }));
+        } catch (error) {
+            return failure({
+                code: 'QC_RECORD_ERROR',
+                message: 'Kalite kontrol kaydı oluşturulurken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    async getQualityChecks(logId: string): Promise<IResult<IQualityCheckDto[]>> {
+        try {
+            const checks = await this.repository.findQualityChecksByLogId(logId);
+            return success(checks.map((c) => this.toQualityCheckDto(c)));
+        } catch (error) {
+            return failure({
+                code: 'QC_FETCH_ERROR',
+                message: 'Kalite kontrol kayıtları getirilirken hata oluştu',
+                details: { error: this.getErrorMessage(error) }
+            });
+        }
+    }
+
+    private toQualityCheckDto(qc: QualityCheckWithRelations): IQualityCheckDto {
+        return {
+            id: qc.id,
+            productionLogId: qc.productionLogId,
+            result: qc.result,
+            passedCount: qc.passedCount,
+            failedCount: qc.failedCount,
+            defectTypes: Array.isArray(qc.defectTypes) ? qc.defectTypes as string[] : undefined,
+            inspectorId: qc.inspectorId ?? undefined,
+            inspectorName: qc.inspector
+                ? `${qc.inspector.firstName} ${qc.inspector.lastName}`
+                : undefined,
+            checkedAt: qc.checkedAt,
+            notes: qc.notes ?? undefined
+        };
     }
 }

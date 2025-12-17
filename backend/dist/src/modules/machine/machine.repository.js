@@ -1,139 +1,120 @@
 "use strict";
 /**
  * Machine Repository
- * Following SRP - Only handles Machine data access
+ * Migrated to Drizzle ORM
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MachineRepository = void 0;
+const schema_1 = require("../../db/schema");
+const drizzle_orm_1 = require("drizzle-orm");
 class MachineRepository {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    db;
+    constructor(db) {
+        this.db = db;
     }
     async findById(id) {
-        return this.prisma.machine.findUnique({
-            where: { id },
-            include: {
-                location: { select: { id: true, name: true } },
-                compatibilities: {
-                    include: {
-                        materialType: { select: { id: true, name: true } },
-                        thicknessRange: { select: { id: true, name: true } }
-                    }
-                },
-                _count: { select: { compatibilities: true, cuttingPlans: true } }
+        const result = await this.db.query.machines.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.machines.id, id),
+            with: {
+                compatibilities: true,
+                location: true
             }
+        });
+        return result ?? null;
+    }
+    async findAll(filter) {
+        const conditions = [];
+        if (filter?.locationId)
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.machines.locationId, filter.locationId));
+        if (filter?.machineType)
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.machines.machineType, filter.machineType));
+        if (filter?.isActive !== undefined)
+            conditions.push((0, drizzle_orm_1.eq)(schema_1.machines.isActive, filter.isActive));
+        return this.db.query.machines.findMany({
+            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            with: {
+                compatibilities: true,
+                location: true
+            },
+            orderBy: [(0, drizzle_orm_1.asc)(schema_1.machines.name)]
         });
     }
     async findByCode(code) {
-        return this.prisma.machine.findUnique({ where: { code } });
-    }
-    async findAll(filter) {
-        const where = {};
-        if (filter?.machineType)
-            where.machineType = filter.machineType;
-        if (filter?.isActive !== undefined)
-            where.isActive = filter.isActive;
-        if (filter?.locationId)
-            where.locationId = filter.locationId;
-        return this.prisma.machine.findMany({
-            where,
-            include: {
-                location: { select: { id: true, name: true } },
-                _count: { select: { compatibilities: true, cuttingPlans: true } }
-            },
-            orderBy: { name: 'asc' }
+        const result = await this.db.query.machines.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.machines.code, code)
         });
+        return result ?? null;
     }
     async create(data) {
-        return this.prisma.machine.create({
-            data: {
-                code: data.code,
-                name: data.name,
-                description: data.description,
-                machineType: data.machineType,
-                maxLength: data.maxLength,
-                maxWidth: data.maxWidth,
-                maxHeight: data.maxHeight,
-                minCutLength: data.minCutLength,
-                kerf: data.kerf,
-                onlyGuillotine: data.onlyGuillotine ?? false,
-                locationId: data.locationId
-            }
-        });
+        const [result] = await this.db.insert(schema_1.machines).values({
+            code: data.code,
+            name: data.name,
+            description: data.description,
+            machineType: data.machineType,
+            maxLength: data.maxLength,
+            maxWidth: data.maxWidth,
+            maxHeight: data.maxHeight,
+            minCutLength: data.minCutLength,
+            kerf: data.kerf,
+            onlyGuillotine: data.onlyGuillotine ?? false,
+            locationId: data.locationId
+        }).returning();
+        return result;
     }
     async update(id, data) {
-        return this.prisma.machine.update({
-            where: { id },
-            data: {
-                name: data.name,
-                description: data.description,
-                maxLength: data.maxLength,
-                maxWidth: data.maxWidth,
-                maxHeight: data.maxHeight,
-                minCutLength: data.minCutLength,
-                kerf: data.kerf,
-                onlyGuillotine: data.onlyGuillotine,
-                locationId: data.locationId,
-                isActive: data.isActive
-            }
-        });
+        const [result] = await this.db.update(schema_1.machines)
+            .set({
+            name: data.name,
+            description: data.description,
+            maxLength: data.maxLength,
+            maxWidth: data.maxWidth,
+            minCutLength: data.minCutLength,
+            kerf: data.kerf,
+            isActive: data.isActive,
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.machines.id, id))
+            .returning();
+        return result;
     }
     async delete(id) {
-        await this.prisma.machine.delete({ where: { id } });
+        await this.db.delete(schema_1.machines).where((0, drizzle_orm_1.eq)(schema_1.machines.id, id));
     }
     async addCompatibility(machineId, data) {
-        return this.prisma.machineCompatibility.create({
-            data: {
-                machineId,
-                materialTypeId: data.materialTypeId,
-                thicknessRangeId: data.thicknessRangeId,
-                cuttingSpeed: data.cuttingSpeed,
-                costPerUnit: data.costPerUnit
+        const [result] = await this.db.insert(schema_1.machineCompatibilities).values({
+            machineId,
+            materialTypeId: data.materialTypeId,
+            thicknessRangeId: data.thicknessRangeId,
+            cuttingSpeed: data.cuttingSpeed,
+            costPerUnit: data.costPerUnit
+        }).returning();
+        return result;
+    }
+    async getCompatibilities(machineId) {
+        return this.db.query.machineCompatibilities.findMany({
+            where: (0, drizzle_orm_1.eq)(schema_1.machineCompatibilities.machineId, machineId),
+            with: {
+                materialType: true,
+                thicknessRange: true
             }
         });
     }
     async removeCompatibility(compatibilityId) {
-        await this.prisma.machineCompatibility.delete({ where: { id: compatibilityId } });
-    }
-    async getCompatibilities(machineId) {
-        return this.prisma.machineCompatibility.findMany({
-            where: { machineId },
-            include: {
-                materialType: { select: { id: true, name: true } },
-                thicknessRange: { select: { id: true, name: true } }
-            }
-        });
+        await this.db.delete(schema_1.machineCompatibilities).where((0, drizzle_orm_1.eq)(schema_1.machineCompatibilities.id, compatibilityId));
     }
     async findCompatibleMachines(materialTypeId, thickness) {
-        return this.prisma.machine.findMany({
-            where: {
-                isActive: true,
-                compatibilities: {
-                    some: {
-                        materialTypeId,
-                        OR: [
-                            { thicknessRangeId: null },
-                            {
-                                thicknessRange: {
-                                    minThickness: { lte: thickness },
-                                    maxThickness: { gte: thickness }
-                                }
-                            }
-                        ]
-                    }
-                }
-            },
-            include: {
-                location: { select: { id: true, name: true } },
-                compatibilities: {
-                    where: { materialTypeId },
-                    include: {
-                        materialType: { select: { id: true, name: true } },
-                        thicknessRange: { select: { id: true, name: true } }
-                    }
-                },
-                _count: { select: { compatibilities: true, cuttingPlans: true } }
+        // Find machines that have compatible material types
+        const compatibleMachineIds = await this.db.select({ machineId: schema_1.machineCompatibilities.machineId })
+            .from(schema_1.machineCompatibilities)
+            .where((0, drizzle_orm_1.eq)(schema_1.machineCompatibilities.materialTypeId, materialTypeId));
+        if (compatibleMachineIds.length === 0)
+            return [];
+        const ids = compatibleMachineIds.map(c => c.machineId);
+        return this.db.query.machines.findMany({
+            where: (0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.machines.isActive, true), (0, drizzle_orm_1.or)(...ids.map(id => (0, drizzle_orm_1.eq)(schema_1.machines.id, id)))),
+            with: {
+                compatibilities: true,
+                location: true
             }
         });
     }

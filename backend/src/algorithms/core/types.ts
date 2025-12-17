@@ -4,7 +4,17 @@
  * Following DRY principle - single source of truth
  */
 
-// ==================== GENERIC TYPES ====================
+// ==================== GRAIN DIRECTION ====================
+
+/**
+ * Grain direction for wood/material patterns
+ * HORIZONTAL: Pattern runs parallel to width
+ * VERTICAL: Pattern runs parallel to height
+ * NONE: No grain constraint (can rotate freely)
+ */
+export type GrainDirection = 'HORIZONTAL' | 'VERTICAL' | 'NONE';
+
+// ==================== GENERIC TYPES ======================================
 
 /**
  * Base interface for expanded pieces (after quantity expansion)
@@ -29,6 +39,7 @@ export interface IExpanded2DPiece extends IExpandedPieceBase {
     readonly width: number;
     readonly height: number;
     readonly canRotate: boolean;
+    readonly grainDirection?: GrainDirection;
 }
 
 // ==================== STOCK TRACKING ====================
@@ -151,6 +162,7 @@ export interface I1DAlgorithmOptions extends IBaseAlgorithmOptions {
  */
 export interface I2DAlgorithmOptions extends IBaseAlgorithmOptions {
     readonly allowRotation: boolean;
+    readonly respectGrainDirection?: boolean;
 }
 
 // ==================== STATISTICS ====================

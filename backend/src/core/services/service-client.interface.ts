@@ -55,6 +55,9 @@ export interface IPlanSummary {
     totalWaste: number;
     wastePercentage: number;
     stockUsedCount: number;
+    assignedMachineId?: string;
+    assignedMachineName?: string;
+    assignedMachineCode?: string;
 }
 
 export interface IPlanStockItem {

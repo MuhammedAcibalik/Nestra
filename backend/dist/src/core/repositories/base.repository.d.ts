@@ -1,74 +1,26 @@
 /**
- * Base Repository Implementation using Prisma
+ * Base Repository Implementation using Drizzle ORM
  * Following Open/Closed Principle (OCP)
- *
- * Note: This is an abstract base that requires concrete implementations
- * to provide model access in a type-safe way.
  */
-import { PrismaClient } from '@prisma/client';
+import { Database } from '../../db';
 import { IBaseRepository } from '../interfaces/repository.interface';
 import { IEntity, IPaginatedResult, IPaginationOptions } from '../interfaces';
+import { PgTableWithColumns } from 'drizzle-orm/pg-core';
 /**
- * Generic delegate type for Prisma model operations
+ * Abstract base repository for Drizzle ORM
+ * Provides common CRUD operations
  */
-interface PrismaDelegate {
-    findUnique(args: {
-        where: {
-            id: string;
-        };
-    }): Promise<unknown>;
-    findFirst(args: {
-        where: unknown;
-    }): Promise<unknown>;
-    findMany(args: {
-        where?: unknown;
-        skip?: number;
-        take?: number;
-        orderBy?: unknown;
-    }): Promise<unknown[]>;
-    create(args: {
-        data: unknown;
-    }): Promise<unknown>;
-    createMany(args: {
-        data: unknown[];
-        skipDuplicates?: boolean;
-    }): Promise<{
-        count: number;
-    }>;
-    update(args: {
-        where: {
-            id: string;
-        };
-        data: unknown;
-    }): Promise<unknown>;
-    updateMany(args: {
-        where: unknown;
-        data: unknown;
-    }): Promise<{
-        count: number;
-    }>;
-    delete(args: {
-        where: {
-            id: string;
-        };
-    }): Promise<unknown>;
-    deleteMany(args: {
-        where: unknown;
-    }): Promise<{
-        count: number;
-    }>;
-    count(args?: {
-        where?: unknown;
-    }): Promise<number>;
-}
 export declare abstract class BaseRepository<T extends IEntity, CreateInput, UpdateInput> implements IBaseRepository<T, CreateInput, UpdateInput> {
-    protected prisma: PrismaClient;
-    constructor(prisma: PrismaClient);
+    protected db: Database;
+    constructor(db: Database);
     /**
-     * Abstract method to get the Prisma model delegate
-     * Concrete implementations must provide this
+     * Abstract method to get the Drizzle table
      */
-    protected abstract getModel(): PrismaDelegate;
+    protected abstract getTable(): PgTableWithColumns<any>;
+    /**
+     * Get ID column reference
+     */
+    protected getIdColumn(): any;
     findById(id: string): Promise<T | null>;
     findOne(filter: Partial<T>): Promise<T | null>;
     findMany(filter?: Partial<T>, pagination?: IPaginationOptions): Promise<T[]>;
@@ -82,5 +34,4 @@ export declare abstract class BaseRepository<T extends IEntity, CreateInput, Upd
     count(filter?: Partial<T>): Promise<number>;
     exists(filter: Partial<T>): Promise<boolean>;
 }
-export {};
 //# sourceMappingURL=base.repository.d.ts.map

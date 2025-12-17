@@ -248,12 +248,12 @@ export class ImportService implements IImportService {
             const date = new Date();
             const orderNumber = `ORD-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}-${String(orderCount + 1).padStart(5, '0')}`;
 
-            const order = await this.repository.createOrderWithItems(
+            const order = await this.repository.createOrderWithItems({
                 orderNumber,
-                userId,
-                orderData.notes ?? '',
-                validItems
-            );
+                createdById: userId,
+                notes: orderData.notes ?? '',
+                items: validItems
+            });
 
             logger.info('Import completed', {
                 orderId: order.id,

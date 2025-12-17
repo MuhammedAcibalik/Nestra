@@ -11,6 +11,16 @@ export interface IProductionService {
     updateProductionLog(logId: string, data: IUpdateProductionInput): Promise<IResult<IProductionLogDto>>;
     completeProduction(logId: string, data: ICompleteProductionInput): Promise<IResult<IProductionLogDto>>;
     getProductionLogs(filter?: IProductionLogFilter): Promise<IResult<IProductionLogDto[]>>;
+    getMachineWorkSummary(filter?: IMachineWorkFilter): Promise<IResult<IMachineWorkSummary[]>>;
+
+    // Downtime tracking
+    recordDowntime(input: ICreateDowntimeInput): Promise<IResult<IDowntimeLogDto>>;
+    endDowntime(downtimeId: string): Promise<IResult<IDowntimeLogDto>>;
+    getProductionDowntimes(logId: string): Promise<IResult<IDowntimeLogDto[]>>;
+
+    // Quality control
+    recordQualityCheck(input: ICreateQualityCheckInput): Promise<IResult<IQualityCheckDto>>;
+    getQualityChecks(logId: string): Promise<IResult<IQualityCheckDto[]>>;
 }
 
 export interface IProductionPlanFilter {
@@ -26,6 +36,25 @@ export interface IProductionLogFilter {
     operatorId?: string;
     startDate?: Date;
     endDate?: Date;
+}
+
+/** Filter for machine work hours query */
+export interface IMachineWorkFilter {
+    machineId?: string;
+    startDate?: Date;
+    endDate?: Date;
+}
+
+/** Machine work hours summary */
+export interface IMachineWorkSummary {
+    machineId: string;
+    machineName: string;
+    machineCode: string;
+    totalWorkMinutes: number;
+    totalWorkHours: number;
+    completedLogs: number;
+    avgTimePerLog: number;
+    idleMinutes?: number;
 }
 
 export interface IProductionLogDto {
@@ -56,3 +85,68 @@ export interface ICompleteProductionInput {
     actualTime: number;
     notes?: string;
 }
+
+// ==================== DOWNTIME INTERFACES ====================
+
+/** Downtime reason codes */
+export type DowntimeReason =
+    | 'BREAKDOWN'       // Arıza
+    | 'MAINTENANCE'     // Bakım
+    | 'MATERIAL_WAIT'   // Malzeme bekleme
+    | 'TOOL_CHANGE'     // Takım değişimi
+    | 'OPERATOR_BREAK'  // Operatör molası
+    | 'SETUP'           // Kurulum
+    | 'OTHER';          // Diğer
+
+/** Input for creating a downtime record */
+export interface ICreateDowntimeInput {
+    productionLogId: string;
+    machineId?: string;
+    reason: DowntimeReason;
+    notes?: string;
+}
+
+/** Downtime log DTO */
+export interface IDowntimeLogDto {
+    id: string;
+    productionLogId: string;
+    machineId?: string;
+    machineName?: string;
+    reason: DowntimeReason;
+    startedAt: Date;
+    endedAt?: Date;
+    durationMinutes?: number;
+    notes?: string;
+}
+
+// ==================== QUALITY CONTROL INTERFACES ====================
+
+/** Quality control result */
+export type QcResult = 'PASS' | 'FAIL' | 'PARTIAL';
+
+/** Input for creating a quality check */
+export interface ICreateQualityCheckInput {
+    productionLogId: string;
+    result: QcResult;
+    passedCount: number;
+    failedCount: number;
+    defectTypes?: string[];
+    inspectorId?: string;
+    notes?: string;
+}
+
+/** Quality check DTO */
+export interface IQualityCheckDto {
+    id: string;
+    productionLogId: string;
+    result: QcResult;
+    passedCount: number;
+    failedCount: number;
+    defectTypes?: string[];
+    inspectorId?: string;
+    inspectorName?: string;
+    checkedAt: Date;
+    notes?: string;
+}
+
+

@@ -1,9 +1,12 @@
 /**
  * Stock Repository
- * Following SRP - Only handles stock data access
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, StockItem, StockMovement } from '@prisma/client';
+import { Database } from '../../db';
+import { stockItems, stockMovements } from '../../db/schema';
 import { IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter } from '../../core/interfaces';
+export type StockItem = typeof stockItems.$inferSelect;
+export type StockMovement = typeof stockMovements.$inferSelect;
 export type StockItemWithRelations = StockItem & {
     materialType?: {
         id: string;
@@ -30,8 +33,8 @@ export interface IStockRepository {
     getMovements(filter?: IMovementFilter): Promise<StockMovement[]>;
 }
 export declare class StockRepository implements IStockRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    constructor(db: Database);
     findById(id: string): Promise<StockItemWithRelations | null>;
     findAll(filter?: IStockFilter): Promise<StockItemWithRelations[]>;
     findByCode(code: string): Promise<StockItem | null>;

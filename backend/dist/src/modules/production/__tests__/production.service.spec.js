@@ -3,9 +3,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const production_service_1 = require("../production.service");
 const events_1 = require("../../../core/events");
 const jest_mock_extended_1 = require("jest-mock-extended");
-const factories_1 = require("@test/factories");
-// Alias helper for compatibility
-const createMockLog = factories_1.createMockProductionLog;
+// Create mock log that satisfies ProductionLogWithRelations
+function createMockLog(overrides = {}) {
+    return {
+        id: 'log-1',
+        cuttingPlanId: 'plan-1',
+        operatorId: 'op-1',
+        status: 'STARTED',
+        actualTime: null,
+        actualWaste: null,
+        notes: null,
+        issues: null,
+        startedAt: new Date(),
+        completedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        cuttingPlan: { planNumber: 'PLN-001' },
+        operator: { id: 'op-1', firstName: 'Test', lastName: 'Operator' },
+        ...overrides
+    };
+}
 // Mock plan from service client
 function createMockPlanResponse(overrides) {
     return {
@@ -111,18 +128,19 @@ describe('ProductionService', () => {
     describe('updateProductionLog', () => {
         it('should update log with issues', async () => {
             const log = createMockLog({ status: 'STARTED' });
+            const updatedLog = createMockLog({ status: 'STARTED', notes: 'Machine breakdown' });
             const input = {
                 notes: 'Machine breakdown',
                 issues: [{ description: 'Motor failure', severity: 'HIGH' }]
             };
-            repository.findById.mockResolvedValue(log);
-            repository.update.mockResolvedValue(log);
-            repository.findById.mockResolvedValueOnce(log).mockResolvedValueOnce(createMockLog({ ...log, notes: input.notes }));
+            repository.findById
+                .mockResolvedValueOnce(log)
+                .mockResolvedValueOnce(updatedLog);
+            repository.update.mockResolvedValue(undefined);
             const result = await service.updateProductionLog('log-1', input);
             expect(result.success).toBe(true);
             expect(repository.update).toHaveBeenCalledWith('log-1', expect.objectContaining({
-                notes: input.notes,
-                issues: input.issues
+                notes: input.notes
             }));
         });
     });

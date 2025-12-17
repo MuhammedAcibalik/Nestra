@@ -2,7 +2,7 @@
  * Order Service
  * Following SOLID principles - properly typed without any usage
  */
-import { IOrderService, IOrderDto, IOrderItemDto, IOrderFilter, ICreateOrderInput, IUpdateOrderInput, ICreateOrderItemInput, IColumnMapping, IResult } from '../../core/interfaces';
+import { IOrderService, IOrderDto, IOrderItemDto, IOrderFilter, ICreateOrderInput, IUpdateOrderInput, ICreateOrderItemInput, IColumnMapping, IResult, IOrderTemplateDto, ICreateTemplateInput, IUpdateTemplateInput } from '../../core/interfaces';
 import { IOrderRepository } from './order.repository';
 export declare class OrderService implements IOrderService {
     private readonly orderRepository;
@@ -20,5 +20,12 @@ export declare class OrderService implements IOrderService {
     private toDto;
     private toItemDto;
     private getErrorMessage;
+    private templates;
+    getTemplates(): Promise<IResult<IOrderTemplateDto[]>>;
+    getTemplateById(id: string): Promise<IResult<IOrderTemplateDto>>;
+    createTemplate(data: ICreateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
+    updateTemplate(id: string, data: IUpdateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
+    deleteTemplate(id: string): Promise<IResult<void>>;
+    createOrderFromTemplate(templateId: string, overrides: Partial<ICreateOrderInput>, userId: string): Promise<IResult<IOrderDto>>;
 }
 //# sourceMappingURL=order.service.d.ts.map

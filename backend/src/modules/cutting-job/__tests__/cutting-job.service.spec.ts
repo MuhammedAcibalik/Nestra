@@ -1,11 +1,7 @@
 import { CuttingJobService } from '../cutting-job.service';
-import { ICuttingJobRepository, CuttingJobWithRelations } from '../cutting-job.repository';
-import { createMockContext, MockContext } from '../../../core/test/prisma-mock';
+import { ICuttingJobRepository, CuttingJobWithRelations, CuttingJob } from '../cutting-job.repository';
 import { EventBus } from '../../../core/events';
 import { mock, MockProxy } from 'jest-mock-extended';
-
-// Don't mock the whole module, spyOn is used for EventBus
-// jest.mock('../../../core/events');
 
 const createMockJob = (overrides: Partial<CuttingJobWithRelations> = {}): CuttingJobWithRelations => ({
     id: 'job-1',
@@ -13,12 +9,9 @@ const createMockJob = (overrides: Partial<CuttingJobWithRelations> = {}): Cuttin
     materialTypeId: 'mat-1',
     thickness: 10,
     status: 'PENDING',
-    itemCount: 0,
-    scenarioCount: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     items: [],
-    scenarios: [],
     _count: { items: 0, scenarios: 0 },
     ...overrides
 } as CuttingJobWithRelations);
@@ -26,12 +19,10 @@ const createMockJob = (overrides: Partial<CuttingJobWithRelations> = {}): Cuttin
 describe('CuttingJobService', () => {
     let service: CuttingJobService;
     let repository: MockProxy<ICuttingJobRepository>;
-    let mockCtx: MockContext;
     let eventBusPublishSpy: jest.SpyInstance;
 
     beforeEach(() => {
         repository = mock<ICuttingJobRepository>();
-        mockCtx = createMockContext();
         service = new CuttingJobService(repository);
 
         // Mock EventBus.publish
@@ -73,21 +64,16 @@ describe('CuttingJobService', () => {
                 orderItemIds: ['item-1']
             };
 
-            const mockOrderItems = [{ id: 'item-1', quantity: 5 }];
-            const mockJob = createMockJob({ _count: { items: 1, scenarios: 0 } });
+            const mockJob = createMockJob({ _count: { items: 1, scenarios: 0 } }) as CuttingJob;
+            const mockJobWithRelations = createMockJob({ _count: { items: 1, scenarios: 0 } });
 
-            repository.getOrderItemsByIds.mockResolvedValue(mockOrderItems);
-            repository.create.mockResolvedValue(mockJob as unknown as import('@prisma/client').CuttingJob);
-            repository.findById.mockResolvedValue(mockJob);
+            repository.create.mockResolvedValue(mockJob);
+            repository.findById.mockResolvedValue(mockJobWithRelations);
 
             const result = await service.createJob(input);
 
             expect(result.success).toBe(true);
-            expect(repository.create).toHaveBeenCalledWith(
-                'mat-1',
-                10,
-                expect.any(Array)
-            );
+            expect(repository.create).toHaveBeenCalledWith(input);
 
             // Verify event
             expect(eventBusPublishSpy).toHaveBeenCalled();
@@ -123,9 +109,8 @@ describe('CuttingJobService', () => {
             const mockJob = createMockJob({ status: 'PENDING' });
             const updatedJob = createMockJob({ status: 'OPTIMIZING' });
 
-            repository.findById.mockResolvedValue(mockJob);
-            repository.updateStatus.mockResolvedValue(updatedJob as unknown as import('@prisma/client').CuttingJob);
             repository.findById.mockResolvedValueOnce(mockJob).mockResolvedValueOnce(updatedJob);
+            repository.updateStatus.mockResolvedValue(updatedJob as CuttingJob);
 
             const result = await service.updateJobStatus('job-1', 'OPTIMIZING');
 
@@ -179,13 +164,23 @@ describe('CuttingJobService', () => {
 
     describe('autoGenerateFromOrders', () => {
         it('should create new job for unassigned items', async () => {
-            repository.getUnassignedOrderItems.mockResolvedValue([
-                { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
-            ]);
+            const mockOrderItem = {
+                id: 'item-1',
+                materialTypeId: 'mat-1',
+                thickness: 10,
+                quantity: 5,
+                itemCode: 'I1',
+                itemName: 'Item 1',
+                length: 100,
+                width: 50,
+                height: 10,
+                geometryType: 'RECTANGLE'
+            };
+            repository.getUnassignedOrderItems.mockResolvedValue([mockOrderItem]);
             repository.findByMaterialAndThickness.mockResolvedValue([]);
 
             const mockJob = createMockJob();
-            repository.create.mockResolvedValue(mockJob);
+            repository.create.mockResolvedValue(mockJob as CuttingJob);
             repository.findById.mockResolvedValue(mockJob);
 
             const result = await service.autoGenerateFromOrders(true);
@@ -196,9 +191,20 @@ describe('CuttingJobService', () => {
         });
 
         it('should add to existing PENDING job', async () => {
-            repository.getUnassignedOrderItems.mockResolvedValue([
-                { id: 'item-1', materialTypeId: 'mat-1', thickness: 10, quantity: 5 }
-            ]);
+            const mockOrderItem = {
+                id: 'item-1',
+                materialTypeId: 'mat-1',
+                thickness: 10,
+                quantity: 5,
+                itemCode: 'I1',
+                itemName: 'Item 1',
+                length: 100,
+                width: 50,
+                height: 10,
+                geometryType: 'RECTANGLE'
+            };
+            repository.getUnassignedOrderItems.mockResolvedValue([mockOrderItem]);
+
             const existingJob = createMockJob({ id: 'job-EXISTING', status: 'PENDING' });
             repository.findByMaterialAndThickness.mockResolvedValue([existingJob]);
             repository.findById.mockResolvedValue(existingJob);
@@ -215,7 +221,7 @@ describe('CuttingJobService', () => {
         it('should add item successfully if job is PENDING', async () => {
             const mockJob = createMockJob({ status: 'PENDING' });
             repository.findById.mockResolvedValueOnce(mockJob).mockResolvedValueOnce(mockJob);
-            repository.addItem.mockResolvedValue({ id: 'item-1', orderItemId: 'order-item-1', quantity: 5 } as any);
+            repository.addItem.mockResolvedValue({ id: 'item-1', cuttingJobId: 'job-1', orderItemId: 'order-item-1', quantity: 5, createdAt: new Date(), updatedAt: new Date() });
 
             const result = await service.addItemToJob('job-1', 'order-item-1', 5);
 

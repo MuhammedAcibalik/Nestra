@@ -178,11 +178,11 @@ export declare const optimizationObjectivesSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const optimizationConstraintsSchema: z.ZodObject<{
     algorithm: z.ZodOptional<z.ZodEnum<{
+        GUILLOTINE: "GUILLOTINE";
         FFD: "FFD";
         BFD: "BFD";
         BRANCH_BOUND: "BRANCH_BOUND";
         BOTTOM_LEFT: "BOTTOM_LEFT";
-        GUILLOTINE: "GUILLOTINE";
     }>>;
     kerf: z.ZodOptional<z.ZodNumber>;
     minUsableWaste: z.ZodOptional<z.ZodNumber>;
@@ -202,11 +202,11 @@ export declare const createScenarioSchema: z.ZodObject<{
         }, z.core.$strip>>;
         constraints: z.ZodOptional<z.ZodObject<{
             algorithm: z.ZodOptional<z.ZodEnum<{
+                GUILLOTINE: "GUILLOTINE";
                 FFD: "FFD";
                 BFD: "BFD";
                 BRANCH_BOUND: "BRANCH_BOUND";
                 BOTTOM_LEFT: "BOTTOM_LEFT";
-                GUILLOTINE: "GUILLOTINE";
             }>>;
             kerf: z.ZodOptional<z.ZodNumber>;
             minUsableWaste: z.ZodOptional<z.ZodNumber>;
@@ -230,10 +230,10 @@ export declare const updateProductionSchema: z.ZodObject<{
     issues: z.ZodOptional<z.ZodArray<z.ZodObject<{
         description: z.ZodString;
         severity: z.ZodEnum<{
+            CRITICAL: "CRITICAL";
             LOW: "LOW";
             MEDIUM: "MEDIUM";
             HIGH: "HIGH";
-            CRITICAL: "CRITICAL";
         }>;
     }, z.core.$strip>>>;
 }, z.core.$strip>;

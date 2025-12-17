@@ -1,9 +1,14 @@
 /**
  * Customer Repository
- * Following SRP - Only handles Customer data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Customer } from '@prisma/client';
+import { Database } from '../../db';
+import { customers } from '../../db/schema';
+import { eq, asc, ilike, or } from 'drizzle-orm';
+
+// Type definitions
+export type Customer = typeof customers.$inferSelect;
 
 export type CustomerWithRelations = Customer & {
     _count?: { orders: number };
@@ -20,7 +25,6 @@ export interface ICreateCustomerInput {
     phone?: string;
     address?: string;
     taxId?: string;
-    customFields?: Record<string, unknown>;
 }
 
 export interface IUpdateCustomerInput {
@@ -29,7 +33,6 @@ export interface IUpdateCustomerInput {
     phone?: string;
     address?: string;
     taxId?: string;
-    customFields?: Record<string, unknown>;
 }
 
 export interface ICustomerRepository {
@@ -42,70 +45,66 @@ export interface ICustomerRepository {
 }
 
 export class CustomerRepository implements ICustomerRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(private readonly db: Database) { }
 
-    async findById(id: string): Promise<CustomerWithRelations | null> {
-        return this.prisma.customer.findUnique({
-            where: { id },
-            include: {
-                _count: { select: { orders: true } }
-            }
+    async findById(id: string): Promise<Customer | null> {
+        const result = await this.db.query.customers.findFirst({
+            where: eq(customers.id, id)
         });
+        return result ?? null;
     }
 
     async findByCode(code: string): Promise<Customer | null> {
-        return this.prisma.customer.findUnique({ where: { code } });
+        const result = await this.db.query.customers.findFirst({
+            where: eq(customers.code, code)
+        });
+        return result ?? null;
     }
 
-    async findAll(filter?: ICustomerFilter): Promise<CustomerWithRelations[]> {
-        const where = filter?.search
-            ? {
-                OR: [
-                    { code: { contains: filter.search, mode: 'insensitive' as const } },
-                    { name: { contains: filter.search, mode: 'insensitive' as const } },
-                    { email: { contains: filter.search, mode: 'insensitive' as const } }
-                ]
-            }
-            : {};
+    async findAll(filter?: ICustomerFilter): Promise<Customer[]> {
+        if (filter?.search) {
+            return this.db.select().from(customers)
+                .where(or(
+                    ilike(customers.name, `%${filter.search}%`),
+                    ilike(customers.code, `%${filter.search}%`),
+                    ilike(customers.email, `%${filter.search}%`)
+                ))
+                .orderBy(asc(customers.name));
+        }
 
-        return this.prisma.customer.findMany({
-            where,
-            include: {
-                _count: { select: { orders: true } }
-            },
-            orderBy: { name: 'asc' }
+        return this.db.query.customers.findMany({
+            orderBy: [asc(customers.name)]
         });
     }
 
     async create(data: ICreateCustomerInput): Promise<Customer> {
-        return this.prisma.customer.create({
-            data: {
-                code: data.code,
-                name: data.name,
-                email: data.email,
-                phone: data.phone,
-                address: data.address,
-                taxId: data.taxId,
-                customFields: data.customFields as object | undefined
-            }
-        });
+        const [result] = await this.db.insert(customers).values({
+            code: data.code,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            address: data.address,
+            taxId: data.taxId
+        }).returning();
+        return result;
     }
 
     async update(id: string, data: IUpdateCustomerInput): Promise<Customer> {
-        return this.prisma.customer.update({
-            where: { id },
-            data: {
+        const [result] = await this.db.update(customers)
+            .set({
                 name: data.name,
                 email: data.email,
                 phone: data.phone,
                 address: data.address,
                 taxId: data.taxId,
-                customFields: data.customFields as object | undefined
-            }
-        });
+                updatedAt: new Date()
+            })
+            .where(eq(customers.id, id))
+            .returning();
+        return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.customer.delete({ where: { id } });
+        await this.db.delete(customers).where(eq(customers.id, id));
     }
 }

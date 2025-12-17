@@ -1,161 +1,139 @@
 /**
  * Order Repository
- * Following SRP - Only handles order data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Prisma, Order, OrderItem } from '@prisma/client';
-import { IOrderFilter, ICreateOrderInput, IUpdateOrderInput, ICreateOrderItemInput } from '../../core/interfaces';
+import { Database } from '../../db';
+import { orders, orderItems } from '../../db/schema';
+import { OrderStatus, GeometryType } from '../../db/schema/enums';
+import { eq, desc, and } from 'drizzle-orm';
+import { ICreateOrderInput, ICreateOrderItemInput, IUpdateOrderInput, IOrderFilter } from '../../core/interfaces';
+
+// Type definitions
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
 
 export type OrderWithRelations = Order & {
-    customer?: { id: string; code: string; name: string } | null;
-    createdBy?: { firstName: string; lastName: string };
     items?: OrderItem[];
+    customer?: { id: string; code: string; name: string } | null;
+    createdBy?: { id: string; firstName: string; lastName: string };
     _count?: { items: number };
 };
 
-interface OrderWhereInput {
-    status?: string;
-    customerId?: string;
-    createdAt?: { gte?: Date; lte?: Date };
-}
+// Re-export from core interfaces for service compatibility
+export type { ICreateOrderInput, ICreateOrderItemInput, IUpdateOrderInput, IOrderFilter } from '../../core/interfaces';
 
 export interface IOrderRepository {
     findById(id: string): Promise<OrderWithRelations | null>;
     findAll(filter?: IOrderFilter): Promise<OrderWithRelations[]>;
-    findByNumber(orderNumber: string): Promise<Order | null>;
+    findByOrderNumber(orderNumber: string): Promise<Order | null>;
     create(data: ICreateOrderInput, userId: string): Promise<Order>;
     update(id: string, data: IUpdateOrderInput): Promise<Order>;
-    updateStatus(id: string, status: string): Promise<Order>;
     delete(id: string): Promise<void>;
     addItem(orderId: string, data: ICreateOrderItemInput): Promise<OrderItem>;
-    getItems(orderId: string): Promise<OrderItem[]>;
-    generateOrderNumber(): Promise<string>;
+    updateStatus(id: string, status: string): Promise<Order>;
 }
 
 export class OrderRepository implements IOrderRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    private orderCounter = 1;
+
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<OrderWithRelations | null> {
-        return this.prisma.order.findUnique({
-            where: { id },
-            include: {
-                customer: { select: { id: true, code: true, name: true } },
-                createdBy: { select: { firstName: true, lastName: true } },
-                items: true
+        const result = await this.db.query.orders.findFirst({
+            where: eq(orders.id, id),
+            with: {
+                items: true,
+                customer: true,
+                createdBy: true
             }
         });
+        return result ?? null;
     }
 
     async findAll(filter?: IOrderFilter): Promise<OrderWithRelations[]> {
-        const where: OrderWhereInput = {};
+        const conditions = [];
 
-        if (filter?.status) where.status = filter.status;
-        if (filter?.customerId) where.customerId = filter.customerId;
-        if (filter?.startDate || filter?.endDate) {
-            where.createdAt = {};
-            if (filter.startDate) where.createdAt.gte = filter.startDate;
-            if (filter.endDate) where.createdAt.lte = filter.endDate;
-        }
+        if (filter?.status) conditions.push(eq(orders.status, filter.status as OrderStatus));
+        if (filter?.customerId) conditions.push(eq(orders.customerId, filter.customerId));
 
-        return this.prisma.order.findMany({
-            where: where as Prisma.OrderWhereInput,
-            include: {
-                customer: { select: { id: true, code: true, name: true } },
-                createdBy: { select: { firstName: true, lastName: true } },
-                _count: { select: { items: true } }
+        return this.db.query.orders.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                items: true,
+                customer: true,
+                createdBy: true
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: [desc(orders.createdAt)]
         });
     }
 
-    async findByNumber(orderNumber: string): Promise<Order | null> {
-        return this.prisma.order.findUnique({ where: { orderNumber } });
+    async findByOrderNumber(orderNumber: string): Promise<Order | null> {
+        const result = await this.db.query.orders.findFirst({
+            where: eq(orders.orderNumber, orderNumber)
+        });
+        return result ?? null;
     }
 
     async create(data: ICreateOrderInput, userId: string): Promise<Order> {
-        const orderNumber = await this.generateOrderNumber();
+        // Generate order number if not provided
+        const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
 
-        return this.prisma.order.create({
-            data: {
-                orderNumber,
-                customerId: data.customerId,
-                createdById: userId,
-                priority: data.priority ?? 5,
-                dueDate: data.dueDate,
-                notes: data.notes,
-                items: data.items ? {
-                    create: data.items.map((item) => ({
-                        itemCode: item.itemCode,
-                        itemName: item.itemName,
-                        geometryType: item.geometryType as 'BAR_1D' | 'RECTANGLE' | 'CIRCLE' | 'SQUARE' | 'POLYGON' | 'FREEFORM',
-                        length: item.length,
-                        width: item.width,
-                        height: item.height,
-                        diameter: item.diameter,
-                        materialTypeId: item.materialTypeId,
-                        thickness: item.thickness,
-                        quantity: item.quantity,
-                        canRotate: item.canRotate ?? true
-                    }))
-                } : undefined
-            }
-        });
+        const [result] = await this.db.insert(orders).values({
+            orderNumber,
+            customerId: data.customerId,
+            createdById: userId,
+            priority: data.priority ?? 5,
+            dueDate: data.dueDate,
+            notes: data.notes
+        }).returning();
+        return result;
     }
 
     async update(id: string, data: IUpdateOrderInput): Promise<Order> {
-        return this.prisma.order.update({
-            where: { id },
-            data: {
-                customerId: data.customerId,
+        const [result] = await this.db.update(orders)
+            .set({
+                status: data.status as OrderStatus,
                 priority: data.priority,
                 dueDate: data.dueDate,
                 notes: data.notes,
-                status: data.status as 'DRAFT' | 'CONFIRMED' | 'IN_PLANNING' | 'IN_PRODUCTION' | 'COMPLETED' | 'CANCELLED' | undefined
-            }
-        });
-    }
-
-    async delete(id: string): Promise<void> {
-        await this.prisma.order.delete({ where: { id } });
+                updatedAt: new Date()
+            })
+            .where(eq(orders.id, id))
+            .returning();
+        return result;
     }
 
     async updateStatus(id: string, status: string): Promise<Order> {
-        return this.prisma.order.update({
-            where: { id },
-            data: {
-                status: status as 'DRAFT' | 'CONFIRMED' | 'IN_PLANNING' | 'IN_PRODUCTION' | 'COMPLETED' | 'CANCELLED'
-            }
-        });
+        const [result] = await this.db.update(orders)
+            .set({
+                status: status as OrderStatus,
+                updatedAt: new Date()
+            })
+            .where(eq(orders.id, id))
+            .returning();
+        return result;
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.db.delete(orders).where(eq(orders.id, id));
     }
 
     async addItem(orderId: string, data: ICreateOrderItemInput): Promise<OrderItem> {
-        return this.prisma.orderItem.create({
-            data: {
-                orderId,
-                itemCode: data.itemCode,
-                itemName: data.itemName,
-                geometryType: data.geometryType as 'BAR_1D' | 'RECTANGLE' | 'CIRCLE' | 'SQUARE' | 'POLYGON' | 'FREEFORM',
-                length: data.length,
-                width: data.width,
-                height: data.height,
-                diameter: data.diameter,
-                materialTypeId: data.materialTypeId,
-                thickness: data.thickness,
-                quantity: data.quantity,
-                canRotate: data.canRotate ?? true
-            }
-        });
-    }
-
-    async getItems(orderId: string): Promise<OrderItem[]> {
-        return this.prisma.orderItem.findMany({
-            where: { orderId },
-            orderBy: { createdAt: 'asc' }
-        });
-    }
-
-    async generateOrderNumber(): Promise<string> {
-        const count = await this.prisma.order.count();
-        return `ORD-${String(count + 1).padStart(6, '0')}`;
+        const [result] = await this.db.insert(orderItems).values({
+            orderId: orderId,
+            itemCode: data.itemCode,
+            itemName: data.itemName,
+            geometryType: data.geometryType as GeometryType,
+            length: data.length,
+            width: data.width,
+            height: data.height,
+            diameter: data.diameter,
+            materialTypeId: data.materialTypeId,
+            thickness: data.thickness,
+            quantity: data.quantity,
+            canRotate: data.canRotate ?? true
+        }).returning();
+        return result;
     }
 }

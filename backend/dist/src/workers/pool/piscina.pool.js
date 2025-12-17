@@ -42,6 +42,10 @@ class OptimizationPool {
     pool = null;
     config;
     initialized = false;
+    // Task tracking for cancellation and progress
+    activeTasks = new Map();
+    taskProgress = new Map();
+    progressCallback = null;
     constructor(config = {}) {
         this.config = {
             ...exports.defaultPiscinaConfig,
@@ -87,6 +91,99 @@ class OptimizationPool {
     async run2D(payload, signal) {
         this.ensureInitialized();
         return this.pool.run(payload, { name: 'optimize2D', signal });
+    }
+    /**
+     * Run optimization with full task tracking, timeout, and cancellation support
+     */
+    async runWithTracking(task) {
+        this.ensureInitialized();
+        const controller = new AbortController();
+        this.activeTasks.set(task.id, controller);
+        // Initialize progress tracking
+        this.updateProgress(task.id, {
+            taskId: task.id,
+            phase: 'queued',
+            progress: 0,
+            startedAt: new Date()
+        });
+        // Set timeout
+        const timeoutId = setTimeout(() => {
+            this.updateProgress(task.id, { phase: 'timeout', progress: 0 });
+            controller.abort();
+        }, task.timeout);
+        try {
+            this.updateProgress(task.id, { phase: 'running', progress: 10 });
+            const result = task.type === '1D'
+                ? await this.run1D(task.payload, controller.signal)
+                : await this.run2D(task.payload, controller.signal);
+            this.updateProgress(task.id, {
+                phase: 'completed',
+                progress: 100,
+                completedAt: new Date()
+            });
+            return result;
+        }
+        catch (error) {
+            const phase = controller.signal.aborted ? 'cancelled' : 'failed';
+            this.updateProgress(task.id, {
+                phase,
+                progress: 0,
+                message: error instanceof Error ? error.message : 'Unknown error',
+                completedAt: new Date()
+            });
+            throw error;
+        }
+        finally {
+            clearTimeout(timeoutId);
+            this.activeTasks.delete(task.id);
+        }
+    }
+    /**
+     * Cancel a running task by ID
+     * @returns true if task was found and cancelled
+     */
+    cancelTask(taskId) {
+        const controller = this.activeTasks.get(taskId);
+        if (controller) {
+            controller.abort();
+            this.updateProgress(taskId, { phase: 'cancelled', progress: 0 });
+            return true;
+        }
+        return false;
+    }
+    /**
+     * Get progress for a specific task
+     */
+    getTaskProgress(taskId) {
+        return this.taskProgress.get(taskId);
+    }
+    /**
+     * Get all active task IDs
+     */
+    getActiveTasks() {
+        return Array.from(this.activeTasks.keys());
+    }
+    /**
+     * Set callback for progress updates (for WebSocket broadcasting)
+     */
+    setProgressCallback(callback) {
+        this.progressCallback = callback;
+    }
+    /**
+     * Update and broadcast task progress
+     */
+    updateProgress(taskId, update) {
+        const current = this.taskProgress.get(taskId) ?? {
+            taskId,
+            phase: 'queued',
+            progress: 0
+        };
+        const updated = { ...current, ...update };
+        this.taskProgress.set(taskId, updated);
+        // Notify callback if set (for WebSocket updates)
+        if (this.progressCallback) {
+            this.progressCallback(updated);
+        }
     }
     /**
      * Get pool statistics

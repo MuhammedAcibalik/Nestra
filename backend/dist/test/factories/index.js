@@ -1,11 +1,13 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMockProductionLog = exports.createMockPlanWithRelations = exports.createMockCuttingPlan = exports.createMockUser = void 0;
 /**
  * Test Factory - Centralized Object Creation
  * Implements the Object Mother / Builder pattern for tests.
  * Allows easy creation of domain objects with valid defaults and flexible overrides.
+ *
+ * Migrated to use local type definitions instead of @prisma/client
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createMockProductionLog = exports.createMockPlanWithRelations = exports.createMockCuttingPlan = exports.createMockUser = void 0;
 const createMockUser = (overrides = {}) => ({
     id: 'user-1',
     email: 'test@example.com',

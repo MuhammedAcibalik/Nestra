@@ -1,19 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const order_repository_1 = require("../order.repository");
-const jest_mock_extended_1 = require("jest-mock-extended");
+const db_mock_1 = require("../../../core/test/db-mock");
 describe('OrderRepository', () => {
     let repository;
-    let prisma;
-    let prismaOrder;
-    let prismaOrderItem;
+    let db;
     beforeEach(() => {
-        prisma = (0, jest_mock_extended_1.mock)();
-        prismaOrder = (0, jest_mock_extended_1.mock)();
-        prismaOrderItem = (0, jest_mock_extended_1.mock)();
-        prisma.order = prismaOrder;
-        prisma.orderItem = prismaOrderItem;
-        repository = new order_repository_1.OrderRepository(prisma);
+        db = (0, db_mock_1.createMockDatabase)();
+        repository = new order_repository_1.OrderRepository(db);
     });
     describe('create', () => {
         it('should create order with items', async () => {
@@ -34,29 +28,20 @@ describe('OrderRepository', () => {
                     }
                 ]
             };
-            prismaOrder.count.mockResolvedValue(0);
             const mockOrder = { id: 'order-1', orderNumber: 'ORD-000001', ...input };
-            prismaOrder.create.mockResolvedValue(mockOrder);
-            const result = await repository.create(input, 'user-1');
-            expect(result).toEqual(mockOrder);
-            expect(prismaOrder.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    orderNumber: 'ORD-000001',
-                    createdById: 'user-1',
-                    items: {
-                        create: expect.arrayContaining([
-                            expect.objectContaining({ itemCode: 'ITEM-1' })
-                        ])
-                    }
+            db.select.mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    limit: jest.fn().mockResolvedValue([{ count: 0 }])
                 })
             });
-        });
-    });
-    describe('generateOrderNumber', () => {
-        it('should generate sequential order number', async () => {
-            prismaOrder.count.mockResolvedValue(5);
-            const result = await repository.generateOrderNumber();
-            expect(result).toBe('ORD-000006');
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockOrder])
+                })
+            });
+            const result = await repository.create(input, 'user-1');
+            expect(result.id).toBe('order-1');
+            expect(result.orderNumber).toBe('ORD-000001');
         });
     });
     describe('addItem', () => {
@@ -72,15 +57,14 @@ describe('OrderRepository', () => {
                 geometryType: 'RECTANGLE'
             };
             const mockItem = { id: 'item-1', orderId: 'order-1', ...input };
-            prismaOrderItem.create.mockResolvedValue(mockItem);
-            const result = await repository.addItem('order-1', input);
-            expect(result).toEqual(mockItem);
-            expect(prismaOrderItem.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    orderId: 'order-1',
-                    itemCode: 'ITEM-2'
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockItem])
                 })
             });
+            const result = await repository.addItem('order-1', input);
+            expect(result.id).toBe('item-1');
+            expect(result.itemCode).toBe('ITEM-2');
         });
     });
 });

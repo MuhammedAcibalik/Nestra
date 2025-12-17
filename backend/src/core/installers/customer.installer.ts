@@ -10,9 +10,9 @@ export const customerInstaller: IModuleInstaller = {
     name: 'customer',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new CustomerRepository(prisma);
+        const repository = new CustomerRepository(db);
 
         const serviceHandler = new CustomerServiceHandler(repository);
         registry.register('customer', serviceHandler);

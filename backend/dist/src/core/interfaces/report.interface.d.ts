@@ -7,6 +7,9 @@ export interface IReportService {
     getEfficiencyReport(filter: IReportFilter): Promise<IResult<IEfficiencyReportDto>>;
     getCustomerReport(filter: IReportFilter): Promise<IResult<ICustomerReportDto[]>>;
     getMachineReport(filter: IReportFilter): Promise<IResult<IMachineReportDto[]>>;
+    getCostReport(filter: IReportFilter): Promise<IResult<ICostReportDto>>;
+    getTrendReport(filter: ITrendFilter): Promise<IResult<ITrendReportDto>>;
+    getComparativeReport(filter: IComparativeFilter): Promise<IResult<IComparativeReportDto>>;
 }
 export interface IReportFilter {
     startDate?: Date;
@@ -66,5 +69,91 @@ export interface IMachineReportDto {
     planCount: number;
     totalProductionTime: number;
     avgWastePercentage: number;
+}
+/** Cost report DTO */
+export interface ICostReportDto {
+    summary: ICostSummary;
+    byMaterial: IMaterialCost[];
+}
+/** Overall cost summary */
+export interface ICostSummary {
+    totalMaterialCost: number;
+    totalWasteCost: number;
+    netCost: number;
+    planCount: number;
+    avgCostPerPlan: number;
+}
+/** Material-specific cost breakdown */
+export interface IMaterialCost {
+    materialTypeId: string;
+    materialName: string;
+    unitPrice: number;
+    totalUsed: number;
+    totalWaste: number;
+    materialCost: number;
+    wasteCost: number;
+    stockItemCount: number;
+}
+/** Trend report filter */
+export interface ITrendFilter {
+    startDate: Date;
+    endDate: Date;
+    metric: TrendMetric;
+    groupBy: 'day' | 'week' | 'month';
+    materialTypeId?: string;
+    machineId?: string;
+}
+/** Available metrics for trend analysis */
+export type TrendMetric = 'WASTE_PERCENTAGE' | 'EFFICIENCY' | 'PRODUCTION_TIME' | 'PLAN_COUNT' | 'COST';
+/** Trend report DTO */
+export interface ITrendReportDto {
+    metric: TrendMetric;
+    period: string;
+    dataPoints: ITrendDataPoint[];
+    trendDirection: 'UP' | 'DOWN' | 'STABLE';
+    changePercentage: number;
+    movingAverage: number[];
+}
+/** Single data point in trend */
+export interface ITrendDataPoint {
+    period: string;
+    value: number;
+    count: number;
+    previousValue?: number;
+    changeFromPrevious?: number;
+}
+/** Comparative report filter */
+export interface IComparativeFilter {
+    startDate: Date;
+    endDate: Date;
+    compareBy: CompareBy;
+    metric: TrendMetric;
+    ids?: string[];
+}
+/** Comparison dimensions */
+export type CompareBy = 'MATERIAL' | 'MACHINE' | 'OPERATOR' | 'PERIOD';
+/** Comparative report DTO */
+export interface IComparativeReportDto {
+    metric: TrendMetric;
+    compareBy: CompareBy;
+    items: IComparisonItem[];
+    best: IComparisonSummary;
+    worst: IComparisonSummary;
+    average: number;
+}
+/** Single comparison item */
+export interface IComparisonItem {
+    id: string;
+    name: string;
+    value: number;
+    count: number;
+    rank: number;
+    deviationFromAvg: number;
+}
+/** Best/Worst summary */
+export interface IComparisonSummary {
+    id: string;
+    name: string;
+    value: number;
 }
 //# sourceMappingURL=report.interface.d.ts.map

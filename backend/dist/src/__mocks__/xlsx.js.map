@@ -1,0 +1,1 @@
+{"version":3,"file":"xlsx.js","sourceRoot":"","sources":["../../../src/__mocks__/xlsx.ts"],"names":[],"mappings":";AAAA;;;GAGG;;;AAEU,QAAA,IAAI,GAAG,IAAI,CAAC,EAAE,EAAE,CAAC;AAEjB,QAAA,KAAK,GAAG;IACjB,aAAa,EAAE,IAAI,CAAC,EAAE,CAAC,GAAG,EAAE,CAAC,EAAE,CAAC;CACnC,CAAC;AAEF,kBAAe;IACX,IAAI,EAAJ,YAAI;IACJ,KAAK,EAAL,aAAK;CACR,CAAC"}

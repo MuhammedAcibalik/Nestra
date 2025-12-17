@@ -11,9 +11,9 @@ export const cuttingJobInstaller: IModuleInstaller = {
     name: 'cutting-job',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new CuttingJobRepository(prisma);
+        const repository = new CuttingJobRepository(db);
 
         const serviceHandler = new CuttingJobServiceHandler(repository);
         registry.register('cutting-job', serviceHandler);

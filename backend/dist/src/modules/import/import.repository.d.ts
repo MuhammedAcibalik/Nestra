@@ -1,22 +1,75 @@
 /**
  * Import Repository
- * Handles data access for import operations
- * Following SRP - Only handles import-related data queries
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient } from '@prisma/client';
-import { ICreateOrderItemInput } from '../../core/interfaces';
-export interface ICreatedOrder {
-    id: string;
+import { Database } from '../../db';
+export interface IStockItemImport {
+    code: string;
+    name: string;
+    materialTypeId: string;
+    stockType: 'BAR_1D' | 'SHEET_2D';
+    thickness: number;
+    length?: number;
+    width?: number;
+    height?: number;
+    quantity: number;
+    unitPrice?: number;
+    locationId?: string;
+}
+export interface IMaterialImport {
+    name: string;
+    description?: string;
+    defaultDensity?: number;
+}
+export interface ICustomerImport {
+    code: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    taxId?: string;
+}
+export interface IOrderWithItemsInput {
     orderNumber: string;
+    customerId?: string;
+    createdById: string;
+    priority?: number;
+    dueDate?: Date;
+    notes?: string;
+    items: Array<{
+        itemCode?: string;
+        itemName?: string;
+        geometryType: string;
+        length?: number;
+        width?: number;
+        height?: number;
+        diameter?: number;
+        materialTypeId: string;
+        thickness: number;
+        quantity: number;
+        canRotate?: boolean;
+    }>;
 }
 export interface IImportRepository {
+    importStockItems(data: IStockItemImport[]): Promise<number>;
+    importMaterials(data: IMaterialImport[]): Promise<number>;
+    importCustomers(data: ICustomerImport[]): Promise<number>;
     getOrderCount(): Promise<number>;
-    createOrderWithItems(orderNumber: string, userId: string, notes: string, items: ICreateOrderItemInput[]): Promise<ICreatedOrder>;
+    createOrderWithItems(data: IOrderWithItemsInput): Promise<{
+        id: string;
+        orderNumber: string;
+    }>;
 }
 export declare class ImportRepository implements IImportRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    constructor(db: Database);
+    importStockItems(data: IStockItemImport[]): Promise<number>;
+    importMaterials(data: IMaterialImport[]): Promise<number>;
+    importCustomers(data: ICustomerImport[]): Promise<number>;
     getOrderCount(): Promise<number>;
-    createOrderWithItems(orderNumber: string, userId: string, notes: string, items: ICreateOrderItemInput[]): Promise<ICreatedOrder>;
+    createOrderWithItems(data: IOrderWithItemsInput): Promise<{
+        id: string;
+        orderNumber: string;
+    }>;
 }
 //# sourceMappingURL=import.repository.d.ts.map

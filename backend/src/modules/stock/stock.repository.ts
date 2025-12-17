@@ -1,10 +1,17 @@
 /**
  * Stock Repository
- * Following SRP - Only handles stock data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, StockItem, StockMovement, StockType } from '@prisma/client';
-import { IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter, MovementType } from '../../core/interfaces';
+import { Database } from '../../db';
+import { stockItems, stockMovements } from '../../db/schema';
+import { StockType, MovementType } from '../../db/schema/enums';
+import { eq, desc, gte, and, lte } from 'drizzle-orm';
+import { IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter } from '../../core/interfaces';
+
+// Type definitions
+export type StockItem = typeof stockItems.$inferSelect;
+export type StockMovement = typeof stockMovements.$inferSelect;
 
 export type StockItemWithRelations = StockItem & {
     materialType?: { id: string; name: string };
@@ -24,133 +31,129 @@ export interface IStockRepository {
     getMovements(filter?: IMovementFilter): Promise<StockMovement[]>;
 }
 
-interface StockWhereInput {
-    materialTypeId?: string;
-    stockType?: StockType;
-    locationId?: string;
-    quantity?: { gte: number };
-}
-
-interface MovementWhereInput {
-    stockItemId?: string;
-    movementType?: MovementType;
-    createdAt?: { gte?: Date; lte?: Date };
-}
-
 export class StockRepository implements IStockRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<StockItemWithRelations | null> {
-        return this.prisma.stockItem.findUnique({
-            where: { id },
-            include: {
-                materialType: { select: { id: true, name: true } },
-                thicknessRange: { select: { id: true, name: true } },
-                location: { select: { id: true, name: true } }
+        const result = await this.db.query.stockItems.findFirst({
+            where: eq(stockItems.id, id),
+            with: {
+                materialType: true,
+                thicknessRange: true,
+                location: true
             }
         });
+        return result ?? null;
     }
 
     async findAll(filter?: IStockFilter): Promise<StockItemWithRelations[]> {
-        const where: StockWhereInput = {};
+        const conditions = [];
 
-        if (filter?.materialTypeId) where.materialTypeId = filter.materialTypeId;
-        if (filter?.stockType) where.stockType = filter.stockType as StockType;
-        if (filter?.locationId) where.locationId = filter.locationId;
-        if (filter?.minQuantity !== undefined) where.quantity = { gte: filter.minQuantity };
+        if (filter?.materialTypeId) conditions.push(eq(stockItems.materialTypeId, filter.materialTypeId));
+        if (filter?.stockType) conditions.push(eq(stockItems.stockType, filter.stockType as StockType));
+        if (filter?.locationId) conditions.push(eq(stockItems.locationId, filter.locationId));
+        if (filter?.minQuantity !== undefined) conditions.push(gte(stockItems.quantity, filter.minQuantity));
 
-        return this.prisma.stockItem.findMany({
-            where,
-            include: {
-                materialType: { select: { id: true, name: true } },
-                thicknessRange: { select: { id: true, name: true } },
-                location: { select: { id: true, name: true } }
+        return this.db.query.stockItems.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                materialType: true,
+                thicknessRange: true,
+                location: true
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: [desc(stockItems.createdAt)]
         });
     }
 
     async findByCode(code: string): Promise<StockItem | null> {
-        return this.prisma.stockItem.findUnique({ where: { code } });
+        const result = await this.db.query.stockItems.findFirst({
+            where: eq(stockItems.code, code)
+        });
+        return result ?? null;
     }
 
     async create(data: ICreateStockInput): Promise<StockItem> {
-        return this.prisma.stockItem.create({
-            data: {
+        const [result] = await this.db.insert(stockItems).values({
+            code: data.code,
+            name: data.name,
+            materialTypeId: data.materialTypeId,
+            thicknessRangeId: data.thicknessRangeId,
+            thickness: data.thickness,
+            stockType: data.stockType as StockType,
+            length: data.length,
+            width: data.width,
+            height: data.height,
+            quantity: data.quantity,
+            unitPrice: data.unitPrice,
+            locationId: data.locationId
+        }).returning();
+        return result;
+    }
+
+    async update(id: string, data: IUpdateStockInput): Promise<StockItem> {
+        const [result] = await this.db.update(stockItems)
+            .set({
                 code: data.code,
                 name: data.name,
-                materialTypeId: data.materialTypeId,
-                thicknessRangeId: data.thicknessRangeId,
                 thickness: data.thickness,
-                stockType: data.stockType as 'BAR_1D' | 'SHEET_2D',
+                stockType: data.stockType as StockType,
                 length: data.length,
                 width: data.width,
                 height: data.height,
                 quantity: data.quantity,
                 unitPrice: data.unitPrice,
-                locationId: data.locationId
-            }
-        });
-    }
-
-    async update(id: string, data: IUpdateStockInput): Promise<StockItem> {
-        return this.prisma.stockItem.update({
-            where: { id },
-            data: {
-                code: data.code,
-                name: data.name,
-                thickness: data.thickness,
-                stockType: data.stockType,
-                length: data.length,
-                width: data.width,
-                height: data.height,
-                quantity: data.quantity,
-                unitPrice: data.unitPrice
-            }
-        });
+                updatedAt: new Date()
+            })
+            .where(eq(stockItems.id, id))
+            .returning();
+        return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.stockItem.delete({ where: { id } });
+        await this.db.delete(stockItems).where(eq(stockItems.id, id));
     }
 
     async updateQuantity(id: string, quantityDelta: number, reservedDelta = 0): Promise<StockItem> {
-        return this.prisma.stockItem.update({
-            where: { id },
-            data: {
-                quantity: { increment: quantityDelta },
-                reservedQty: { increment: reservedDelta }
-            }
+        // Get current values
+        const current = await this.db.query.stockItems.findFirst({
+            where: eq(stockItems.id, id)
         });
+
+        if (!current) throw new Error('Stock item not found');
+
+        const [result] = await this.db.update(stockItems)
+            .set({
+                quantity: current.quantity + quantityDelta,
+                reservedQty: current.reservedQty + reservedDelta,
+                updatedAt: new Date()
+            })
+            .where(eq(stockItems.id, id))
+            .returning();
+        return result;
     }
 
     async createMovement(data: ICreateMovementInput): Promise<StockMovement> {
-        return this.prisma.stockMovement.create({
-            data: {
-                stockItemId: data.stockItemId,
-                movementType: data.movementType,
-                quantity: data.quantity,
-                notes: data.notes,
-                productionLogId: data.productionLogId
-            }
-        });
+        const [result] = await this.db.insert(stockMovements).values({
+            stockItemId: data.stockItemId,
+            movementType: data.movementType as MovementType,
+            quantity: data.quantity,
+            notes: data.notes,
+            productionLogId: data.productionLogId
+        }).returning();
+        return result;
     }
 
     async getMovements(filter?: IMovementFilter): Promise<StockMovement[]> {
-        const where: MovementWhereInput = {};
+        const conditions = [];
 
-        if (filter?.stockItemId) where.stockItemId = filter.stockItemId;
-        if (filter?.movementType) where.movementType = filter.movementType as MovementType;
-        if (filter?.startDate || filter?.endDate) {
-            where.createdAt = {};
-            if (filter.startDate) where.createdAt.gte = filter.startDate;
-            if (filter.endDate) where.createdAt.lte = filter.endDate;
-        }
+        if (filter?.stockItemId) conditions.push(eq(stockMovements.stockItemId, filter.stockItemId));
+        if (filter?.movementType) conditions.push(eq(stockMovements.movementType, filter.movementType as MovementType));
+        if (filter?.startDate) conditions.push(gte(stockMovements.createdAt, filter.startDate));
+        if (filter?.endDate) conditions.push(lte(stockMovements.createdAt, filter.endDate));
 
-        return this.prisma.stockMovement.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take: 100
-        });
+        return this.db.select().from(stockMovements)
+            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .orderBy(desc(stockMovements.createdAt))
+            .limit(100);
     }
 }

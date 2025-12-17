@@ -1,50 +1,75 @@
 /**
  * Optimization Repository
- * Following SRP - Only handles optimization data access
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Prisma, OptimizationScenario, CuttingPlan, CuttingPlanStock } from '@prisma/client';
-import { ICreateScenarioInput, IScenarioFilter, IPlanFilter } from '../../core/interfaces';
+import { Database } from '../../db';
+import { optimizationScenarios, cuttingPlans, cuttingPlanStocks } from '../../db/schema';
+import { ScenarioStatus, PlanStatus } from '../../db/schema/enums';
+import { eq, desc, and } from 'drizzle-orm';
+import { IOptimizationParameters } from '../../core/interfaces';
+
+// Type definitions
+export type OptimizationScenario = typeof optimizationScenarios.$inferSelect;
+export type CuttingPlan = typeof cuttingPlans.$inferSelect;
+export type CuttingPlanStock = typeof cuttingPlanStocks.$inferSelect;
 
 export type ScenarioWithRelations = OptimizationScenario & {
+    results?: CuttingPlan[];
     cuttingJob?: { id: string; jobNumber: string };
-    createdBy?: { firstName: string; lastName: string };
+    createdBy?: { id: string; firstName: string; lastName: string };
     _count?: { results: number };
 };
 
 export type PlanWithRelations = CuttingPlan & {
-    scenario?: { id: string; name: string };
+    stockItems?: CuttingPlanStock[];
     stockUsed?: CuttingPlanStock[];
+    scenario?: OptimizationScenario & { name: string };
+    approvedBy?: { id: string; firstName: string; lastName: string } | null;
     assignedMachine?: { id: string; name: string; code: string } | null;
-    approvedBy?: { firstName: string; lastName: string } | null;
-    _count?: { stockItems: number };
 };
 
-interface CreatePlanInput {
+export interface IScenarioFilter {
+    status?: string;
+    cuttingJobId?: string;
+    createdById?: string;
+}
+
+export interface IPlanFilter {
+    status?: string;
+    scenarioId?: string;
+}
+
+export interface ICreateScenarioInput {
+    name: string;
+    cuttingJobId: string;
+    parameters: IOptimizationParameters;
+    useWarehouseStock?: boolean;
+    useStandardSizes?: boolean;
+    selectedStockIds?: string[];
+}
+
+export interface ICreatePlanData {
     totalWaste: number;
     wastePercentage: number;
     stockUsedCount: number;
     estimatedTime?: number;
     estimatedCost?: number;
-    layoutData: PlanLayoutData[];
+    layoutData?: Array<{
+        stockItemId: string;
+        sequence: number;
+        waste: number;
+        wastePercentage: number;
+        layoutJson?: unknown;
+    }>;
 }
 
-interface PlanLayoutData {
-    stockItemId: string;
-    sequence: number;
-    waste: number;
-    wastePercentage: number;
-    layoutJson: string;
-}
-
-interface ScenarioWhereInput {
-    cuttingJobId?: string;
-    status?: string;
-}
-
-interface PlanWhereInput {
-    scenarioId?: string;
-    status?: string;
+/** Layout data for cutting plan visualization */
+export interface ILayoutData {
+    pieces?: Array<{ x: number; y: number; width: number; height: number; itemId: string }>;
+    cuts?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+    waste?: Array<{ x: number; y: number; width: number; height: number }>;
+    [key: string]: unknown;
 }
 
 export interface IOptimizationRepository {
@@ -52,149 +77,151 @@ export interface IOptimizationRepository {
     findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]>;
     createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario>;
     updateScenarioStatus(id: string, status: string): Promise<OptimizationScenario>;
-    deleteScenario(id: string): Promise<void>;
     findPlanById(id: string): Promise<PlanWithRelations | null>;
     findAllPlans(filter?: IPlanFilter): Promise<PlanWithRelations[]>;
-    createPlan(scenarioId: string, data: CreatePlanInput): Promise<CuttingPlan>;
+    createPlan(scenarioId: string, data: ICreatePlanData): Promise<CuttingPlan>;
     updatePlanStatus(id: string, status: string, approvedById?: string, machineId?: string): Promise<CuttingPlan>;
     getPlanStockItems(planId: string): Promise<CuttingPlanStock[]>;
-    generatePlanNumber(): Promise<string>;
 }
 
 export class OptimizationRepository implements IOptimizationRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    private planCounter = 1;
+
+    constructor(private readonly db: Database) { }
 
     async findScenarioById(id: string): Promise<ScenarioWithRelations | null> {
-        return this.prisma.optimizationScenario.findUnique({
-            where: { id },
-            include: {
-                cuttingJob: { select: { id: true, jobNumber: true } },
-                createdBy: { select: { firstName: true, lastName: true } },
-                _count: { select: { results: true } }
+        const result = await this.db.query.optimizationScenarios.findFirst({
+            where: eq(optimizationScenarios.id, id),
+            with: {
+                results: true,
+                cuttingJob: true,
+                createdBy: true
             }
         });
+        return result ?? null;
     }
 
     async findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]> {
-        const where: ScenarioWhereInput = {};
-        if (filter?.cuttingJobId) where.cuttingJobId = filter.cuttingJobId;
-        if (filter?.status) where.status = filter.status;
+        const conditions = [];
 
-        return this.prisma.optimizationScenario.findMany({
-            where: where as Prisma.OptimizationScenarioWhereInput,
-            include: {
-                cuttingJob: { select: { id: true, jobNumber: true } },
-                createdBy: { select: { firstName: true, lastName: true } },
-                _count: { select: { results: true } }
+        if (filter?.status) conditions.push(eq(optimizationScenarios.status, filter.status as ScenarioStatus));
+        if (filter?.cuttingJobId) conditions.push(eq(optimizationScenarios.cuttingJobId, filter.cuttingJobId));
+        if (filter?.createdById) conditions.push(eq(optimizationScenarios.createdById, filter.createdById));
+
+        return this.db.query.optimizationScenarios.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                results: true,
+                cuttingJob: true,
+                createdBy: true
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: [desc(optimizationScenarios.createdAt)]
         });
     }
 
     async createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario> {
-        return this.prisma.optimizationScenario.create({
-            data: {
-                name: data.name,
-                cuttingJobId: data.cuttingJobId,
-                parameters: data.parameters as object,
-                useWarehouseStock: data.useWarehouseStock ?? true,
-                useStandardSizes: data.useStandardSizes ?? false,
-                selectedStockIds: data.selectedStockIds ?? [],
-                createdById: userId
-            }
-        });
+        const [result] = await this.db.insert(optimizationScenarios).values({
+            name: data.name,
+            cuttingJobId: data.cuttingJobId,
+            createdById: userId,
+            parameters: data.parameters,
+            useWarehouseStock: data.useWarehouseStock ?? true,
+            useStandardSizes: data.useStandardSizes ?? true,
+            selectedStockIds: data.selectedStockIds
+        }).returning();
+        return result;
     }
 
     async updateScenarioStatus(id: string, status: string): Promise<OptimizationScenario> {
-        return this.prisma.optimizationScenario.update({
-            where: { id },
-            data: { status: status as 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' }
-        });
-    }
-
-    async deleteScenario(id: string): Promise<void> {
-        await this.prisma.optimizationScenario.delete({ where: { id } });
+        const [result] = await this.db.update(optimizationScenarios)
+            .set({
+                status: status as ScenarioStatus,
+                updatedAt: new Date()
+            })
+            .where(eq(optimizationScenarios.id, id))
+            .returning();
+        return result;
     }
 
     async findPlanById(id: string): Promise<PlanWithRelations | null> {
-        return this.prisma.cuttingPlan.findUnique({
-            where: { id },
-            include: {
-                scenario: { select: { id: true, name: true } },
+        const result = await this.db.query.cuttingPlans.findFirst({
+            where: eq(cuttingPlans.id, id),
+            with: {
                 stockItems: true,
-                machine: { select: { id: true, name: true, code: true } },
-                approvedBy: { select: { firstName: true, lastName: true } }
+                scenario: true,
+                approvedBy: true
             }
         });
+        if (!result) return null;
+        // Add stockUsed as alias for stockItems
+        return { ...result, stockUsed: result.stockItems };
     }
 
     async findAllPlans(filter?: IPlanFilter): Promise<PlanWithRelations[]> {
-        const where: PlanWhereInput = {};
-        if (filter?.scenarioId) where.scenarioId = filter.scenarioId;
-        if (filter?.status) where.status = filter.status;
+        const conditions = [];
 
-        return this.prisma.cuttingPlan.findMany({
-            where: where as Prisma.CuttingPlanWhereInput,
-            include: {
-                scenario: { select: { id: true, name: true } },
-                machine: { select: { id: true, name: true, code: true } },
-                _count: { select: { stockItems: true } }
+        if (filter?.status) conditions.push(eq(cuttingPlans.status, filter.status as PlanStatus));
+        if (filter?.scenarioId) conditions.push(eq(cuttingPlans.scenarioId, filter.scenarioId));
+
+        const plans = await this.db.query.cuttingPlans.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                stockItems: true,
+                scenario: true,
+                approvedBy: true
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: [desc(cuttingPlans.createdAt)]
         });
+
+        return plans.map(p => ({ ...p, stockUsed: p.stockItems }));
     }
 
-    async createPlan(scenarioId: string, data: CreatePlanInput): Promise<CuttingPlan> {
-        const planNumber = await this.generatePlanNumber();
+    async createPlan(scenarioId: string, data: ICreatePlanData): Promise<CuttingPlan> {
+        const planNumber = `PLN-${Date.now()}-${this.planCounter++}`;
 
-        return this.prisma.cuttingPlan.create({
-            data: {
-                planNumber,
-                scenarioId,
-                totalWaste: data.totalWaste,
-                wastePercentage: data.wastePercentage,
-                stockUsedCount: data.stockUsedCount,
-                estimatedTime: data.estimatedTime,
-                estimatedCost: data.estimatedCost,
-                stockItems: {
-                    create: data.layoutData.map((layout) => ({
-                        stockItemId: layout.stockItemId,
-                        sequence: layout.sequence,
-                        waste: layout.waste,
-                        wastePercentage: layout.wastePercentage,
-                        layoutData: layout.layoutJson
-                    }))
-                }
-            }
-        });
+        const [plan] = await this.db.insert(cuttingPlans).values({
+            planNumber,
+            scenarioId,
+            totalWaste: data.totalWaste,
+            wastePercentage: data.wastePercentage,
+            stockUsedCount: data.stockUsedCount,
+            estimatedTime: data.estimatedTime,
+            estimatedCost: data.estimatedCost
+        }).returning();
+
+        // Insert layout data as stock items
+        if (data.layoutData && data.layoutData.length > 0) {
+            await this.db.insert(cuttingPlanStocks).values(
+                data.layoutData.map(layout => ({
+                    cuttingPlanId: plan.id,
+                    stockItemId: layout.stockItemId,
+                    sequence: layout.sequence,
+                    waste: layout.waste,
+                    wastePercentage: layout.wastePercentage,
+                    layoutData: layout.layoutJson
+                }))
+            );
+        }
+
+        return plan;
     }
 
-    async updatePlanStatus(
-        id: string,
-        status: string,
-        approvedById?: string,
-        machineId?: string
-    ): Promise<CuttingPlan> {
-        return this.prisma.cuttingPlan.update({
-            where: { id },
-            data: {
-                status: status as 'DRAFT' | 'APPROVED' | 'IN_PRODUCTION' | 'COMPLETED' | 'CANCELLED',
-                approvedById: approvedById,
-                approvedAt: approvedById ? new Date() : undefined,
-                machineId: machineId
-            }
-        });
+    async updatePlanStatus(id: string, status: string, approvedById?: string, machineId?: string): Promise<CuttingPlan> {
+        const [result] = await this.db.update(cuttingPlans)
+            .set({
+                status: status as PlanStatus,
+                approvedById,
+                machineId,
+                approvedAt: approvedById ? new Date() : null,
+                updatedAt: new Date()
+            })
+            .where(eq(cuttingPlans.id, id))
+            .returning();
+        return result;
     }
 
     async getPlanStockItems(planId: string): Promise<CuttingPlanStock[]> {
-        return this.prisma.cuttingPlanStock.findMany({
-            where: { cuttingPlanId: planId },
-            orderBy: { sequence: 'asc' }
-        });
-    }
-
-    async generatePlanNumber(): Promise<string> {
-        const count = await this.prisma.cuttingPlan.count();
-        return `PLN-${String(count + 1).padStart(6, '0')}`;
+        return this.db.select().from(cuttingPlanStocks)
+            .where(eq(cuttingPlanStocks.cuttingPlanId, planId));
     }
 }

@@ -67,15 +67,27 @@ function calculateArea(rect) {
  * @param height - Original height
  * @param canRotate - Whether piece can be rotated
  * @param allowRotation - Global rotation setting
+ * @param grainDirection - Grain direction constraint (optional)
+ * @param respectGrainDirection - Whether to enforce grain direction (optional)
  */
-function getOrientations(width, height, canRotate, allowRotation) {
+function getOrientations(width, height, canRotate, allowRotation, grainDirection, respectGrainDirection) {
     const orientations = [
         { width, height, rotated: false }
     ];
-    // Add rotated option if allowed and dimensions are different
-    if (allowRotation && canRotate && width !== height) {
-        orientations.push({ width: height, height: width, rotated: true });
+    // Check if rotation is allowed
+    if (!allowRotation || !canRotate || width === height) {
+        return orientations;
     }
+    // Check grain direction constraint
+    // If grain direction is HORIZONTAL or VERTICAL and we must respect it,
+    // rotation would violate the grain direction, so we skip it
+    if (respectGrainDirection && grainDirection && grainDirection !== 'NONE') {
+        // Rotation would flip horizontal grain to vertical and vice versa
+        // So we cannot rotate when grain direction matters
+        return orientations;
+    }
+    // Add rotated option
+    orientations.push({ width: height, height: width, rotated: true });
     return orientations;
 }
 // ==================== POSITION GENERATION ====================

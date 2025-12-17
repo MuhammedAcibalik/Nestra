@@ -1,24 +1,36 @@
 /**
- * CuttingJob Repository
- * Following SRP - Only handles CuttingJob data access
+ * Cutting Job Repository
+ * Migrated to Drizzle ORM
  */
 
-import { PrismaClient, Prisma, CuttingJob, CuttingJobItem } from '@prisma/client';
+import { Database } from '../../db';
+import { cuttingJobs, cuttingJobItems, orderItems, orders } from '../../db/schema';
+import { eq, desc, and, isNull, inArray, sql } from 'drizzle-orm';
+
+// Type definitions
+export type CuttingJob = typeof cuttingJobs.$inferSelect;
+export type CuttingJobItem = typeof cuttingJobItems.$inferSelect;
+
+export interface OrderItemForJob {
+    id: string;
+    itemCode: string | null;
+    itemName: string | null;
+    length: number | null;
+    width: number | null;
+    height: number | null;
+    thickness: number;
+    quantity: number;
+    geometryType: string;
+    materialTypeId: string;
+}
+
+export type CuttingJobItemWithRelations = CuttingJobItem & {
+    orderItem?: OrderItemForJob;
+};
 
 export type CuttingJobWithRelations = CuttingJob & {
-    items?: (CuttingJobItem & {
-        orderItem?: {
-            id: string;
-            itemCode: string | null;
-            itemName: string | null;
-            geometryType: string;
-            length: number | null;
-            width: number | null;
-            height: number | null;
-            quantity: number;
-        };
-    })[];
-    scenarios?: { id: string; name: string; status: string }[];
+    items?: CuttingJobItemWithRelations[];
+    materialType?: { id: string; name: string };
     _count?: { items: number; scenarios: number };
 };
 
@@ -31,10 +43,15 @@ export interface ICuttingJobFilter {
 export interface ICreateCuttingJobInput {
     materialTypeId: string;
     thickness: number;
-    orderItemIds: string[];
+    orderItemIds?: string[];
 }
 
-export interface IAddJobItemInput {
+export interface IUpdateCuttingJobInput {
+    status?: string;
+}
+
+export interface ICreateCuttingJobItemInput {
+    cuttingJobId: string;
     orderItemId: string;
     quantity: number;
 }
@@ -42,158 +59,161 @@ export interface IAddJobItemInput {
 export interface ICuttingJobRepository {
     findById(id: string): Promise<CuttingJobWithRelations | null>;
     findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]>;
-    findByJobNumber(jobNumber: string): Promise<CuttingJob | null>;
-    create(materialTypeId: string, thickness: number, items?: { orderItemId: string; quantity: number }[]): Promise<CuttingJob>;
+    create(data: ICreateCuttingJobInput): Promise<CuttingJob>;
+    update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob>;
     updateStatus(id: string, status: string): Promise<CuttingJob>;
     delete(id: string): Promise<void>;
-    addItem(jobId: string, data: IAddJobItemInput): Promise<CuttingJobItem>;
+    addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem>;
     removeItem(jobId: string, orderItemId: string): Promise<void>;
-    getItems(jobId: string): Promise<CuttingJobItem[]>;
+    getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
-    generateJobNumber(): Promise<string>;
-    // OrderItem queries for service use
-    getOrderItemsByIds(ids: string[]): Promise<{ id: string; quantity: number }[]>;
-    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
-        id: string;
-        materialTypeId: string;
-        thickness: number;
-        quantity: number;
-    }[]>;
-}
-
-interface CuttingJobWhereInput {
-    status?: string;
-    materialTypeId?: string;
-    thickness?: number;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]>;
 }
 
 export class CuttingJobRepository implements ICuttingJobRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+    private jobCounter = 1;
+
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<CuttingJobWithRelations | null> {
-        return this.prisma.cuttingJob.findUnique({
-            where: { id },
-            include: {
+        const result = await this.db.query.cuttingJobs.findFirst({
+            where: eq(cuttingJobs.id, id),
+            with: {
                 items: {
-                    include: {
-                        orderItem: {
-                            select: {
-                                id: true,
-                                itemCode: true,
-                                itemName: true,
-                                geometryType: true,
-                                length: true,
-                                width: true,
-                                height: true,
-                                quantity: true
-                            }
-                        }
+                    with: {
+                        orderItem: true
                     }
-                },
-                scenarios: {
-                    select: { id: true, name: true, status: true }
-                },
-                _count: { select: { items: true, scenarios: true } }
-            }
-        });
-    }
-
-    async findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]> {
-        const where: CuttingJobWhereInput = {};
-        if (filter?.status) where.status = filter.status;
-        if (filter?.materialTypeId) where.materialTypeId = filter.materialTypeId;
-        if (filter?.thickness) where.thickness = filter.thickness;
-
-        return this.prisma.cuttingJob.findMany({
-            where: where as Prisma.CuttingJobWhereInput,
-            include: {
-                items: {
-                    include: {
-                        orderItem: {
-                            select: {
-                                id: true,
-                                itemCode: true,
-                                itemName: true,
-                                geometryType: true,
-                                length: true,
-                                width: true,
-                                height: true,
-                                quantity: true
-                            }
-                        }
-                    }
-                },
-                _count: { select: { items: true, scenarios: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-    }
-
-    async findByJobNumber(jobNumber: string): Promise<CuttingJob | null> {
-        return this.prisma.cuttingJob.findUnique({ where: { jobNumber } });
-    }
-
-    async create(
-        materialTypeId: string,
-        thickness: number,
-        items?: { orderItemId: string; quantity: number }[]
-    ): Promise<CuttingJob> {
-        const jobNumber = await this.generateJobNumber();
-
-        return this.prisma.cuttingJob.create({
-            data: {
-                jobNumber,
-                materialTypeId,
-                thickness,
-                status: 'PENDING',
-                items: items ? {
-                    create: items.map(item => ({
-                        orderItemId: item.orderItemId,
-                        quantity: item.quantity
-                    }))
-                } : undefined
-            }
-        });
-    }
-
-    async updateStatus(id: string, status: string): Promise<CuttingJob> {
-        return this.prisma.cuttingJob.update({
-            where: { id },
-            data: {
-                status: status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED'
-            }
-        });
-    }
-
-    async delete(id: string): Promise<void> {
-        await this.prisma.cuttingJob.delete({ where: { id } });
-    }
-
-    async addItem(jobId: string, data: IAddJobItemInput): Promise<CuttingJobItem> {
-        return this.prisma.cuttingJobItem.create({
-            data: {
-                cuttingJobId: jobId,
-                orderItemId: data.orderItemId,
-                quantity: data.quantity
-            }
-        });
-    }
-
-    async removeItem(jobId: string, orderItemId: string): Promise<void> {
-        await this.prisma.cuttingJobItem.delete({
-            where: {
-                cuttingJobId_orderItemId: {
-                    cuttingJobId: jobId,
-                    orderItemId
                 }
             }
         });
+
+        if (!result) return null;
+
+        // Add _count
+        const itemCount = result.items?.length ?? 0;
+        return {
+            ...result,
+            _count: { items: itemCount, scenarios: 0 }
+        };
     }
 
-    async getItems(jobId: string): Promise<CuttingJobItem[]> {
-        return this.prisma.cuttingJobItem.findMany({
-            where: { cuttingJobId: jobId }
+    async findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]> {
+        const conditions = [];
+
+        if (filter?.status) {
+            conditions.push(eq(cuttingJobs.status, filter.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED'));
+        }
+        if (filter?.materialTypeId) {
+            conditions.push(eq(cuttingJobs.materialTypeId, filter.materialTypeId));
+        }
+        if (filter?.thickness !== undefined) {
+            conditions.push(eq(cuttingJobs.thickness, filter.thickness));
+        }
+
+        const results = await this.db.query.cuttingJobs.findMany({
+            where: conditions.length > 0 ? and(...conditions) : undefined,
+            with: {
+                items: {
+                    with: {
+                        orderItem: true
+                    }
+                }
+            },
+            orderBy: [desc(cuttingJobs.createdAt)]
         });
+
+        return results.map(job => ({
+            ...job,
+            _count: { items: job.items?.length ?? 0, scenarios: 0 }
+        }));
+    }
+
+    async create(data: ICreateCuttingJobInput): Promise<CuttingJob> {
+        const jobNumber = `JOB-${Date.now()}-${this.jobCounter++}`;
+
+        const [result] = await this.db.insert(cuttingJobs).values({
+            jobNumber: jobNumber as unknown as typeof cuttingJobs.$inferInsert['jobNumber'],
+            materialTypeId: data.materialTypeId,
+            thickness: data.thickness
+        }).returning();
+
+        // Add items if provided
+        if (data.orderItemIds && data.orderItemIds.length > 0) {
+            const orderItemsData = await this.getOrderItemsByIds(data.orderItemIds);
+            for (const item of orderItemsData) {
+                await this.db.insert(cuttingJobItems).values({
+                    cuttingJobId: result.id,
+                    orderItemId: item.id,
+                    quantity: item.quantity
+                });
+            }
+        }
+
+        return result;
+    }
+
+    async update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob> {
+        const [result] = await this.db.update(cuttingJobs)
+            .set({
+                status: data.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
+                updatedAt: new Date()
+            })
+            .where(eq(cuttingJobs.id, id))
+            .returning();
+        return result;
+    }
+
+    async updateStatus(id: string, status: string): Promise<CuttingJob> {
+        const [result] = await this.db.update(cuttingJobs)
+            .set({
+                status: status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
+                updatedAt: new Date()
+            })
+            .where(eq(cuttingJobs.id, id))
+            .returning();
+        return result;
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.db.delete(cuttingJobs).where(eq(cuttingJobs.id, id));
+    }
+
+    async addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem> {
+        const [result] = await this.db.insert(cuttingJobItems).values({
+            cuttingJobId: jobId,
+            orderItemId: data.orderItemId,
+            quantity: data.quantity
+        }).returning();
+        return result;
+    }
+
+    async removeItem(jobId: string, orderItemId: string): Promise<void> {
+        await this.db.delete(cuttingJobItems)
+            .where(and(
+                eq(cuttingJobItems.cuttingJobId, jobId),
+                eq(cuttingJobItems.orderItemId, orderItemId)
+            ));
+    }
+
+    async getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]> {
+        if (ids.length === 0) return [];
+
+        const results = await this.db.select({
+            id: orderItems.id,
+            itemCode: orderItems.itemCode,
+            itemName: orderItems.itemName,
+            length: orderItems.length,
+            width: orderItems.width,
+            height: orderItems.height,
+            thickness: orderItems.thickness,
+            quantity: orderItems.quantity,
+            geometryType: orderItems.geometryType,
+            materialTypeId: orderItems.materialTypeId
+        })
+            .from(orderItems)
+            .where(inArray(orderItems.id, ids));
+
+        return results;
     }
 
     async findByMaterialAndThickness(
@@ -201,68 +221,70 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         thickness: number,
         status?: string
     ): Promise<CuttingJobWithRelations[]> {
-        return this.prisma.cuttingJob.findMany({
-            where: {
-                materialTypeId,
-                thickness,
-                ...(status && { status: status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' })
-            },
-            include: {
+        const conditions = [
+            eq(cuttingJobs.materialTypeId, materialTypeId),
+            eq(cuttingJobs.thickness, thickness)
+        ];
+
+        if (status) {
+            conditions.push(eq(cuttingJobs.status, status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED'));
+        }
+
+        const results = await this.db.query.cuttingJobs.findMany({
+            where: and(...conditions),
+            with: {
                 items: {
-                    include: {
-                        orderItem: {
-                            select: {
-                                id: true,
-                                itemCode: true,
-                                itemName: true,
-                                geometryType: true,
-                                length: true,
-                                width: true,
-                                height: true,
-                                quantity: true
-                            }
-                        }
+                    with: {
+                        orderItem: true
                     }
-                },
-                _count: { select: { items: true, scenarios: true } }
+                }
             }
         });
+
+        return results.map(job => ({
+            ...job,
+            _count: { items: job.items?.length ?? 0, scenarios: 0 }
+        }));
     }
 
-    async generateJobNumber(): Promise<string> {
-        const count = await this.prisma.cuttingJob.count();
-        const date = new Date();
-        const year = date.getFullYear().toString().slice(-2);
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `JOB-${year}${month}-${String(count + 1).padStart(5, '0')}`;
-    }
+    async getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]> {
+        // Get order items that are not yet assigned to any cutting job
+        const assignedItemIds = await this.db
+            .select({ orderItemId: cuttingJobItems.orderItemId })
+            .from(cuttingJobItems);
 
-    async getOrderItemsByIds(ids: string[]): Promise<{ id: string; quantity: number }[]> {
-        const items = await this.prisma.orderItem.findMany({
-            where: { id: { in: ids } },
-            select: { id: true, quantity: true }
-        });
-        return items;
-    }
+        const assignedIds = assignedItemIds.map(a => a.orderItemId);
 
-    async getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
-        id: string;
-        materialTypeId: string;
-        thickness: number;
-        quantity: number;
-    }[]> {
-        const items = await this.prisma.orderItem.findMany({
-            where: {
-                order: confirmedOnly ? { status: 'CONFIRMED' } : undefined,
-                cuttingJobItems: { none: {} }
-            },
-            select: {
-                id: true,
-                materialTypeId: true,
-                thickness: true,
-                quantity: true
-            }
-        });
-        return items;
+        let query = this.db.select({
+            id: orderItems.id,
+            itemCode: orderItems.itemCode,
+            itemName: orderItems.itemName,
+            length: orderItems.length,
+            width: orderItems.width,
+            height: orderItems.height,
+            thickness: orderItems.thickness,
+            quantity: orderItems.quantity,
+            geometryType: orderItems.geometryType,
+            materialTypeId: orderItems.materialTypeId
+        })
+            .from(orderItems)
+            .innerJoin(orders, eq(orderItems.orderId, orders.id));
+
+        const conditions = [];
+
+        if (confirmedOnly) {
+            conditions.push(eq(orders.status, 'CONFIRMED'));
+        }
+
+        // Exclude already assigned items
+        if (assignedIds.length > 0) {
+            conditions.push(sql`${orderItems.id} NOT IN (${sql.join(assignedIds.map(id => sql`${id}`), sql`, `)})`);
+        }
+
+        if (conditions.length > 0) {
+            return query.where(and(...conditions));
+        }
+
+        return query;
     }
 }

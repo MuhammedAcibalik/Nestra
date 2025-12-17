@@ -1,15 +1,21 @@
 /**
  * Optimization Repository
- * Following SRP - Only handles optimization data access
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, OptimizationScenario, CuttingPlan, CuttingPlanStock } from '@prisma/client';
-import { ICreateScenarioInput, IScenarioFilter, IPlanFilter } from '../../core/interfaces';
+import { Database } from '../../db';
+import { optimizationScenarios, cuttingPlans, cuttingPlanStocks } from '../../db/schema';
+import { IOptimizationParameters } from '../../core/interfaces';
+export type OptimizationScenario = typeof optimizationScenarios.$inferSelect;
+export type CuttingPlan = typeof cuttingPlans.$inferSelect;
+export type CuttingPlanStock = typeof cuttingPlanStocks.$inferSelect;
 export type ScenarioWithRelations = OptimizationScenario & {
+    results?: CuttingPlan[];
     cuttingJob?: {
         id: string;
         jobNumber: string;
     };
     createdBy?: {
+        id: string;
         firstName: string;
         lastName: string;
     };
@@ -18,66 +24,99 @@ export type ScenarioWithRelations = OptimizationScenario & {
     };
 };
 export type PlanWithRelations = CuttingPlan & {
-    scenario?: {
-        id: string;
+    stockItems?: CuttingPlanStock[];
+    stockUsed?: CuttingPlanStock[];
+    scenario?: OptimizationScenario & {
         name: string;
     };
-    stockUsed?: CuttingPlanStock[];
+    approvedBy?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+    } | null;
     assignedMachine?: {
         id: string;
         name: string;
         code: string;
     } | null;
-    approvedBy?: {
-        firstName: string;
-        lastName: string;
-    } | null;
-    _count?: {
-        stockItems: number;
-    };
 };
-interface CreatePlanInput {
+export interface IScenarioFilter {
+    status?: string;
+    cuttingJobId?: string;
+    createdById?: string;
+}
+export interface IPlanFilter {
+    status?: string;
+    scenarioId?: string;
+}
+export interface ICreateScenarioInput {
+    name: string;
+    cuttingJobId: string;
+    parameters: IOptimizationParameters;
+    useWarehouseStock?: boolean;
+    useStandardSizes?: boolean;
+    selectedStockIds?: string[];
+}
+export interface ICreatePlanData {
     totalWaste: number;
     wastePercentage: number;
     stockUsedCount: number;
     estimatedTime?: number;
     estimatedCost?: number;
-    layoutData: PlanLayoutData[];
+    layoutData?: Array<{
+        stockItemId: string;
+        sequence: number;
+        waste: number;
+        wastePercentage: number;
+        layoutJson?: unknown;
+    }>;
 }
-interface PlanLayoutData {
-    stockItemId: string;
-    sequence: number;
-    waste: number;
-    wastePercentage: number;
-    layoutJson: string;
+/** Layout data for cutting plan visualization */
+export interface ILayoutData {
+    pieces?: Array<{
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        itemId: string;
+    }>;
+    cuts?: Array<{
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+    }>;
+    waste?: Array<{
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }>;
+    [key: string]: unknown;
 }
 export interface IOptimizationRepository {
     findScenarioById(id: string): Promise<ScenarioWithRelations | null>;
     findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]>;
     createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario>;
     updateScenarioStatus(id: string, status: string): Promise<OptimizationScenario>;
-    deleteScenario(id: string): Promise<void>;
     findPlanById(id: string): Promise<PlanWithRelations | null>;
     findAllPlans(filter?: IPlanFilter): Promise<PlanWithRelations[]>;
-    createPlan(scenarioId: string, data: CreatePlanInput): Promise<CuttingPlan>;
+    createPlan(scenarioId: string, data: ICreatePlanData): Promise<CuttingPlan>;
     updatePlanStatus(id: string, status: string, approvedById?: string, machineId?: string): Promise<CuttingPlan>;
     getPlanStockItems(planId: string): Promise<CuttingPlanStock[]>;
-    generatePlanNumber(): Promise<string>;
 }
 export declare class OptimizationRepository implements IOptimizationRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    private planCounter;
+    constructor(db: Database);
     findScenarioById(id: string): Promise<ScenarioWithRelations | null>;
     findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]>;
     createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario>;
     updateScenarioStatus(id: string, status: string): Promise<OptimizationScenario>;
-    deleteScenario(id: string): Promise<void>;
     findPlanById(id: string): Promise<PlanWithRelations | null>;
     findAllPlans(filter?: IPlanFilter): Promise<PlanWithRelations[]>;
-    createPlan(scenarioId: string, data: CreatePlanInput): Promise<CuttingPlan>;
+    createPlan(scenarioId: string, data: ICreatePlanData): Promise<CuttingPlan>;
     updatePlanStatus(id: string, status: string, approvedById?: string, machineId?: string): Promise<CuttingPlan>;
     getPlanStockItems(planId: string): Promise<CuttingPlanStock[]>;
-    generatePlanNumber(): Promise<string>;
 }
-export {};
 //# sourceMappingURL=optimization.repository.d.ts.map

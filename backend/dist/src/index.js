@@ -46,7 +46,7 @@ const express_1 = __importDefault(require("express"));
 const node_http_1 = require("node:http");
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const client_1 = require("@prisma/client");
+const db_1 = require("./db");
 // Modules
 const material_1 = require("./modules/material");
 const stock_1 = require("./modules/stock");
@@ -79,6 +79,8 @@ const timeout_middleware_1 = require("./middleware/timeout.middleware");
 const request_logging_middleware_1 = require("./middleware/request-logging.middleware");
 // Monitoring
 const monitoring_1 = require("./core/monitoring");
+// Config
+const config_1 = require("./core/config");
 // Services (Microservice Infrastructure)
 const services_1 = require("./core/services");
 const optimization_service_handler_1 = require("./modules/optimization/optimization.service-handler");
@@ -107,7 +109,7 @@ dotenv_1.default.config();
 class Application {
     app;
     httpServer;
-    prisma;
+    db;
     port;
     // Services stored as class properties for route initialization
     materialService;
@@ -125,31 +127,32 @@ class Application {
     constructor() {
         this.app = (0, express_1.default)();
         this.httpServer = (0, node_http_1.createServer)(this.app);
-        this.prisma = new client_1.PrismaClient();
+        this.db = (0, db_1.getDb)();
         this.port = Number.parseInt(process.env.PORT ?? '3000', 10);
     }
     /**
      * Initialize all dependencies - Composition Root
      */
     initializeDependencies() {
-        // Auth configuration
+        // Auth configuration - uses centralized config (JWT_SECRET required)
+        const config = (0, config_1.getConfig)();
         const authConfig = {
-            jwtSecret: process.env.JWT_SECRET ?? 'your-secret-key',
-            jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+            jwtSecret: config.jwt.secret,
+            jwtExpiresIn: config.jwt.expiresIn,
             saltRounds: 10
         };
         // Initialize repositories
-        const materialRepository = new material_1.MaterialRepository(this.prisma);
-        const stockRepository = new stock_1.StockRepository(this.prisma);
-        const userRepository = new auth_1.UserRepository(this.prisma);
-        const orderRepository = new order_1.OrderRepository(this.prisma);
-        const optimizationRepository = new optimization_1.OptimizationRepository(this.prisma);
-        const productionRepository = new production_1.ProductionRepository(this.prisma);
-        const reportRepository = new report_1.ReportRepository(this.prisma);
-        const cuttingJobRepository = new cutting_job_1.CuttingJobRepository(this.prisma);
-        const machineRepository = new machine_1.MachineRepository(this.prisma);
-        const customerRepository = new customer_1.CustomerRepository(this.prisma);
-        const locationRepository = new location_1.LocationRepository(this.prisma);
+        const materialRepository = new material_1.MaterialRepository(this.db);
+        const stockRepository = new stock_1.StockRepository(this.db);
+        const userRepository = new auth_1.UserRepository(this.db);
+        const orderRepository = new order_1.OrderRepository(this.db);
+        const optimizationRepository = new optimization_1.OptimizationRepository(this.db);
+        const productionRepository = new production_1.ProductionRepository(this.db);
+        const reportRepository = new report_1.ReportRepository(this.db);
+        const cuttingJobRepository = new cutting_job_1.CuttingJobRepository(this.db);
+        const machineRepository = new machine_1.MachineRepository(this.db);
+        const customerRepository = new customer_1.CustomerRepository(this.db);
+        const locationRepository = new location_1.LocationRepository(this.db);
         // Initialize strategy registry
         // ==================== MICROSERVICE INFRASTRUCTURE ====================
         // Create service handlers for inter-module communication
@@ -197,7 +200,7 @@ class Application {
         this.productionService = new production_1.ProductionService(productionRepository, optimizationClient, stockClient);
         this.reportService = new report_1.ReportService(reportRepository);
         this.cuttingJobService = new cutting_job_1.CuttingJobService(cuttingJobRepository);
-        const importRepository = new import_1.ImportRepository(this.prisma);
+        const importRepository = new import_1.ImportRepository(this.db);
         this.importService = new import_1.ImportService(importRepository);
         this.machineService = new machine_1.MachineService(machineRepository);
         this.customerService = new customer_1.CustomerService(customerRepository);
@@ -277,17 +280,17 @@ class Application {
         const customerController = new customer_1.CustomerController(this.customerService);
         const locationController = new location_1.LocationController(this.locationService);
         // Export module with repository injection
-        const exportRepository = new export_1.ExportRepository(this.prisma);
+        const exportRepository = new export_1.ExportRepository(this.db);
         const exportController = new export_1.ExportController(exportRepository);
         // Dashboard module with repository -> service -> controller injection
-        const dashboardRepository = new dashboard_1.DashboardRepository(this.prisma);
+        const dashboardRepository = new dashboard_1.DashboardRepository(this.db);
         const dashboardService = new dashboard_1.DashboardService(dashboardRepository);
         const dashboardController = new dashboard_1.DashboardController(dashboardService);
         // Create auth middleware with proper type
         const authMiddleware = (0, authMiddleware_1.createAuthMiddleware)(this.authService);
         // Health check endpoints (public)
-        const healthController = (0, health_controller_1.createHealthController)(this.prisma);
-        this.app.use(healthController.getRouter());
+        const healthController = (0, health_controller_1.getHealthController)();
+        this.app.use(healthController.router);
         // Public routes (with stricter rate limiting)
         this.app.use('/api/auth', rate_limit_middleware_1.authRateLimiter, authController.router);
         // Protected routes
@@ -316,8 +319,8 @@ class Application {
      */
     async connectDatabase() {
         try {
-            await this.prisma.$connect();
-            console.log('✅ Database connected');
+            // Drizzle uses connection pooling - connection is established on first query
+            console.log('✅ Database connection pool ready');
         }
         catch (error) {
             console.error('❌ Database connection failed:', error);
@@ -368,7 +371,7 @@ class Application {
         const { shutdownOptimizationPool } = await Promise.resolve().then(() => __importStar(require('./workers')));
         await shutdownOptimizationPool();
         console.log('✅ Worker pool terminated');
-        await this.prisma.$disconnect();
+        await (0, db_1.closeDb)();
         console.log('✅ Database disconnected');
     }
 }

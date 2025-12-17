@@ -8,7 +8,7 @@ import express, { Express } from 'express';
 import { createServer, Server as HttpServer } from 'node:http';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { getDb, closeDb, Database } from './db';
 
 // Modules
 import { MaterialRepository, MaterialService, MaterialController } from './modules/material';
@@ -33,7 +33,7 @@ import { ExportRepository, ExportController } from './modules/export';
 import { DashboardRepository, DashboardService, DashboardController } from './modules/dashboard';
 
 // Health
-import { createHealthController } from './controllers/health.controller';
+import { getHealthController } from './controllers/health.controller';
 
 // WebSocket
 import { websocketService } from './websocket';
@@ -90,7 +90,7 @@ dotenv.config();
 export class Application {
     private readonly app: Express;
     private readonly httpServer: HttpServer;
-    private readonly prisma: PrismaClient;
+    private readonly db: Database;
     private readonly port: number;
 
     // Services stored as class properties for route initialization
@@ -110,7 +110,7 @@ export class Application {
     constructor() {
         this.app = express();
         this.httpServer = createServer(this.app);
-        this.prisma = new PrismaClient();
+        this.db = getDb();
         this.port = Number.parseInt(process.env.PORT ?? '3000', 10);
     }
 
@@ -127,17 +127,17 @@ export class Application {
         };
 
         // Initialize repositories
-        const materialRepository = new MaterialRepository(this.prisma);
-        const stockRepository = new StockRepository(this.prisma);
-        const userRepository = new UserRepository(this.prisma);
-        const orderRepository = new OrderRepository(this.prisma);
-        const optimizationRepository = new OptimizationRepository(this.prisma);
-        const productionRepository = new ProductionRepository(this.prisma);
-        const reportRepository = new ReportRepository(this.prisma);
-        const cuttingJobRepository = new CuttingJobRepository(this.prisma);
-        const machineRepository = new MachineRepository(this.prisma);
-        const customerRepository = new CustomerRepository(this.prisma);
-        const locationRepository = new LocationRepository(this.prisma);
+        const materialRepository = new MaterialRepository(this.db);
+        const stockRepository = new StockRepository(this.db);
+        const userRepository = new UserRepository(this.db);
+        const orderRepository = new OrderRepository(this.db);
+        const optimizationRepository = new OptimizationRepository(this.db);
+        const productionRepository = new ProductionRepository(this.db);
+        const reportRepository = new ReportRepository(this.db);
+        const cuttingJobRepository = new CuttingJobRepository(this.db);
+        const machineRepository = new MachineRepository(this.db);
+        const customerRepository = new CustomerRepository(this.db);
+        const locationRepository = new LocationRepository(this.db);
 
         // Initialize strategy registry
 
@@ -201,7 +201,7 @@ export class Application {
 
         this.reportService = new ReportService(reportRepository);
         this.cuttingJobService = new CuttingJobService(cuttingJobRepository);
-        const importRepository = new ImportRepository(this.prisma);
+        const importRepository = new ImportRepository(this.db);
         this.importService = new ImportService(importRepository);
         this.machineService = new MachineService(machineRepository);
         this.customerService = new CustomerService(customerRepository);
@@ -299,11 +299,11 @@ export class Application {
         const customerController = new CustomerController(this.customerService);
         const locationController = new LocationController(this.locationService);
         // Export module with repository injection
-        const exportRepository = new ExportRepository(this.prisma);
+        const exportRepository = new ExportRepository(this.db);
         const exportController = new ExportController(exportRepository);
 
         // Dashboard module with repository -> service -> controller injection
-        const dashboardRepository = new DashboardRepository(this.prisma);
+        const dashboardRepository = new DashboardRepository(this.db);
         const dashboardService = new DashboardService(dashboardRepository);
         const dashboardController = new DashboardController(dashboardService);
 
@@ -311,8 +311,8 @@ export class Application {
         const authMiddleware = createAuthMiddleware(this.authService as IAuthService);
 
         // Health check endpoints (public)
-        const healthController = createHealthController(this.prisma);
-        this.app.use(healthController.getRouter());
+        const healthController = getHealthController();
+        this.app.use(healthController.router);
 
         // Public routes (with stricter rate limiting)
         this.app.use('/api/auth', authRateLimiter, authController.router);
@@ -345,8 +345,8 @@ export class Application {
      */
     private async connectDatabase(): Promise<void> {
         try {
-            await this.prisma.$connect();
-            console.log('✅ Database connected');
+            // Drizzle uses connection pooling - connection is established on first query
+            console.log('✅ Database connection pool ready');
         } catch (error) {
             console.error('❌ Database connection failed:', error);
             process.exit(1);
@@ -405,7 +405,7 @@ export class Application {
         await shutdownOptimizationPool();
         console.log('✅ Worker pool terminated');
 
-        await this.prisma.$disconnect();
+        await closeDb();
         console.log('✅ Database disconnected');
     }
 }

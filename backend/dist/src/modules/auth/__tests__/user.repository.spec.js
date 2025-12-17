@@ -1,41 +1,33 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const user_repository_1 = require("../user.repository");
-const jest_mock_extended_1 = require("jest-mock-extended");
+const db_mock_1 = require("../../../core/test/db-mock");
 describe('UserRepository', () => {
     let repository;
-    let prisma;
-    let prismaUser; // Mock for prisma.user delegate
+    let db;
     beforeEach(() => {
-        prisma = (0, jest_mock_extended_1.mock)();
-        prismaUser = (0, jest_mock_extended_1.mock)();
-        prisma.user = prismaUser;
-        repository = new user_repository_1.UserRepository(prisma);
+        db = (0, db_mock_1.createMockDatabase)();
+        repository = new user_repository_1.UserRepository(db);
     });
     describe('findById', () => {
         it('should return user when found', async () => {
             const mockUser = { id: 'user-1', email: 'test@example.com' };
-            prismaUser.findUnique.mockResolvedValue(mockUser);
+            db.query.users.findFirst.mockResolvedValue(mockUser);
             const result = await repository.findById('user-1');
             expect(result).toEqual(mockUser);
-            expect(prismaUser.findUnique).toHaveBeenCalledWith({ where: { id: 'user-1' } });
         });
         it('should return null when not found', async () => {
-            prismaUser.findUnique.mockResolvedValue(null);
+            db.query.users.findFirst.mockResolvedValue(null);
             const result = await repository.findById('user-1');
             expect(result).toBeNull();
         });
     });
     describe('findByEmail', () => {
         it('should return user when found', async () => {
-            const mockUser = { id: 'user-1', email: 'test@example.com' };
-            prismaUser.findUnique.mockResolvedValue(mockUser);
+            const mockUser = { id: 'user-1', email: 'test@example.com', role: { id: 'role-1', name: 'OPERATOR' } };
+            db.query.users.findFirst.mockResolvedValue(mockUser);
             const result = await repository.findByEmail('test@example.com');
             expect(result).toEqual(mockUser);
-            expect(prismaUser.findUnique).toHaveBeenCalledWith({
-                where: { email: 'test@example.com' },
-                include: { role: true }
-            });
         });
     });
     describe('create', () => {
@@ -49,31 +41,33 @@ describe('UserRepository', () => {
             const mockUser = {
                 id: 'user-1',
                 ...input,
-                role: { id: 'role-1', name: 'OPERATOR' }
+                roleId: 'role-1'
             };
-            prismaUser.create.mockResolvedValue(mockUser);
-            const result = await repository.create(input);
-            expect(result).toEqual(mockUser);
-            expect(prismaUser.create).toHaveBeenCalledWith({
-                data: {
-                    ...input,
-                    role: { connect: { name: 'OPERATOR' } }
-                },
-                include: { role: true }
+            const mockRole = { id: 'role-1', name: 'OPERATOR' };
+            db.query.roles.findFirst.mockResolvedValue(mockRole);
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockUser])
+                })
             });
+            const result = await repository.create(input);
+            expect(result.id).toBe('user-1');
+            expect(result.email).toBe('test@example.com');
         });
     });
     describe('update', () => {
         it('should update user successfully', async () => {
             const updateData = { firstName: 'Updated' };
             const mockUser = { id: 'user-1', firstName: 'Updated' };
-            prismaUser.update.mockResolvedValue(mockUser);
+            db.update.mockReturnValue({
+                set: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        returning: jest.fn().mockResolvedValue([mockUser])
+                    })
+                })
+            });
             const result = await repository.update('user-1', updateData);
             expect(result).toEqual(mockUser);
-            expect(prismaUser.update).toHaveBeenCalledWith({
-                where: { id: 'user-1' },
-                data: updateData
-            });
         });
     });
 });

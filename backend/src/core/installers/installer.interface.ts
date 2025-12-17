@@ -4,7 +4,7 @@
  * Following Microservice Pattern: Composition Root Decomposition
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Database } from '../../db';
 import { Router, RequestHandler } from 'express';
 import { ServiceRegistry } from '../services';
 
@@ -14,8 +14,8 @@ import { ServiceRegistry } from '../services';
  * Installation context provided to each module installer
  */
 export interface IInstallContext {
-    /** Prisma database client */
-    readonly prisma: PrismaClient;
+    /** Drizzle database instance */
+    readonly db: Database;
     /** Service registry for inter-module communication */
     readonly registry: ServiceRegistry;
     /** Auth middleware for protected routes */

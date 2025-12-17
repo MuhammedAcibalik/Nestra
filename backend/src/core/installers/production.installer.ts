@@ -11,9 +11,9 @@ export const productionInstaller: IModuleInstaller = {
     name: 'production',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new ProductionRepository(prisma);
+        const repository = new ProductionRepository(db);
 
         // Event handler
         const eventHandler = new ProductionEventHandler(repository);

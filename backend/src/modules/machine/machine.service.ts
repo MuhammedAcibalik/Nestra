@@ -3,7 +3,6 @@
  * Following SOLID principles with proper types
  */
 
-import { MachineType } from '@prisma/client';
 import {
     IResult,
     success,
@@ -12,6 +11,7 @@ import {
 import {
     IMachineRepository,
     MachineWithRelations,
+    MachineType,
     IMachineFilter,
     ICreateMachineInput,
     IUpdateMachineInput,

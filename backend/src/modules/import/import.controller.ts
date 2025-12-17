@@ -10,6 +10,17 @@ import { createModuleLogger } from '../../core/logger';
 
 const logger = createModuleLogger('ImportController');
 
+/** Extended Request with user authentication info */
+interface AuthenticatedRequest extends Request {
+    user?: {
+        id: string;
+        userId?: string;
+        email: string;
+        roleId?: string;
+        roleName?: string;
+    };
+}
+
 // Configure multer for memory storage
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -52,7 +63,7 @@ export class ImportController {
         this.router.post('/suggest-mapping', this.suggestMapping.bind(this));
     }
 
-    private async importOrders(req: Request, res: Response): Promise<void> {
+    private async importOrders(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.file) {
                 res.status(400).json({
@@ -66,7 +77,7 @@ export class ImportController {
             }
 
             // Get user ID from auth
-            const userId = (req as any).user?.id;
+            const userId = req.user?.id ?? req.user?.userId;
             if (!userId) {
                 res.status(401).json({
                     success: false,

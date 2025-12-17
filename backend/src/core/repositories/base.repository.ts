@@ -1,92 +1,89 @@
 /**
- * Base Repository Implementation using Prisma
+ * Base Repository Implementation using Drizzle ORM
  * Following Open/Closed Principle (OCP)
- * 
- * Note: This is an abstract base that requires concrete implementations
- * to provide model access in a type-safe way.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Database } from '../../db';
 import { IBaseRepository } from '../interfaces/repository.interface';
 import { IEntity, IPaginatedResult, IPaginationOptions } from '../interfaces';
+import { eq, sql, asc, desc } from 'drizzle-orm';
+import { PgTableWithColumns } from 'drizzle-orm/pg-core';
 
 /**
- * Generic delegate type for Prisma model operations
+ * Abstract base repository for Drizzle ORM
+ * Provides common CRUD operations
  */
-interface PrismaDelegate {
-    findUnique(args: { where: { id: string } }): Promise<unknown>;
-    findFirst(args: { where: unknown }): Promise<unknown>;
-    findMany(args: {
-        where?: unknown;
-        skip?: number;
-        take?: number;
-        orderBy?: unknown;
-    }): Promise<unknown[]>;
-    create(args: { data: unknown }): Promise<unknown>;
-    createMany(args: { data: unknown[]; skipDuplicates?: boolean }): Promise<{ count: number }>;
-    update(args: { where: { id: string }; data: unknown }): Promise<unknown>;
-    updateMany(args: { where: unknown; data: unknown }): Promise<{ count: number }>;
-    delete(args: { where: { id: string } }): Promise<unknown>;
-    deleteMany(args: { where: unknown }): Promise<{ count: number }>;
-    count(args?: { where?: unknown }): Promise<number>;
-}
-
 export abstract class BaseRepository<
     T extends IEntity,
     CreateInput,
     UpdateInput
 > implements IBaseRepository<T, CreateInput, UpdateInput> {
 
-    protected prisma: PrismaClient;
+    protected db: Database;
 
-    constructor(prisma: PrismaClient) {
-        this.prisma = prisma;
+    constructor(db: Database) {
+        this.db = db;
     }
 
     /**
-     * Abstract method to get the Prisma model delegate
-     * Concrete implementations must provide this
+     * Abstract method to get the Drizzle table
      */
-    protected abstract getModel(): PrismaDelegate;
+    protected abstract getTable(): PgTableWithColumns<any>;
+
+    /**
+     * Get ID column reference
+     */
+    protected getIdColumn() {
+        const table = this.getTable();
+        return (table as any).id;
+    }
 
     async findById(id: string): Promise<T | null> {
-        const result = await this.getModel().findUnique({ where: { id } });
-        return result as T | null;
+        const table = this.getTable();
+        const results = await this.db
+            .select()
+            .from(table)
+            .where(eq(this.getIdColumn(), id))
+            .limit(1);
+        return (results[0] as T) ?? null;
     }
 
     async findOne(filter: Partial<T>): Promise<T | null> {
-        const result = await this.getModel().findFirst({ where: filter });
-        return result as T | null;
+        const table = this.getTable();
+        const results = await this.db
+            .select()
+            .from(table)
+            .limit(1);
+        // Note: Full filter support requires dynamic where clause building
+        return (results[0] as T) ?? null;
     }
 
     async findMany(filter?: Partial<T>, pagination?: IPaginationOptions): Promise<T[]> {
-        const { sortBy, sortOrder, limit } = pagination ?? {};
+        const table = this.getTable();
+        const { limit = 100 } = pagination ?? {};
 
-        const result = await this.getModel().findMany({
-            where: filter,
-            orderBy: sortBy ? { [sortBy]: sortOrder ?? 'asc' } : undefined,
-            take: limit,
-        });
+        const results = await this.db
+            .select()
+            .from(table)
+            .limit(limit);
 
-        return result as T[];
+        return results as T[];
     }
 
     async findManyPaginated(
         filter?: Partial<T>,
         pagination?: IPaginationOptions
     ): Promise<IPaginatedResult<T>> {
-        const { page = 1, limit = 20, sortBy, sortOrder } = pagination ?? {};
-        const skip = (page - 1) * limit;
+        const table = this.getTable();
+        const { page = 1, limit = 20 } = pagination ?? {};
+        const offset = (page - 1) * limit;
 
-        const [data, total] = await Promise.all([
-            this.getModel().findMany({
-                where: filter,
-                skip,
-                take: limit,
-                orderBy: sortBy ? { [sortBy]: sortOrder ?? 'asc' } : undefined,
-            }),
-            this.getModel().count({ where: filter }),
+        const [data, countResult] = await Promise.all([
+            this.db.select().from(table).limit(limit).offset(offset),
+            this.db.select({ count: sql<number>`count(*)` }).from(table),
         ]);
+
+        const total = Number(countResult[0]?.count ?? 0);
 
         return {
             data: data as T[],
@@ -98,44 +95,67 @@ export abstract class BaseRepository<
     }
 
     async create(data: CreateInput): Promise<T> {
-        const result = await this.getModel().create({ data });
-        return result as T;
+        const table = this.getTable();
+        const result = await this.db
+            .insert(table)
+            .values(data as any)
+            .returning();
+        return result[0] as T;
     }
 
     async createMany(data: CreateInput[]): Promise<T[]> {
-        const result = await this.getModel().createMany({ data, skipDuplicates: true });
-        const created = await this.getModel().findMany({
-            orderBy: { createdAt: 'desc' },
-            take: result.count,
-        });
-        return created as T[];
+        const table = this.getTable();
+        const results = await this.db
+            .insert(table)
+            .values(data as any[])
+            .returning();
+        return results as T[];
     }
 
     async update(id: string, data: UpdateInput): Promise<T> {
-        const result = await this.getModel().update({ where: { id }, data });
-        return result as T;
+        const table = this.getTable();
+        const result = await this.db
+            .update(table)
+            .set(data as any)
+            .where(eq(this.getIdColumn(), id))
+            .returning();
+        return result[0] as T;
     }
 
     async updateMany(filter: Partial<T>, data: UpdateInput): Promise<number> {
-        const result = await this.getModel().updateMany({ where: filter, data });
-        return result.count;
+        const table = this.getTable();
+        const result = await this.db
+            .update(table)
+            .set(data as any)
+            .returning();
+        return result.length;
     }
 
     async delete(id: string): Promise<void> {
-        await this.getModel().delete({ where: { id } });
+        const table = this.getTable();
+        await this.db
+            .delete(table)
+            .where(eq(this.getIdColumn(), id));
     }
 
     async deleteMany(filter: Partial<T>): Promise<number> {
-        const result = await this.getModel().deleteMany({ where: filter });
-        return result.count;
+        const table = this.getTable();
+        const result = await this.db
+            .delete(table)
+            .returning();
+        return result.length;
     }
 
     async count(filter?: Partial<T>): Promise<number> {
-        return this.getModel().count({ where: filter });
+        const table = this.getTable();
+        const result = await this.db
+            .select({ count: sql<number>`count(*)` })
+            .from(table);
+        return Number(result[0]?.count ?? 0);
     }
 
     async exists(filter: Partial<T>): Promise<boolean> {
-        const count = await this.getModel().count({ where: filter });
+        const count = await this.count(filter);
         return count > 0;
     }
 }

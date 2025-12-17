@@ -1,30 +1,30 @@
 /**
  * Dashboard Repository
- * Handles data access for dashboard analytics
- * Following SRP - Only handles dashboard-related data queries
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient } from '@prisma/client';
+import { Database } from '../../db';
 export interface IOrderStats {
     total: number;
     pending: number;
-    inProduction: number;
+    inProgress: number;
     completed: number;
 }
 export interface IJobStats {
     total: number;
     pending: number;
     optimizing: number;
-    inProduction: number;
+    completed: number;
 }
 export interface IStockStats {
     totalItems: number;
-    lowStockCount: number;
+    lowStockItems: number;
     totalValue: number;
 }
 export interface IProductionStats {
+    totalPlans: number;
     activePlans: number;
-    completedToday: number;
-    averageWastePercentage: number;
+    completedPlans: number;
+    avgWastePercentage: number;
 }
 export interface IRecentOrder {
     id: string;
@@ -38,22 +38,19 @@ export interface IRecentJob {
     status: string;
     updatedAt: Date;
 }
-export interface IPlanWasteData {
-    createdAt: Date;
+export interface ICompletedPlan {
+    id: string;
     totalWaste: number;
     wastePercentage: number;
+    createdAt: Date;
 }
-export interface IJobMaterialData {
+export interface IJobWithMaterials {
     materialTypeId: string;
     scenarios: Array<{
         results: Array<{
             wastePercentage: number;
         }>;
     }>;
-}
-export interface IMaterialTypeData {
-    id: string;
-    name: string;
 }
 export interface IDashboardRepository {
     getOrderStats(): Promise<IOrderStats>;
@@ -62,21 +59,27 @@ export interface IDashboardRepository {
     getProductionStats(): Promise<IProductionStats>;
     getRecentOrders(limit: number): Promise<IRecentOrder[]>;
     getRecentJobs(limit: number): Promise<IRecentJob[]>;
-    getCompletedPlansInPeriod(startDate: Date): Promise<IPlanWasteData[]>;
-    getCompletedJobsWithMaterials(): Promise<IJobMaterialData[]>;
-    getAllMaterialTypes(): Promise<IMaterialTypeData[]>;
+    getCompletedPlansInPeriod(startDate: Date): Promise<ICompletedPlan[]>;
+    getCompletedJobsWithMaterials(): Promise<IJobWithMaterials[]>;
+    getAllMaterialTypes(): Promise<Array<{
+        id: string;
+        name: string;
+    }>>;
 }
 export declare class DashboardRepository implements IDashboardRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    constructor(db: Database);
     getOrderStats(): Promise<IOrderStats>;
     getJobStats(): Promise<IJobStats>;
     getStockStats(): Promise<IStockStats>;
     getProductionStats(): Promise<IProductionStats>;
-    getRecentOrders(limit: number): Promise<IRecentOrder[]>;
-    getRecentJobs(limit: number): Promise<IRecentJob[]>;
-    getCompletedPlansInPeriod(startDate: Date): Promise<IPlanWasteData[]>;
-    getCompletedJobsWithMaterials(): Promise<IJobMaterialData[]>;
-    getAllMaterialTypes(): Promise<IMaterialTypeData[]>;
+    getRecentOrders(limit?: number): Promise<IRecentOrder[]>;
+    getRecentJobs(limit?: number): Promise<IRecentJob[]>;
+    getCompletedPlansInPeriod(startDate: Date): Promise<ICompletedPlan[]>;
+    getCompletedJobsWithMaterials(): Promise<IJobWithMaterials[]>;
+    getAllMaterialTypes(): Promise<Array<{
+        id: string;
+        name: string;
+    }>>;
 }
 //# sourceMappingURL=dashboard.repository.d.ts.map

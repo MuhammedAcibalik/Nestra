@@ -1,26 +1,32 @@
 /**
- * CuttingJob Repository
- * Following SRP - Only handles CuttingJob data access
+ * Cutting Job Repository
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, CuttingJob, CuttingJobItem } from '@prisma/client';
+import { Database } from '../../db';
+import { cuttingJobs, cuttingJobItems } from '../../db/schema';
+export type CuttingJob = typeof cuttingJobs.$inferSelect;
+export type CuttingJobItem = typeof cuttingJobItems.$inferSelect;
+export interface OrderItemForJob {
+    id: string;
+    itemCode: string | null;
+    itemName: string | null;
+    length: number | null;
+    width: number | null;
+    height: number | null;
+    thickness: number;
+    quantity: number;
+    geometryType: string;
+    materialTypeId: string;
+}
+export type CuttingJobItemWithRelations = CuttingJobItem & {
+    orderItem?: OrderItemForJob;
+};
 export type CuttingJobWithRelations = CuttingJob & {
-    items?: (CuttingJobItem & {
-        orderItem?: {
-            id: string;
-            itemCode: string | null;
-            itemName: string | null;
-            geometryType: string;
-            length: number | null;
-            width: number | null;
-            height: number | null;
-            quantity: number;
-        };
-    })[];
-    scenarios?: {
+    items?: CuttingJobItemWithRelations[];
+    materialType?: {
         id: string;
         name: string;
-        status: string;
-    }[];
+    };
     _count?: {
         items: number;
         scenarios: number;
@@ -34,64 +40,43 @@ export interface ICuttingJobFilter {
 export interface ICreateCuttingJobInput {
     materialTypeId: string;
     thickness: number;
-    orderItemIds: string[];
+    orderItemIds?: string[];
 }
-export interface IAddJobItemInput {
+export interface IUpdateCuttingJobInput {
+    status?: string;
+}
+export interface ICreateCuttingJobItemInput {
+    cuttingJobId: string;
     orderItemId: string;
     quantity: number;
 }
 export interface ICuttingJobRepository {
     findById(id: string): Promise<CuttingJobWithRelations | null>;
     findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]>;
-    findByJobNumber(jobNumber: string): Promise<CuttingJob | null>;
-    create(materialTypeId: string, thickness: number, items?: {
-        orderItemId: string;
-        quantity: number;
-    }[]): Promise<CuttingJob>;
+    create(data: ICreateCuttingJobInput): Promise<CuttingJob>;
+    update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob>;
     updateStatus(id: string, status: string): Promise<CuttingJob>;
     delete(id: string): Promise<void>;
-    addItem(jobId: string, data: IAddJobItemInput): Promise<CuttingJobItem>;
+    addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem>;
     removeItem(jobId: string, orderItemId: string): Promise<void>;
-    getItems(jobId: string): Promise<CuttingJobItem[]>;
+    getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
-    generateJobNumber(): Promise<string>;
-    getOrderItemsByIds(ids: string[]): Promise<{
-        id: string;
-        quantity: number;
-    }[]>;
-    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
-        id: string;
-        materialTypeId: string;
-        thickness: number;
-        quantity: number;
-    }[]>;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]>;
 }
 export declare class CuttingJobRepository implements ICuttingJobRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    private jobCounter;
+    constructor(db: Database);
     findById(id: string): Promise<CuttingJobWithRelations | null>;
     findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]>;
-    findByJobNumber(jobNumber: string): Promise<CuttingJob | null>;
-    create(materialTypeId: string, thickness: number, items?: {
-        orderItemId: string;
-        quantity: number;
-    }[]): Promise<CuttingJob>;
+    create(data: ICreateCuttingJobInput): Promise<CuttingJob>;
+    update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob>;
     updateStatus(id: string, status: string): Promise<CuttingJob>;
     delete(id: string): Promise<void>;
-    addItem(jobId: string, data: IAddJobItemInput): Promise<CuttingJobItem>;
+    addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem>;
     removeItem(jobId: string, orderItemId: string): Promise<void>;
-    getItems(jobId: string): Promise<CuttingJobItem[]>;
+    getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]>;
     findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
-    generateJobNumber(): Promise<string>;
-    getOrderItemsByIds(ids: string[]): Promise<{
-        id: string;
-        quantity: number;
-    }[]>;
-    getUnassignedOrderItems(confirmedOnly: boolean): Promise<{
-        id: string;
-        materialTypeId: string;
-        thickness: number;
-        quantity: number;
-    }[]>;
+    getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]>;
 }
 //# sourceMappingURL=cutting-job.repository.d.ts.map

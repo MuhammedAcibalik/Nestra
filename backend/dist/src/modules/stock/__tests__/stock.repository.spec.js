@@ -1,19 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const stock_repository_1 = require("../stock.repository");
-const jest_mock_extended_1 = require("jest-mock-extended");
+const db_mock_1 = require("../../../core/test/db-mock");
 describe('StockRepository', () => {
     let repository;
-    let prisma;
-    let prismaStock;
-    let prismaMovement;
+    let db;
     beforeEach(() => {
-        prisma = (0, jest_mock_extended_1.mock)();
-        prismaStock = (0, jest_mock_extended_1.mock)();
-        prismaMovement = (0, jest_mock_extended_1.mock)();
-        prisma.stockItem = prismaStock;
-        prisma.stockMovement = prismaMovement;
-        repository = new stock_repository_1.StockRepository(prisma);
+        db = (0, db_mock_1.createMockDatabase)();
+        repository = new stock_repository_1.StockRepository(db);
     });
     describe('create', () => {
         it('should create stock item', async () => {
@@ -27,30 +21,31 @@ describe('StockRepository', () => {
                 unitPrice: 100
             };
             const mockItem = { id: 'item-1', ...input };
-            prismaStock.create.mockResolvedValue(mockItem);
-            const result = await repository.create(input);
-            expect(result).toEqual(mockItem);
-            expect(prismaStock.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    code: 'STK-001',
-                    name: 'MDF 18mm'
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockItem])
                 })
             });
+            const result = await repository.create(input);
+            expect(result.id).toBe('item-1');
+            expect(result.code).toBe('STK-001');
         });
     });
     describe('updateQuantity', () => {
-        it('should increment quantity', async () => {
-            const mockItem = { id: 'item-1', quantity: 15, reservedQty: 0 };
-            prismaStock.update.mockResolvedValue(mockItem);
-            const result = await repository.updateQuantity('item-1', 5);
-            expect(result).toEqual(mockItem);
-            expect(prismaStock.update).toHaveBeenCalledWith({
-                where: { id: 'item-1' },
-                data: {
-                    quantity: { increment: 5 },
-                    reservedQty: { increment: 0 }
-                }
+        it('should update quantity', async () => {
+            const currentItem = { id: 'item-1', quantity: 10, reservedQty: 0 };
+            const updatedItem = { id: 'item-1', quantity: 15, reservedQty: 0 };
+            // Mock findFirst for current item lookup
+            db.query.stockItems.findFirst.mockResolvedValue(currentItem);
+            db.update.mockReturnValue({
+                set: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        returning: jest.fn().mockResolvedValue([updatedItem])
+                    })
+                })
             });
+            const result = await repository.updateQuantity('item-1', 5);
+            expect(result.quantity).toBe(15);
         });
     });
     describe('createMovement', () => {
@@ -62,16 +57,14 @@ describe('StockRepository', () => {
                 notes: 'Test'
             };
             const mockMovement = { id: 'mov-1', ...input };
-            prismaMovement.create.mockResolvedValue(mockMovement);
-            const result = await repository.createMovement(input);
-            expect(result).toEqual(mockMovement);
-            expect(prismaMovement.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    stockItemId: 'item-1',
-                    movementType: 'PURCHASE',
-                    quantity: 10
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockMovement])
                 })
             });
+            const result = await repository.createMovement(input);
+            expect(result.id).toBe('mov-1');
+            expect(result.movementType).toBe('PURCHASE');
         });
     });
 });

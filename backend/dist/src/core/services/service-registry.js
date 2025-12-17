@@ -17,12 +17,35 @@ exports.createStockQueryClient = createStockQueryClient;
  * For microservices: replace with HTTP/gRPC calls
  */
 class ServiceRegistry {
-    static instance;
+    static instance = null;
     services = new Map();
+    /**
+     * Constructor is public to allow explicit instance creation for testing
+     * For production, use getInstance() for singleton behavior
+     */
     constructor() { }
+    /**
+     * Get singleton instance (production use)
+     */
     static getInstance() {
         ServiceRegistry.instance ??= new ServiceRegistry();
         return ServiceRegistry.instance;
+    }
+    /**
+     * Create a new isolated instance (testing use)
+     * Does not affect the singleton instance
+     */
+    static createTestInstance() {
+        return new ServiceRegistry();
+    }
+    /**
+     * Reset singleton instance (test cleanup)
+     */
+    static resetInstance() {
+        if (ServiceRegistry.instance) {
+            ServiceRegistry.instance.services.clear();
+        }
+        ServiceRegistry.instance = null;
     }
     register(serviceName, handler) {
         this.services.set(serviceName, handler);
@@ -63,14 +86,6 @@ class ServiceRegistry {
                     message: error instanceof Error ? error.message : 'Unknown error'
                 }
             };
-        }
-    }
-    /**
-     * Reset for testing
-     */
-    static reset() {
-        if (ServiceRegistry.instance) {
-            ServiceRegistry.instance.services.clear();
         }
     }
 }

@@ -8,7 +8,7 @@ export declare const metricsRegistry: promClient.Registry<"text/plain; version=0
 export declare const httpRequestsTotal: promClient.Counter<"route" | "method" | "status_code">;
 export declare const httpRequestDuration: promClient.Histogram<"route" | "method" | "status_code">;
 export declare const httpActiveRequests: promClient.Gauge<string>;
-export declare const optimizationTasksTotal: promClient.Counter<"status" | "type">;
+export declare const optimizationTasksTotal: promClient.Counter<"type" | "status">;
 export declare const optimizationDuration: promClient.Histogram<"type" | "algorithm">;
 export declare const piscinaUtilization: promClient.Gauge<string>;
 export declare const piscinaQueueSize: promClient.Gauge<string>;

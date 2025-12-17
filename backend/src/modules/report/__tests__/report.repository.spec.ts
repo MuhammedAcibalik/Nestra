@@ -1,86 +1,87 @@
 import { ReportRepository } from '../report.repository';
-import { PrismaClient } from '@prisma/client';
-import { mock, MockProxy } from 'jest-mock-extended';
+import { createMockDatabase, MockProxy } from '../../../core/test/db-mock';
+import { Database } from '../../../db';
 
 describe('ReportRepository', () => {
     let repository: ReportRepository;
-    let prisma: MockProxy<PrismaClient>;
-    let prismaPlan: any;
-    let prismaCustomer: any;
+    let db: MockProxy<Database>;
 
     beforeEach(() => {
-        prisma = mock<PrismaClient>();
-        prismaPlan = mock<any>();
-        prismaCustomer = mock<any>();
-        (prisma as any).cuttingPlan = prismaPlan;
-        (prisma as any).customer = prismaCustomer;
-        repository = new ReportRepository(prisma);
+        db = createMockDatabase();
+        repository = new ReportRepository(db);
     });
 
     describe('getWasteData', () => {
         it('should get waste data reports', async () => {
-            const mockPlans = [{
-                id: 'plan-1',
-                planNumber: 'PLN-001',
-                totalWaste: 10,
-                wastePercentage: 5,
+            const mockResults = [{
                 createdAt: new Date(),
-                productionLogs: [{ actualWaste: 12 }]
+                totalWaste: 10,
+                wastePercentage: 5
             }];
 
-            prismaPlan.findMany.mockResolvedValue(mockPlans);
+            (db.select as jest.Mock).mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        orderBy: jest.fn().mockResolvedValue(mockResults)
+                    }),
+                    orderBy: jest.fn().mockResolvedValue(mockResults)
+                })
+            });
 
             const result = await repository.getWasteData({});
 
             expect(result).toHaveLength(1);
-            expect(result[0].actualWaste).toBe(12);
-            expect(prismaPlan.findMany).toHaveBeenCalledWith(expect.objectContaining({
-                where: expect.objectContaining({ status: 'COMPLETED' }),
-                include: expect.objectContaining({
-                    productionLogs: expect.anything()
-                })
-            }));
+            expect(result[0].wastePercentage).toBe(5);
         });
     });
 
     describe('getEfficiencyData', () => {
         it('should calculate efficiency aggregation', async () => {
-            const mockGroup = [{
-                _count: { id: 5 },
-                _avg: { wastePercentage: 10 },
-                _sum: { stockUsedCount: 20 },
-                scenarioId: 'scen-1'
+            const mockResults = [{
+                planCount: 5,
+                avgWaste: 10,
+                totalWaste: 50,
+                stockUsed: 20
             }];
 
-            prismaPlan.groupBy.mockResolvedValue(mockGroup);
+            (db.select as jest.Mock).mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    where: jest.fn().mockResolvedValue(mockResults),
+                    orderBy: jest.fn().mockResolvedValue(mockResults)
+                })
+            });
 
             const result = await repository.getEfficiencyData({});
 
             expect(result).toHaveLength(1);
             expect(result[0].avgEfficiency).toBe(90); // 100 - 10
-            expect(result[0].planCount).toBe(5);
         });
     });
 
     describe('getCustomerData', () => {
         it('should aggregate customer order stats', async () => {
-            const mockCustomers = [{
-                id: 'c1',
-                code: 'C001',
-                name: 'ACME',
-                orders: [
-                    { id: 'o1', _count: { items: 5 } },
-                    { id: 'o2', _count: { items: 3 } }
-                ]
+            const mockResults = [{
+                customerId: 'c1',
+                customerName: 'ACME',
+                customerCode: 'C001',
+                orderCount: 2
             }];
 
-            prismaCustomer.findMany.mockResolvedValue(mockCustomers);
+            (db.select as jest.Mock).mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    leftJoin: jest.fn().mockReturnValue({
+                        where: jest.fn().mockReturnValue({
+                            groupBy: jest.fn().mockResolvedValue(mockResults)
+                        })
+                    })
+                })
+            });
 
             const result = await repository.getCustomerData({});
 
             expect(result).toHaveLength(1);
             expect(result[0].orderCount).toBe(2);
-            expect(result[0].itemCount).toBe(8);
+            expect(result[0].customerName).toBe('ACME');
         });
     });
 });

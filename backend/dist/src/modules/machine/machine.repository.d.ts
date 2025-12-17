@@ -1,32 +1,38 @@
 /**
  * Machine Repository
- * Following SRP - Only handles Machine data access
+ * Migrated to Drizzle ORM
  */
-import { PrismaClient, Machine, MachineCompatibility, MachineType } from '@prisma/client';
+import { Database } from '../../db';
+import { machines, machineCompatibilities } from '../../db/schema';
+import { MachineType } from '../../db/schema/enums';
+export type Machine = typeof machines.$inferSelect;
+export type MachineCompatibility = typeof machineCompatibilities.$inferSelect;
+export { MachineType } from '../../db/schema/enums';
 export type MachineWithRelations = Machine & {
+    compatibilities?: MachineCompatibility[];
     location?: {
         id: string;
         name: string;
     } | null;
-    compatibilities?: (MachineCompatibility & {
-        materialType?: {
-            id: string;
-            name: string;
-        };
-        thicknessRange?: {
-            id: string;
-            name: string;
-        } | null;
-    })[];
     _count?: {
         compatibilities: number;
         cuttingPlans: number;
     };
 };
+export type CompatibilityWithRelations = MachineCompatibility & {
+    materialType?: {
+        id: string;
+        name: string;
+    };
+    thicknessRange?: {
+        id: string;
+        name: string;
+    } | null;
+};
 export interface IMachineFilter {
+    locationId?: string;
     machineType?: MachineType;
     isActive?: boolean;
-    locationId?: string;
 }
 export interface ICreateMachineInput {
     code: string;
@@ -46,11 +52,8 @@ export interface IUpdateMachineInput {
     description?: string;
     maxLength?: number;
     maxWidth?: number;
-    maxHeight?: number;
     minCutLength?: number;
     kerf?: number;
-    onlyGuillotine?: boolean;
-    locationId?: string;
     isActive?: boolean;
 }
 export interface IAddCompatibilityInput {
@@ -61,28 +64,28 @@ export interface IAddCompatibilityInput {
 }
 export interface IMachineRepository {
     findById(id: string): Promise<MachineWithRelations | null>;
-    findByCode(code: string): Promise<Machine | null>;
     findAll(filter?: IMachineFilter): Promise<MachineWithRelations[]>;
+    findByCode(code: string): Promise<Machine | null>;
     create(data: ICreateMachineInput): Promise<Machine>;
     update(id: string, data: IUpdateMachineInput): Promise<Machine>;
     delete(id: string): Promise<void>;
     addCompatibility(machineId: string, data: IAddCompatibilityInput): Promise<MachineCompatibility>;
+    getCompatibilities(machineId: string): Promise<CompatibilityWithRelations[]>;
     removeCompatibility(compatibilityId: string): Promise<void>;
-    getCompatibilities(machineId: string): Promise<MachineCompatibility[]>;
     findCompatibleMachines(materialTypeId: string, thickness: number): Promise<MachineWithRelations[]>;
 }
 export declare class MachineRepository implements IMachineRepository {
-    private readonly prisma;
-    constructor(prisma: PrismaClient);
+    private readonly db;
+    constructor(db: Database);
     findById(id: string): Promise<MachineWithRelations | null>;
-    findByCode(code: string): Promise<Machine | null>;
     findAll(filter?: IMachineFilter): Promise<MachineWithRelations[]>;
+    findByCode(code: string): Promise<Machine | null>;
     create(data: ICreateMachineInput): Promise<Machine>;
     update(id: string, data: IUpdateMachineInput): Promise<Machine>;
     delete(id: string): Promise<void>;
     addCompatibility(machineId: string, data: IAddCompatibilityInput): Promise<MachineCompatibility>;
+    getCompatibilities(machineId: string): Promise<CompatibilityWithRelations[]>;
     removeCompatibility(compatibilityId: string): Promise<void>;
-    getCompatibilities(machineId: string): Promise<MachineCompatibility[]>;
     findCompatibleMachines(materialTypeId: string, thickness: number): Promise<MachineWithRelations[]>;
 }
 //# sourceMappingURL=machine.repository.d.ts.map

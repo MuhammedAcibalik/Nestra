@@ -11,9 +11,9 @@ export const orderInstaller: IModuleInstaller = {
     name: 'order',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new OrderRepository(prisma);
+        const repository = new OrderRepository(db);
 
         const serviceHandler = new OrderServiceHandler(repository);
         registry.register('order', serviceHandler);

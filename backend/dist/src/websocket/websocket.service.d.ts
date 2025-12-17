@@ -21,6 +21,8 @@ export interface IWebSocketService {
 declare class WebSocketService implements IWebSocketService {
     private io;
     private readonly connectedClients;
+    private readonly jwtSecret;
+    constructor();
     initialize(httpServer: HttpServer): void;
     private emit;
     emitOptimizationStarted(payload: IOptimizationStartedPayload): void;

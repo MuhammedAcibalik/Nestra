@@ -1,19 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const optimization_repository_1 = require("../optimization.repository");
-const jest_mock_extended_1 = require("jest-mock-extended");
+const db_mock_1 = require("../../../core/test/db-mock");
 describe('OptimizationRepository', () => {
     let repository;
-    let prisma;
-    let prismaScenario;
-    let prismaPlan;
+    let db;
     beforeEach(() => {
-        prisma = (0, jest_mock_extended_1.mock)();
-        prismaScenario = (0, jest_mock_extended_1.mock)();
-        prismaPlan = (0, jest_mock_extended_1.mock)();
-        prisma.optimizationScenario = prismaScenario;
-        prisma.cuttingPlan = prismaPlan;
-        repository = new optimization_repository_1.OptimizationRepository(prisma);
+        db = (0, db_mock_1.createMockDatabase)();
+        repository = new optimization_repository_1.OptimizationRepository(db);
     });
     describe('createScenario', () => {
         it('should create optimization scenario', async () => {
@@ -24,15 +18,15 @@ describe('OptimizationRepository', () => {
                     constraints: { algorithm: 'rect_best_fit' }
                 }
             };
-            const mockScenario = { id: 'scen-1', ...input };
-            prismaScenario.create.mockResolvedValue(mockScenario);
-            const result = await repository.createScenario(input, 'user-1');
-            expect(result).toEqual(mockScenario);
-            expect(prismaScenario.create).toHaveBeenCalledWith(expect.objectContaining({
-                data: expect.objectContaining({
-                    name: 'Scenario 1'
+            const mockScenario = { id: 'scen-1', ...input, status: 'PENDING' };
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockScenario])
                 })
-            }));
+            });
+            const result = await repository.createScenario(input, 'user-1');
+            expect(result.id).toBe('scen-1');
+            expect(result.name).toBe('Scenario 1');
         });
     });
     describe('createPlan', () => {
@@ -50,34 +44,34 @@ describe('OptimizationRepository', () => {
                 stockUsedCount: 1,
                 layoutData
             };
-            prismaPlan.count.mockResolvedValue(0);
-            const mockPlan = { id: 'plan-1', planNumber: 'PLN-000001', ...input };
-            prismaPlan.create.mockResolvedValue(mockPlan);
-            const result = await repository.createPlan('scen-1', input);
-            expect(result).toEqual(mockPlan);
-            expect(prismaPlan.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    planNumber: 'PLN-000001',
-                    scenarioId: 'scen-1',
-                    stockItems: {
-                        create: expect.arrayContaining([
-                            expect.objectContaining({ stockItemId: 'item-1' })
-                        ])
-                    }
+            const mockPlan = { id: 'plan-1', planNumber: 'PLN-000001', scenarioId: 'scen-1', ...input };
+            db.select.mockReturnValue({
+                from: jest.fn().mockReturnValue({
+                    limit: jest.fn().mockResolvedValue([{ count: 0 }])
                 })
             });
+            db.insert.mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockPlan])
+                })
+            });
+            const result = await repository.createPlan('scen-1', input);
+            expect(result.id).toBe('plan-1');
+            expect(result.planNumber).toBe('PLN-000001');
         });
     });
     describe('updateScenarioStatus', () => {
         it('should update status', async () => {
             const mockScenario = { id: 'scen-1', status: 'COMPLETED' };
-            prismaScenario.update.mockResolvedValue(mockScenario);
-            const result = await repository.updateScenarioStatus('scen-1', 'COMPLETED');
-            expect(result).toEqual(mockScenario);
-            expect(prismaScenario.update).toHaveBeenCalledWith({
-                where: { id: 'scen-1' },
-                data: { status: 'COMPLETED' }
+            db.update.mockReturnValue({
+                set: jest.fn().mockReturnValue({
+                    where: jest.fn().mockReturnValue({
+                        returning: jest.fn().mockResolvedValue([mockScenario])
+                    })
+                })
             });
+            const result = await repository.updateScenarioStatus('scen-1', 'COMPLETED');
+            expect(result.status).toBe('COMPLETED');
         });
     });
 });

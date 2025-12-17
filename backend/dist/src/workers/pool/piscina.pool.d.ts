@@ -37,11 +37,31 @@ export interface IOptimizationPoolStats {
  * - Hyper-threading (SMT) can cause cache contention for pure compute tasks
  */
 export declare const defaultPiscinaConfig: Required<IPiscinaConfig>;
+export type TaskPhase = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+export interface IOptimizationTask {
+    readonly id: string;
+    readonly type: '1D' | '2D';
+    readonly payload: unknown;
+    readonly timeout: number;
+    readonly createdAt: Date;
+}
+export interface ITaskProgress {
+    readonly taskId: string;
+    readonly phase: TaskPhase;
+    readonly progress: number;
+    readonly message?: string;
+    readonly startedAt?: Date;
+    readonly completedAt?: Date;
+}
+export type TaskProgressCallback = (progress: ITaskProgress) => void;
 export declare class OptimizationPool {
     private static instance;
     private pool;
     private readonly config;
     private initialized;
+    private readonly activeTasks;
+    private readonly taskProgress;
+    private progressCallback;
     private constructor();
     /**
      * Get singleton instance
@@ -59,6 +79,31 @@ export declare class OptimizationPool {
      * Run 2D optimization in worker thread
      */
     run2D<T>(payload: T, signal?: AbortSignal): Promise<unknown>;
+    /**
+     * Run optimization with full task tracking, timeout, and cancellation support
+     */
+    runWithTracking(task: IOptimizationTask): Promise<unknown>;
+    /**
+     * Cancel a running task by ID
+     * @returns true if task was found and cancelled
+     */
+    cancelTask(taskId: string): boolean;
+    /**
+     * Get progress for a specific task
+     */
+    getTaskProgress(taskId: string): ITaskProgress | undefined;
+    /**
+     * Get all active task IDs
+     */
+    getActiveTasks(): string[];
+    /**
+     * Set callback for progress updates (for WebSocket broadcasting)
+     */
+    setProgressCallback(callback: TaskProgressCallback | null): void;
+    /**
+     * Update and broadcast task progress
+     */
+    private updateProgress;
     /**
      * Get pool statistics
      */

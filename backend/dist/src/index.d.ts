@@ -9,7 +9,7 @@
 export declare class Application {
     private readonly app;
     private readonly httpServer;
-    private readonly prisma;
+    private readonly db;
     private readonly port;
     private materialService;
     private stockService;

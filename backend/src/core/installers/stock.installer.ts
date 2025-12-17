@@ -11,9 +11,9 @@ export const stockInstaller: IModuleInstaller = {
     name: 'stock',
 
     install(context: IInstallContext): IModuleResult {
-        const { prisma, registry, authMiddleware } = context;
+        const { db, registry, authMiddleware } = context;
 
-        const repository = new StockRepository(prisma);
+        const repository = new StockRepository(db);
 
         const serviceHandler = new StockServiceHandler(repository);
         registry.register('stock', serviceHandler);

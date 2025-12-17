@@ -16,6 +16,13 @@ export interface IStockService {
     deleteStockItem(id: string): Promise<IResult<void>>;
     createMovement(data: ICreateMovementInput): Promise<IResult<IStockMovementDto>>;
     getMovements(filter?: IMovementFilter): Promise<IResult<IStockMovementDto[]>>;
+
+    // Stock alert methods
+    checkAndNotifyLowStock(): Promise<IResult<ILowStockAlert[]>>;
+    getLowStockItems(threshold?: number): Promise<IResult<IStockItemDto[]>>;
+
+    // Waste piece registration
+    registerWastePiece(data: IRegisterWasteInput): Promise<IResult<IStockItemDto>>;
 }
 
 export interface IStockFilter {
@@ -55,6 +62,7 @@ export interface ICreateStockInput {
     quantity: number;
     unitPrice?: number;
     locationId?: string;
+    isFromWaste?: boolean;
 }
 
 export interface IUpdateStockInput extends Partial<ICreateStockInput> { }
@@ -81,4 +89,34 @@ export interface IMovementFilter {
     movementType?: string;
     startDate?: Date;
     endDate?: Date;
+}
+
+// ==================== STOCK ALERT TYPES ====================
+
+export interface ILowStockAlert {
+    stockItemId: string;
+    stockCode: string;
+    stockName: string;
+    materialTypeName: string;
+    currentQuantity: number;
+    minQuantity: number;
+    alertLevel: 'WARNING' | 'CRITICAL' | 'OUT_OF_STOCK';
+    notifiedAt: Date;
+}
+
+// ==================== WASTE PIECE TYPES ====================
+
+export interface IRegisterWasteInput {
+    /** Original stock item that was cut */
+    sourceStockItemId: string;
+    /** Dimensions of waste piece */
+    length?: number;
+    width?: number;
+    height?: number;
+    /** Quantity of waste pieces */
+    quantity: number;
+    /** Production log that generated this waste */
+    productionLogId?: string;
+    /** Notes about the waste */
+    notes?: string;
 }

@@ -15,9 +15,8 @@ import {
     success,
     failure
 } from '../../core/interfaces';
-import { IOptimizationRepository, ScenarioWithRelations, PlanWithRelations } from './optimization.repository';
+import { IOptimizationRepository, ScenarioWithRelations, PlanWithRelations, CuttingPlanStock } from './optimization.repository';
 import { OptimizationEngine, OptimizationParameters } from './optimization.engine';
-import { CuttingPlanStock } from '@prisma/client';
 import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
 
 export class OptimizationService implements IOptimizationService {

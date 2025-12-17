@@ -21,8 +21,24 @@ export interface IServiceHandler {
 export declare class ServiceRegistry implements IServiceRegistry, IServiceClient {
     private static instance;
     private readonly services;
-    private constructor();
+    /**
+     * Constructor is public to allow explicit instance creation for testing
+     * For production, use getInstance() for singleton behavior
+     */
+    constructor();
+    /**
+     * Get singleton instance (production use)
+     */
     static getInstance(): ServiceRegistry;
+    /**
+     * Create a new isolated instance (testing use)
+     * Does not affect the singleton instance
+     */
+    static createTestInstance(): ServiceRegistry;
+    /**
+     * Reset singleton instance (test cleanup)
+     */
+    static resetInstance(): void;
     register(serviceName: string, handler: IServiceHandler): void;
     unregister(serviceName: string): void;
     getService(serviceName: string): IServiceHandler | undefined;
@@ -31,10 +47,6 @@ export declare class ServiceRegistry implements IServiceRegistry, IServiceClient
      * IServiceClient implementation - routes requests to registered handlers
      */
     request<TReq, TRes>(serviceName: string, request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>>;
-    /**
-     * Reset for testing
-     */
-    static reset(): void;
 }
 /**
  * Factory to create type-safe service clients

@@ -1,65 +1,61 @@
 "use strict";
 /**
  * Location Repository
- * Following SRP - Only handles Location data access
+ * Migrated to Drizzle ORM
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LocationRepository = void 0;
+const schema_1 = require("../../db/schema");
+const drizzle_orm_1 = require("drizzle-orm");
 class LocationRepository {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    db;
+    constructor(db) {
+        this.db = db;
     }
     async findById(id) {
-        return this.prisma.location.findUnique({
-            where: { id },
-            include: {
-                _count: { select: { stockItems: true, machines: true } }
-            }
+        const result = await this.db.query.locations.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.locations.id, id)
         });
+        return result ?? null;
     }
     async findByName(name) {
-        return this.prisma.location.findUnique({ where: { name } });
+        const result = await this.db.query.locations.findFirst({
+            where: (0, drizzle_orm_1.eq)(schema_1.locations.name, name)
+        });
+        return result ?? null;
     }
     async findAll(filter) {
-        const where = filter?.search
-            ? {
-                OR: [
-                    { name: { contains: filter.search, mode: 'insensitive' } },
-                    { description: { contains: filter.search, mode: 'insensitive' } },
-                    { address: { contains: filter.search, mode: 'insensitive' } }
-                ]
-            }
-            : {};
-        return this.prisma.location.findMany({
-            where,
-            include: {
-                _count: { select: { stockItems: true, machines: true } }
-            },
-            orderBy: { name: 'asc' }
+        if (filter?.search) {
+            return this.db.select().from(schema_1.locations)
+                .where((0, drizzle_orm_1.or)((0, drizzle_orm_1.ilike)(schema_1.locations.name, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.locations.description, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.locations.address, `%${filter.search}%`)))
+                .orderBy((0, drizzle_orm_1.asc)(schema_1.locations.name));
+        }
+        return this.db.query.locations.findMany({
+            orderBy: [(0, drizzle_orm_1.asc)(schema_1.locations.name)]
         });
     }
     async create(data) {
-        return this.prisma.location.create({
-            data: {
-                name: data.name,
-                description: data.description,
-                address: data.address
-            }
-        });
+        const [result] = await this.db.insert(schema_1.locations).values({
+            name: data.name,
+            description: data.description,
+            address: data.address
+        }).returning();
+        return result;
     }
     async update(id, data) {
-        return this.prisma.location.update({
-            where: { id },
-            data: {
-                name: data.name,
-                description: data.description,
-                address: data.address
-            }
-        });
+        const [result] = await this.db.update(schema_1.locations)
+            .set({
+            name: data.name,
+            description: data.description,
+            address: data.address,
+            updatedAt: new Date()
+        })
+            .where((0, drizzle_orm_1.eq)(schema_1.locations.id, id))
+            .returning();
+        return result;
     }
     async delete(id) {
-        await this.prisma.location.delete({ where: { id } });
+        await this.db.delete(schema_1.locations).where((0, drizzle_orm_1.eq)(schema_1.locations.id, id));
     }
 }
 exports.LocationRepository = LocationRepository;

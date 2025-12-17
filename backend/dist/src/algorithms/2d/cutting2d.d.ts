@@ -9,6 +9,7 @@ export interface CuttingPiece2D {
     quantity: number;
     orderItemId: string;
     canRotate: boolean;
+    grainDirection?: 'HORIZONTAL' | 'VERTICAL' | 'NONE';
 }
 export interface StockSheet2D {
     id: string;
@@ -54,6 +55,7 @@ export interface Optimization2DOptions {
     kerf: number;
     allowRotation: boolean;
     guillotineOnly: boolean;
+    respectGrainDirection?: boolean;
 }
 /**
  * Bottom-Left Fill Algorithm

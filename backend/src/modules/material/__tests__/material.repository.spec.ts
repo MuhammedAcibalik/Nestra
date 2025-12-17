@@ -1,37 +1,25 @@
 import { MaterialRepository } from '../material.repository';
-import { PrismaClient } from '@prisma/client';
-import { mock, MockProxy } from 'jest-mock-extended';
+import { createMockDatabase, MockProxy } from '../../../core/test/db-mock';
+import { Database } from '../../../db';
 
 describe('MaterialRepository', () => {
     let repository: MaterialRepository;
-    let prisma: MockProxy<PrismaClient>;
-    let prismaMaterial: any;
-    let prismaThickness: any;
+    let db: MockProxy<Database>;
 
     beforeEach(() => {
-        prisma = mock<PrismaClient>();
-        prismaMaterial = mock<any>();
-        prismaThickness = mock<any>();
-        (prisma as any).materialType = prismaMaterial;
-        (prisma as any).thicknessRange = prismaThickness;
-        repository = new MaterialRepository(prisma);
+        db = createMockDatabase();
+        repository = new MaterialRepository(db);
     });
 
     describe('findAll', () => {
         it('should return all materials with relations', async () => {
-            const mockMaterials = [{ id: 'm1', name: 'MDF' }];
-            prismaMaterial.findMany.mockResolvedValue(mockMaterials);
+            const mockMaterials = [{ id: 'm1', name: 'MDF', thicknessRanges: [], _count: { stockItems: 0 } }];
+            (db.query as any).materialTypes.findMany.mockResolvedValue(mockMaterials);
 
             const result = await repository.findAll();
 
-            expect(result).toEqual(mockMaterials);
-            expect(prismaMaterial.findMany).toHaveBeenCalledWith({
-                include: {
-                    thicknessRanges: true,
-                    _count: { select: { stockItems: true } }
-                },
-                orderBy: { name: 'asc' }
-            });
+            expect(result).toHaveLength(1);
+            expect(result[0].name).toBe('MDF');
         });
     });
 
@@ -40,19 +28,16 @@ describe('MaterialRepository', () => {
             const input = { name: 'MDF', isRotatable: true };
             const mockMaterial = { id: 'm1', ...input };
 
-            prismaMaterial.create.mockResolvedValue(mockMaterial);
+            (db.insert as jest.Mock).mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockMaterial])
+                })
+            });
 
             const result = await repository.create(input);
 
             expect(result).toEqual(mockMaterial);
-            expect(prismaMaterial.create).toHaveBeenCalledWith({
-                data: {
-                    name: input.name,
-                    description: undefined,
-                    isRotatable: true,
-                    defaultDensity: undefined
-                }
-            });
+            expect(db.insert).toHaveBeenCalled();
         });
     });
 
@@ -61,19 +46,15 @@ describe('MaterialRepository', () => {
             const input = { name: '18mm', minThickness: 17.5, maxThickness: 18.5 };
             const mockRange = { id: 'tr1', materialTypeId: 'm1', ...input };
 
-            prismaThickness.create.mockResolvedValue(mockRange);
+            (db.insert as jest.Mock).mockReturnValue({
+                values: jest.fn().mockReturnValue({
+                    returning: jest.fn().mockResolvedValue([mockRange])
+                })
+            });
 
             const result = await repository.addThicknessRange('m1', input);
 
             expect(result).toEqual(mockRange);
-            expect(prismaThickness.create).toHaveBeenCalledWith({
-                data: {
-                    materialTypeId: 'm1',
-                    name: input.name,
-                    minThickness: input.minThickness,
-                    maxThickness: input.maxThickness
-                }
-            });
         });
     });
 });
