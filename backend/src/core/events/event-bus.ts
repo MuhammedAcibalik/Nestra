@@ -4,15 +4,17 @@
  * Enables loose coupling between modules (microservices communication)
  */
 
-import { IDomainEvent, IEventPublisher, IEventSubscriber } from '../interfaces/event.interface';
+import { IDomainEvent, IEventSubscriber, ITypedEventPublisher } from '../interfaces/event.interface';
+import { createModuleLogger } from '../logger';
 
+const logger = createModuleLogger('EventBus');
 type EventHandler = (event: IDomainEvent) => Promise<void>;
 
 /**
- * In-Memory Event Bus
+ * In-Memory Event Bus with type-safe publishing
  * For production, this can be replaced with Redis/RabbitMQ implementation
  */
-export class EventBus implements IEventPublisher, IEventSubscriber {
+export class EventBus implements ITypedEventPublisher, IEventSubscriber {
     private static instance: EventBus;
     private readonly handlers: Map<string, Set<EventHandler>> = new Map();
     private eventLog: IDomainEvent[] = [];
@@ -38,7 +40,7 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
     async publish(event: IDomainEvent): Promise<void> {
         // Log event
         this.logEvent(event);
-        console.log(`[EVENT] ${event.eventType}: ${event.aggregateType}#${event.aggregateId}`);
+        logger.debug('Event published', { eventType: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId });
 
         // Get handlers for this event type
         const handlers = this.handlers.get(event.eventType);
@@ -51,7 +53,7 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
             try {
                 await handler(event);
             } catch (error) {
-                console.error(`[EVENT ERROR] Handler failed for ${event.eventType}:`, error);
+                logger.error('Handler failed', { eventType: event.eventType, error });
             }
         });
 
@@ -69,6 +71,27 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
     }
 
     /**
+     * Type-safe publish with automatic event ID and timestamp
+     * Eliminates need for `as unknown as` casts in event handlers
+     */
+    async publishTyped<T extends Record<string, unknown>>(
+        eventType: string,
+        aggregateType: string,
+        aggregateId: string,
+        payload: T
+    ): Promise<void> {
+        const event: IDomainEvent<T> = {
+            eventId: generateEventId(),
+            eventType,
+            timestamp: new Date(),
+            aggregateType,
+            aggregateId,
+            payload
+        };
+        await this.publish(event);
+    }
+
+    /**
      * Subscribe to an event type
      */
     subscribe(eventType: string, handler: EventHandler): void {
@@ -76,7 +99,17 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
             this.handlers.set(eventType, new Set());
         }
         this.handlers.get(eventType)!.add(handler);
-        console.log(`[EVENT] Subscribed to: ${eventType}`);
+        logger.debug('Subscribed to event', { eventType });
+    }
+
+    /**
+     * Subscribe with typed handler
+     */
+    subscribeTyped<T extends Record<string, unknown>>(
+        eventType: string,
+        handler: (event: IDomainEvent<T>) => Promise<void>
+    ): void {
+        this.subscribe(eventType, handler as EventHandler);
     }
 
     /**
@@ -84,7 +117,7 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
      */
     unsubscribe(eventType: string): void {
         this.handlers.delete(eventType);
-        console.log(`[EVENT] Unsubscribed from: ${eventType}`);
+        logger.debug('Unsubscribed from event', { eventType });
     }
 
     /**
@@ -139,6 +172,7 @@ export class EventBus implements IEventPublisher, IEventSubscriber {
         EventBus.instance = undefined as unknown as EventBus;
     }
 }
+
 
 /**
  * Helper function to create domain events

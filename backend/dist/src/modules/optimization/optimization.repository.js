@@ -1,21 +1,42 @@
 "use strict";
 /**
  * Optimization Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OptimizationRepository = void 0;
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
+const database_1 = require("../../core/database");
+const tenant_1 = require("../../core/tenant");
 class OptimizationRepository {
     db;
     planCounter = 1;
     constructor(db) {
         this.db = db;
     }
+    // ==================== TENANT FILTERING ====================
+    getTenantFilter() {
+        const tenantId = (0, tenant_1.getCurrentTenantIdOptional)();
+        if (!tenantId)
+            return undefined;
+        return (0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.tenantId, tenantId);
+    }
+    withTenantFilter(conditions) {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter)
+            conditions.push(tenantFilter);
+        return conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined;
+    }
+    getCurrentTenantId() {
+        return (0, tenant_1.getCurrentTenantIdOptional)();
+    }
+    // ==================== SCENARIO OPERATIONS ====================
     async findScenarioById(id) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id)];
+        const where = this.withTenantFilter(conditions);
         const result = await this.db.query.optimizationScenarios.findFirst({
-            where: (0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id),
+            where,
             with: {
                 results: true,
                 cuttingJob: true,
@@ -25,15 +46,14 @@ class OptimizationRepository {
         return result ?? null;
     }
     async findAllScenarios(filter) {
-        const conditions = [];
-        if (filter?.status)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.status, filter.status));
-        if (filter?.cuttingJobId)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.cuttingJobId, filter.cuttingJobId));
-        if (filter?.createdById)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.createdById, filter.createdById));
+        const where = (0, database_1.createFilter)()
+            .eq(schema_1.optimizationScenarios.status, filter?.status)
+            .eq(schema_1.optimizationScenarios.cuttingJobId, filter?.cuttingJobId)
+            .eq(schema_1.optimizationScenarios.createdById, filter?.createdById)
+            .eq(schema_1.optimizationScenarios.tenantId, this.getCurrentTenantId())
+            .build();
         return this.db.query.optimizationScenarios.findMany({
-            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            where,
             with: {
                 results: true,
                 cuttingJob: true,
@@ -44,6 +64,7 @@ class OptimizationRepository {
     }
     async createScenario(data, userId) {
         const [result] = await this.db.insert(schema_1.optimizationScenarios).values({
+            tenantId: this.getCurrentTenantId(),
             name: data.name,
             cuttingJobId: data.cuttingJobId,
             createdById: userId,
@@ -55,15 +76,18 @@ class OptimizationRepository {
         return result;
     }
     async updateScenarioStatus(id, status) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id)];
+        const where = this.withTenantFilter(conditions);
         const [result] = await this.db.update(schema_1.optimizationScenarios)
             .set({
             status: status,
             updatedAt: new Date()
         })
-            .where((0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id))
+            .where(where ?? (0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id))
             .returning();
         return result;
     }
+    // ==================== PLAN OPERATIONS ====================
     async findPlanById(id) {
         const result = await this.db.query.cuttingPlans.findFirst({
             where: (0, drizzle_orm_1.eq)(schema_1.cuttingPlans.id, id),
@@ -75,17 +99,15 @@ class OptimizationRepository {
         });
         if (!result)
             return null;
-        // Add stockUsed as alias for stockItems
         return { ...result, stockUsed: result.stockItems };
     }
     async findAllPlans(filter) {
-        const conditions = [];
-        if (filter?.status)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.cuttingPlans.status, filter.status));
-        if (filter?.scenarioId)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.cuttingPlans.scenarioId, filter.scenarioId));
+        const where = (0, database_1.createFilter)()
+            .eq(schema_1.cuttingPlans.status, filter?.status)
+            .eq(schema_1.cuttingPlans.scenarioId, filter?.scenarioId)
+            .build();
         const plans = await this.db.query.cuttingPlans.findMany({
-            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            where,
             with: {
                 stockItems: true,
                 scenario: true,
@@ -106,7 +128,6 @@ class OptimizationRepository {
             estimatedTime: data.estimatedTime,
             estimatedCost: data.estimatedCost
         }).returning();
-        // Insert layout data as stock items
         if (data.layoutData && data.layoutData.length > 0) {
             await this.db.insert(schema_1.cuttingPlanStocks).values(data.layoutData.map(layout => ({
                 cuttingPlanId: plan.id,

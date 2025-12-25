@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, getEventAdapter } from '../../core/events';
 import { IMachineRepository } from './machine.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('MachineEventHandler');
 
 export class MachineEventHandler {
     constructor(private readonly machineRepository: IMachineRepository) { }
@@ -23,7 +26,7 @@ export class MachineEventHandler {
         // Handle production completed - release machine
         adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
-        console.log('[EVENT] Machine event handlers registered');
+        logger.info('Event handlers registered');
     }
 
     /**
@@ -34,11 +37,11 @@ export class MachineEventHandler {
 
         try {
             if (payload.machineId) {
-                console.log(`[MACHINE EVENT] Production started on machine: ${payload.machineId}`);
+                logger.debug('Production started on machine', { machineId: payload.machineId });
                 // Could update machine status to 'in_use'
             }
         } catch (error) {
-            console.error('[MACHINE EVENT] Error handling production start:', error);
+            logger.error('Error handling production start', { error });
         }
     }
 
@@ -50,11 +53,11 @@ export class MachineEventHandler {
 
         try {
             if (payload.machineId) {
-                console.log(`[MACHINE EVENT] Production completed, releasing machine: ${payload.machineId}`);
+                logger.debug('Production completed, releasing machine', { machineId: payload.machineId });
                 // Could update machine status to 'available'
             }
         } catch (error) {
-            console.error('[MACHINE EVENT] Error handling production completion:', error);
+            logger.error('Error handling production completion', { error });
         }
     }
 }

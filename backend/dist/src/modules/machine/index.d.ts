@@ -5,4 +5,5 @@ export { MachineRepository, IMachineRepository, MachineWithRelations, IMachineFi
 export { MachineService, IMachineService, IMachineDto, ICompatibilityDto } from './machine.service';
 export { MachineController } from './machine.controller';
 export { MachineServiceHandler } from './machine.service-handler';
+export { MachineEventHandler } from './machine.event-handler';
 //# sourceMappingURL=index.d.ts.map

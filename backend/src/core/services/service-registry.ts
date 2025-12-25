@@ -14,6 +14,9 @@ import {
     ICuttingJobServiceClient,
     IStockQueryClient
 } from './service-client.interface';
+import { createModuleLogger } from '../logger';
+
+const logger = createModuleLogger('ServiceRegistry');
 
 // ==================== SERVICE REGISTRY ====================
 
@@ -71,12 +74,12 @@ export class ServiceRegistry implements IServiceRegistry, IServiceClient {
 
     register(serviceName: string, handler: IServiceHandler): void {
         this.services.set(serviceName, handler);
-        console.log(`[SERVICE] Registered: ${serviceName}`);
+        logger.debug('Service registered', { serviceName });
     }
 
     unregister(serviceName: string): void {
         this.services.delete(serviceName);
-        console.log(`[SERVICE] Unregistered: ${serviceName}`);
+        logger.debug('Service unregistered', { serviceName });
     }
 
     getService(serviceName: string): IServiceHandler | undefined {

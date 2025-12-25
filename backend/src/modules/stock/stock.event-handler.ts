@@ -8,6 +8,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, StockConsumeRequestedPayload, getEventAdapter } from '../../core/events';
 import { IStockRepository } from './stock.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('StockEventHandler');
 
 export class StockEventHandler {
     constructor(private readonly stockRepository: IStockRepository) { }
@@ -27,7 +30,7 @@ export class StockEventHandler {
         // Handle production completed - may trigger low stock alerts
         adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
-        console.log('[EVENT] Stock event handlers registered');
+        logger.info('Stock event handlers registered');
     }
 
     /**
@@ -119,13 +122,13 @@ export class StockEventHandler {
             const stock = await this.stockRepository.findById(payload.stockItemId);
 
             if (!stock) {
-                console.error(`[STOCK] Reserve failed: stock ${payload.stockItemId} not found`);
+                logger.error('Reserve failed: stock not found', { stockItemId: payload.stockItemId });
                 return;
             }
 
             const available = stock.quantity - stock.reservedQty;
             if (available < payload.quantity) {
-                console.error(`[STOCK] Reserve failed: insufficient available (${available}/${payload.quantity})`);
+                logger.error('Reserve failed: insufficient available', { available, requested: payload.quantity });
                 return;
             }
 
@@ -140,7 +143,7 @@ export class StockEventHandler {
             }));
 
         } catch (error) {
-            console.error('[STOCK] Reserve failed:', error);
+            logger.error('Reserve failed', { error });
         }
     }
 
@@ -149,6 +152,6 @@ export class StockEventHandler {
      */
     private async handleProductionCompleted(event: IDomainEvent): Promise<void> {
         // Log for monitoring
-        console.log(`[STOCK] Production completed: ${event.aggregateId}`);
+        logger.info('Production completed', { aggregateId: event.aggregateId });
     }
 }

@@ -1,161 +1,103 @@
 "use strict";
 /**
  * Optimization Controller
- * Following SRP - Only handles HTTP concerns
+ * Following SRP - Composes scenario and plan sub-controllers
+ *
+ * @openapi
+ * components:
+ *   schemas:
+ *     OptimizationScenario:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         name:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [DRAFT, RUNNING, COMPLETED, FAILED]
+ *         cuttingJobId:
+ *           type: string
+ *           format: uuid
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *     CuttingPlan:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         planNumber:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [DRAFT, APPROVED, IN_PRODUCTION, COMPLETED]
+ *         scenarioId:
+ *           type: string
+ *           format: uuid
+ *         totalWaste:
+ *           type: number
+ *         wastePercentage:
+ *           type: number
+ *         totalStocks:
+ *           type: integer
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *     CreateScenarioRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - cuttingJobId
+ *       properties:
+ *         name:
+ *           type: string
+ *         cuttingJobId:
+ *           type: string
+ *           format: uuid
+ *         constraints:
+ *           type: object
+ *           properties:
+ *             kerf:
+ *               type: number
+ *             minUsableWaste:
+ *               type: number
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OptimizationController = void 0;
+exports.createPlanController = exports.PlanController = exports.createScenarioController = exports.ScenarioController = exports.OptimizationController = void 0;
 exports.createOptimizationController = createOptimizationController;
 const express_1 = require("express");
+const scenario_controller_1 = require("./scenario.controller");
+const plan_controller_1 = require("./plan.controller");
 class OptimizationController {
     optimizationService;
     router;
+    scenarioController;
+    planController;
     constructor(optimizationService) {
         this.optimizationService = optimizationService;
         this.router = (0, express_1.Router)();
+        this.scenarioController = (0, scenario_controller_1.createScenarioController)(optimizationService);
+        this.planController = (0, plan_controller_1.createPlanController)(optimizationService);
         this.initializeRoutes();
     }
     initializeRoutes() {
-        // Scenarios
-        this.router.get('/scenarios', this.getScenarios.bind(this));
-        this.router.get('/scenarios/:id', this.getScenarioById.bind(this));
-        this.router.post('/scenarios', this.createScenario.bind(this));
-        this.router.post('/scenarios/:id/run', this.runOptimization.bind(this));
-        // Plans
-        this.router.get('/plans', this.getPlans.bind(this));
-        this.router.get('/plans/:id', this.getPlanById.bind(this));
-        this.router.post('/plans/:id/approve', this.approvePlan.bind(this));
-        this.router.post('/plans/compare', this.comparePlans.bind(this));
-    }
-    async getScenarios(req, res, next) {
-        try {
-            const filter = {
-                cuttingJobId: req.query.cuttingJobId,
-                status: req.query.status
-            };
-            const result = await this.optimizationService.getScenarios(filter);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                res.status(400).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async getScenarioById(req, res, next) {
-        try {
-            const result = await this.optimizationService.getScenarioById(req.params.id);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                const status = result.error?.code === 'SCENARIO_NOT_FOUND' ? 404 : 400;
-                res.status(status).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async createScenario(req, res, next) {
-        try {
-            const result = await this.optimizationService.createScenario(req.body, req.user.userId);
-            if (result.success) {
-                res.status(201).json({ success: true, data: result.data });
-            }
-            else {
-                res.status(400).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async runOptimization(req, res, next) {
-        try {
-            const result = await this.optimizationService.runOptimization(req.params.id);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                const status = result.error?.code === 'SCENARIO_NOT_FOUND' ? 404 : 400;
-                res.status(status).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async getPlans(req, res, next) {
-        try {
-            const filter = {
-                scenarioId: req.query.scenarioId,
-                status: req.query.status
-            };
-            const result = await this.optimizationService.getPlans(filter);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                res.status(400).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async getPlanById(req, res, next) {
-        try {
-            const result = await this.optimizationService.getPlanById(req.params.id);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                const status = result.error?.code === 'PLAN_NOT_FOUND' ? 404 : 400;
-                res.status(status).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async approvePlan(req, res, next) {
-        try {
-            const { machineId } = req.body;
-            const result = await this.optimizationService.approvePlan(req.params.id, req.user.userId, machineId);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                const status = result.error?.code === 'PLAN_NOT_FOUND' ? 404 : 400;
-                res.status(status).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async comparePlans(req, res, next) {
-        try {
-            const { planIds } = req.body;
-            const result = await this.optimizationService.comparePlans(planIds);
-            if (result.success) {
-                res.json({ success: true, data: result.data });
-            }
-            else {
-                res.status(400).json({ success: false, error: result.error });
-            }
-        }
-        catch (error) {
-            next(error);
-        }
+        // Mount sub-controllers
+        this.router.use('/scenarios', this.scenarioController.router);
+        this.router.use('/plans', this.planController.router);
     }
 }
 exports.OptimizationController = OptimizationController;
 function createOptimizationController(optimizationService) {
     return new OptimizationController(optimizationService);
 }
+// Re-export sub-controllers for direct usage if needed
+var scenario_controller_2 = require("./scenario.controller");
+Object.defineProperty(exports, "ScenarioController", { enumerable: true, get: function () { return scenario_controller_2.ScenarioController; } });
+Object.defineProperty(exports, "createScenarioController", { enumerable: true, get: function () { return scenario_controller_2.createScenarioController; } });
+var plan_controller_2 = require("./plan.controller");
+Object.defineProperty(exports, "PlanController", { enumerable: true, get: function () { return plan_controller_2.PlanController; } });
+Object.defineProperty(exports, "createPlanController", { enumerable: true, get: function () { return plan_controller_2.createPlanController; } });
 //# sourceMappingURL=optimization.controller.js.map

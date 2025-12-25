@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, getEventAdapter } from '../../core/events';
 import { OptimizationEngine, OptimizationInput, OptimizationAlgorithm } from './optimization.engine';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('OptimizationConsumer');
 
 // ==================== PAYLOAD TYPES ====================
 
@@ -36,7 +39,7 @@ export class OptimizationConsumer {
             this.handleOptimizationRequest.bind(this)
         );
 
-        console.log('[OPTIMIZATION CONSUMER] Registered for optimization requests');
+        logger.info('Registered for optimization requests');
     }
 
     /**
@@ -46,7 +49,7 @@ export class OptimizationConsumer {
         const payload = event.payload as unknown as OptimizationRequestPayload;
         const adapter = getEventAdapter();
 
-        console.log(`[OPTIMIZATION CONSUMER] Received request: ${payload.cuttingJobId}`);
+        logger.debug('Received optimization request', { cuttingJobId: payload.cuttingJobId });
 
         try {
             // Prepare input
@@ -74,7 +77,7 @@ export class OptimizationConsumer {
                     wastePercentage: result.planData.wastePercentage
                 }));
 
-                console.log(`[OPTIMIZATION CONSUMER] Completed: ${payload.correlationId}`);
+                logger.info('Optimization completed', { correlationId: payload.correlationId });
             } else {
                 // Publish failure event
                 await adapter.publish(DomainEvents.optimizationFailed({
@@ -82,7 +85,7 @@ export class OptimizationConsumer {
                     reason: result.error ?? 'Unknown error'
                 }));
 
-                console.error(`[OPTIMIZATION CONSUMER] Failed: ${result.error}`);
+                logger.error('Optimization failed', { error: result.error });
             }
 
         } catch (error) {
@@ -93,7 +96,7 @@ export class OptimizationConsumer {
                 reason: errorMessage
             }));
 
-            console.error(`[OPTIMIZATION CONSUMER] Error:`, error);
+            logger.error('Optimization consumer error', { error });
         }
     }
 

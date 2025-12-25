@@ -11,6 +11,8 @@ exports.createStockClient = createStockClient;
 exports.createOrderClient = createOrderClient;
 exports.createCuttingJobClient = createCuttingJobClient;
 exports.createStockQueryClient = createStockQueryClient;
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('ServiceRegistry');
 /**
  * In-Memory Service Registry
  * For monolith: direct function calls
@@ -49,11 +51,11 @@ class ServiceRegistry {
     }
     register(serviceName, handler) {
         this.services.set(serviceName, handler);
-        console.log(`[SERVICE] Registered: ${serviceName}`);
+        logger.debug('Service registered', { serviceName });
     }
     unregister(serviceName) {
         this.services.delete(serviceName);
-        console.log(`[SERVICE] Unregistered: ${serviceName}`);
+        logger.debug('Service unregistered', { serviceName });
     }
     getService(serviceName) {
         return this.services.get(serviceName);

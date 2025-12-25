@@ -15,6 +15,8 @@ exports.initializeOptimizationPool = initializeOptimizationPool;
 exports.shutdownOptimizationPool = shutdownOptimizationPool;
 const piscina_1 = __importDefault(require("piscina"));
 const node_path_1 = __importDefault(require("node:path"));
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('Piscina');
 // ==================== AMD RYZEN 9 9950X OPTIMIZED CONFIG ====================
 // Specs: 16 Cores, 32 Threads, 80MB Cache (L2+L3), 170W TDP, Zen 5
 /**
@@ -76,7 +78,7 @@ class OptimizationPool {
                 : this.config.maxQueue
         });
         this.initialized = true;
-        console.log(`[PISCINA] Pool initialized: ${this.config.minThreads}-${this.config.maxThreads} threads`);
+        logger.info('Pool initialized', { minThreads: this.config.minThreads, maxThreads: this.config.maxThreads });
     }
     /**
      * Run 1D optimization in worker thread
@@ -235,11 +237,11 @@ class OptimizationPool {
      */
     async shutdown() {
         if (this.pool) {
-            console.log('[PISCINA] Waiting for pending tasks...');
+            logger.info('Waiting for pending tasks...');
             await this.pool.destroy();
             this.pool = null;
             this.initialized = false;
-            console.log('[PISCINA] Pool destroyed');
+            logger.info('Pool destroyed');
         }
     }
     /**

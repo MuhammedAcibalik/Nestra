@@ -14,6 +14,8 @@ exports.OptimizationEngine = void 0;
 const cutting1d_1 = require("../../algorithms/1d/cutting1d");
 const cutting2d_1 = require("../../algorithms/2d/cutting2d");
 const workers_1 = require("../../workers");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('OptimizationEngine');
 // ==================== ENGINE CLASS ====================
 class OptimizationEngine {
     cuttingJobClient;
@@ -32,7 +34,7 @@ class OptimizationEngine {
         if (this.useWorkerThreads && !this.pool) {
             this.pool = (0, workers_1.getOptimizationPool)();
             await this.pool.initialize();
-            console.log('[OPTIMIZATION ENGINE] Piscina pool initialized');
+            logger.info('Piscina pool initialized');
         }
     }
     /**
@@ -89,10 +91,10 @@ class OptimizationEngine {
             try {
                 const payload = { pieces, stockBars: bars, options };
                 result = await this.pool.run1D(payload);
-                console.log('[OPTIMIZATION ENGINE] 1D completed in Piscina worker');
+                logger.debug('1D optimization completed in Piscina worker');
             }
             catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
+                logger.warn('Piscina failed, falling back to main thread', { error });
                 result = this.run1DSync(pieces, bars, options);
             }
         }
@@ -165,10 +167,10 @@ class OptimizationEngine {
             try {
                 const payload = { pieces, stockSheets: sheets, options };
                 result = await this.pool.run2D(payload);
-                console.log('[OPTIMIZATION ENGINE] 2D completed in Piscina worker');
+                logger.debug('2D optimization completed in Piscina worker');
             }
             catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
+                logger.warn('Piscina failed, falling back to main thread', { error });
                 result = this.run2DSync(pieces, sheets, options);
             }
         }

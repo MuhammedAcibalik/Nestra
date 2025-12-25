@@ -5,8 +5,8 @@
  */
 import * as promClient from 'prom-client';
 export declare const metricsRegistry: promClient.Registry<"text/plain; version=0.0.4; charset=utf-8">;
-export declare const httpRequestsTotal: promClient.Counter<"route" | "method" | "status_code">;
-export declare const httpRequestDuration: promClient.Histogram<"route" | "method" | "status_code">;
+export declare const httpRequestsTotal: promClient.Counter<"method" | "route" | "status_code">;
+export declare const httpRequestDuration: promClient.Histogram<"method" | "route" | "status_code">;
 export declare const httpActiveRequests: promClient.Gauge<string>;
 export declare const optimizationTasksTotal: promClient.Counter<"type" | "status">;
 export declare const optimizationDuration: promClient.Histogram<"type" | "algorithm">;

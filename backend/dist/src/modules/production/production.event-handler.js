@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionEventHandler = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('ProductionEventHandler');
 class ProductionEventHandler {
     productionRepository;
     constructor(productionRepository) {
@@ -21,7 +23,7 @@ class ProductionEventHandler {
         adapter.subscribe(events_1.EventTypes.PLAN_APPROVED, this.handlePlanApproved.bind(this));
         // Handle stock consumed - update production progress
         adapter.subscribe(events_1.EventTypes.STOCK_CONSUMED, this.handleStockConsumed.bind(this));
-        console.log('[EVENT] Production event handlers registered');
+        logger.info('Production event handlers registered');
     }
     /**
      * Handle plan approved - may trigger production start
@@ -30,7 +32,7 @@ class ProductionEventHandler {
         const payload = event.payload;
         const adapter = (0, events_1.getEventAdapter)();
         try {
-            console.log(`[PRODUCTION EVENT] Plan approved: ${payload.planId}`);
+            logger.info('Plan approved', { planId: payload.planId });
             // Publish production started event with correct payload
             await adapter.publish(events_1.DomainEvents.productionStarted({
                 logId: `log_${Date.now()}`,
@@ -40,7 +42,7 @@ class ProductionEventHandler {
             }));
         }
         catch (error) {
-            console.error('[PRODUCTION EVENT] Error handling plan approval:', error);
+            logger.error('Error handling plan approval', { error, planId: payload.planId });
         }
     }
     /**
@@ -49,11 +51,11 @@ class ProductionEventHandler {
     async handleStockConsumed(event) {
         const payload = event.payload;
         try {
-            console.log(`[PRODUCTION EVENT] Stock consumed: ${payload.stockItemId} x ${payload.quantity}`);
+            logger.debug('Stock consumed', { stockItemId: payload.stockItemId, quantity: payload.quantity });
             // Update production progress metrics
         }
         catch (error) {
-            console.error('[PRODUCTION EVENT] Error handling stock consumption:', error);
+            logger.error('Error handling stock consumption', { error });
         }
     }
 }

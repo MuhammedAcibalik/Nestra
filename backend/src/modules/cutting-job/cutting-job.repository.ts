@@ -1,11 +1,13 @@
 /**
  * Cutting Job Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 
 import { Database } from '../../db';
 import { cuttingJobs, cuttingJobItems, orderItems, orders } from '../../db/schema';
-import { eq, desc, and, isNull, inArray, sql } from 'drizzle-orm';
+import { eq, desc, and, inArray, sql, SQL } from 'drizzle-orm';
+import { createFilter } from '../../core/database';
+import { getCurrentTenantIdOptional } from '../../core/tenant';
 
 // Type definitions
 export type CuttingJob = typeof cuttingJobs.$inferSelect;
@@ -75,9 +77,32 @@ export class CuttingJobRepository implements ICuttingJobRepository {
 
     constructor(private readonly db: Database) { }
 
+    // ==================== TENANT FILTERING ====================
+
+    private getTenantFilter(): SQL | undefined {
+        const tenantId = getCurrentTenantIdOptional();
+        if (!tenantId) return undefined;
+        return eq(cuttingJobs.tenantId, tenantId);
+    }
+
+    private withTenantFilter(conditions: SQL[]): SQL | undefined {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter) conditions.push(tenantFilter);
+        return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    private getCurrentTenantId(): string | undefined {
+        return getCurrentTenantIdOptional();
+    }
+
+    // ==================== READ OPERATIONS ====================
+
     async findById(id: string): Promise<CuttingJobWithRelations | null> {
+        const conditions = [eq(cuttingJobs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.cuttingJobs.findFirst({
-            where: eq(cuttingJobs.id, id),
+            where,
             with: {
                 items: {
                     with: {
@@ -89,7 +114,6 @@ export class CuttingJobRepository implements ICuttingJobRepository {
 
         if (!result) return null;
 
-        // Add _count
         const itemCount = result.items?.length ?? 0;
         return {
             ...result,
@@ -98,20 +122,15 @@ export class CuttingJobRepository implements ICuttingJobRepository {
     }
 
     async findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.status) {
-            conditions.push(eq(cuttingJobs.status, filter.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED'));
-        }
-        if (filter?.materialTypeId) {
-            conditions.push(eq(cuttingJobs.materialTypeId, filter.materialTypeId));
-        }
-        if (filter?.thickness !== undefined) {
-            conditions.push(eq(cuttingJobs.thickness, filter.thickness));
-        }
+        const where = createFilter()
+            .eq(cuttingJobs.status, filter?.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined)
+            .eq(cuttingJobs.materialTypeId, filter?.materialTypeId)
+            .eq(cuttingJobs.thickness, filter?.thickness)
+            .eq(cuttingJobs.tenantId, this.getCurrentTenantId())
+            .build();
 
         const results = await this.db.query.cuttingJobs.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 items: {
                     with: {
@@ -128,16 +147,47 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         }));
     }
 
+    async findByMaterialAndThickness(
+        materialTypeId: string,
+        thickness: number,
+        status?: string
+    ): Promise<CuttingJobWithRelations[]> {
+        const where = createFilter()
+            .eq(cuttingJobs.materialTypeId, materialTypeId)
+            .eq(cuttingJobs.thickness, thickness)
+            .eq(cuttingJobs.status, status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined)
+            .eq(cuttingJobs.tenantId, this.getCurrentTenantId())
+            .build();
+
+        const results = await this.db.query.cuttingJobs.findMany({
+            where,
+            with: {
+                items: {
+                    with: {
+                        orderItem: true
+                    }
+                }
+            }
+        });
+
+        return results.map(job => ({
+            ...job,
+            _count: { items: job.items?.length ?? 0, scenarios: 0 }
+        }));
+    }
+
+    // ==================== WRITE OPERATIONS ====================
+
     async create(data: ICreateCuttingJobInput): Promise<CuttingJob> {
         const jobNumber = `JOB-${Date.now()}-${this.jobCounter++}`;
 
         const [result] = await this.db.insert(cuttingJobs).values({
+            tenantId: this.getCurrentTenantId(),
             jobNumber: jobNumber as unknown as typeof cuttingJobs.$inferInsert['jobNumber'],
             materialTypeId: data.materialTypeId,
             thickness: data.thickness
         }).returning();
 
-        // Add items if provided
         if (data.orderItemIds && data.orderItemIds.length > 0) {
             const orderItemsData = await this.getOrderItemsByIds(data.orderItemIds);
             for (const item of orderItemsData) {
@@ -153,30 +203,41 @@ export class CuttingJobRepository implements ICuttingJobRepository {
     }
 
     async update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob> {
+        const conditions = [eq(cuttingJobs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(cuttingJobs)
             .set({
                 status: data.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
                 updatedAt: new Date()
             })
-            .where(eq(cuttingJobs.id, id))
+            .where(where ?? eq(cuttingJobs.id, id))
             .returning();
         return result;
     }
 
     async updateStatus(id: string, status: string): Promise<CuttingJob> {
+        const conditions = [eq(cuttingJobs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(cuttingJobs)
             .set({
                 status: status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
                 updatedAt: new Date()
             })
-            .where(eq(cuttingJobs.id, id))
+            .where(where ?? eq(cuttingJobs.id, id))
             .returning();
         return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.db.delete(cuttingJobs).where(eq(cuttingJobs.id, id));
+        const conditions = [eq(cuttingJobs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
+        await this.db.delete(cuttingJobs).where(where ?? eq(cuttingJobs.id, id));
     }
+
+    // ==================== JOB ITEMS ====================
 
     async addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem> {
         const [result] = await this.db.insert(cuttingJobItems).values({
@@ -194,6 +255,8 @@ export class CuttingJobRepository implements ICuttingJobRepository {
                 eq(cuttingJobItems.orderItemId, orderItemId)
             ));
     }
+
+    // ==================== ORDER ITEMS ====================
 
     async getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]> {
         if (ids.length === 0) return [];
@@ -216,46 +279,14 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         return results;
     }
 
-    async findByMaterialAndThickness(
-        materialTypeId: string,
-        thickness: number,
-        status?: string
-    ): Promise<CuttingJobWithRelations[]> {
-        const conditions = [
-            eq(cuttingJobs.materialTypeId, materialTypeId),
-            eq(cuttingJobs.thickness, thickness)
-        ];
-
-        if (status) {
-            conditions.push(eq(cuttingJobs.status, status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED'));
-        }
-
-        const results = await this.db.query.cuttingJobs.findMany({
-            where: and(...conditions),
-            with: {
-                items: {
-                    with: {
-                        orderItem: true
-                    }
-                }
-            }
-        });
-
-        return results.map(job => ({
-            ...job,
-            _count: { items: job.items?.length ?? 0, scenarios: 0 }
-        }));
-    }
-
     async getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]> {
-        // Get order items that are not yet assigned to any cutting job
         const assignedItemIds = await this.db
             .select({ orderItemId: cuttingJobItems.orderItemId })
             .from(cuttingJobItems);
 
         const assignedIds = assignedItemIds.map(a => a.orderItemId);
 
-        let query = this.db.select({
+        const query = this.db.select({
             id: orderItems.id,
             itemCode: orderItems.itemCode,
             itemName: orderItems.itemName,
@@ -272,11 +303,16 @@ export class CuttingJobRepository implements ICuttingJobRepository {
 
         const conditions = [];
 
+        // Filter by tenant
+        const tenantId = this.getCurrentTenantId();
+        if (tenantId) {
+            conditions.push(eq(orders.tenantId, tenantId));
+        }
+
         if (confirmedOnly) {
             conditions.push(eq(orders.status, 'CONFIRMED'));
         }
 
-        // Exclude already assigned items
         if (assignedIds.length > 0) {
             conditions.push(sql`${orderItems.id} NOT IN (${sql.join(assignedIds.map(id => sql`${id}`), sql`, `)})`);
         }
@@ -288,3 +324,4 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         return query;
     }
 }
+

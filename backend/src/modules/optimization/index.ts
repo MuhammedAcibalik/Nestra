@@ -23,7 +23,7 @@ export { OptimizationRepository, IOptimizationRepository, ScenarioWithRelations,
 // ==================== LEGACY (Backward Compatibility) ====================
 export { OptimizationEngine, OptimizationInput, OptimizationOutput, OptimizationParameters, PlanData, LayoutData } from './optimization.engine';
 export { OptimizationService } from './optimization.service';
-export { OptimizationController, createOptimizationController } from './optimization.controller';
+export { OptimizationController, createOptimizationController, ScenarioController, createScenarioController, PlanController, createPlanController } from './optimization.controller';
 export { OptimizationStrategyRegistry, I1DOptimizationStrategy, I2DOptimizationStrategy } from './optimization.strategy';
 
 // ==================== MICROSERVICE ====================

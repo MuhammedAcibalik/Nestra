@@ -2,24 +2,33 @@
 /**
  * Production Service - Microservice Architecture
  * Following SOLID principles with proper service isolation
- * NO cross-module repository dependencies
+ * Core production operations only - delegates downtime/quality to sub-services
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionService = void 0;
 const interfaces_1 = require("../../core/interfaces");
 const events_1 = require("../../core/events");
+const production_mapper_1 = require("./production.mapper");
+const production_downtime_service_1 = require("./production-downtime.service");
+const production_quality_service_1 = require("./production-quality.service");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('ProductionService');
 class ProductionService {
     repository;
     optimizationClient;
     stockClient;
-    constructor(repository, optimizationClient, stockClient) {
+    downtimeService;
+    qualityService;
+    constructor(repository, optimizationClient, stockClient, downtimeService, qualityService) {
         this.repository = repository;
         this.optimizationClient = optimizationClient;
         this.stockClient = stockClient;
+        this.downtimeService = downtimeService ?? new production_downtime_service_1.ProductionDowntimeService(repository);
+        this.qualityService = qualityService ?? new production_quality_service_1.ProductionQualityService(repository);
     }
+    // ==================== CORE PRODUCTION OPERATIONS ====================
     async getApprovedPlans(_filter) {
         try {
-            // Call optimization service to get approved plans
             const response = await this.optimizationClient.getApprovedPlans({
                 scenarioId: _filter?.scenarioId,
                 fromDate: _filter?.fromDate,
@@ -31,7 +40,6 @@ class ProductionService {
                     message: 'Onaylı planlar getirilemedi'
                 });
             }
-            // Transform to ICuttingPlanDto format
             const plans = response.data.map(plan => ({
                 id: plan.id,
                 planNumber: plan.planNumber,
@@ -40,7 +48,7 @@ class ProductionService {
                 wastePercentage: plan.wastePercentage,
                 stockUsedCount: plan.stockUsedCount,
                 status: plan.status,
-                layoutItems: [] // Layout items not needed for listing
+                layoutItems: []
             }));
             return (0, interfaces_1.success)(plans);
         }
@@ -48,13 +56,12 @@ class ProductionService {
             return (0, interfaces_1.failure)({
                 code: 'APPROVED_PLANS_ERROR',
                 message: 'Onaylı planlar getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
     async startProduction(planId, operatorId) {
         try {
-            // 1. Get plan from optimization service (cross-module via service client)
             const planResponse = await this.optimizationClient.getPlanById(planId);
             if (!planResponse.success || !planResponse.data) {
                 return (0, interfaces_1.failure)({
@@ -69,7 +76,6 @@ class ProductionService {
                     message: 'Sadece onaylı planlar üretime geçebilir'
                 });
             }
-            // 2. Check if production already started
             const existingLog = await this.repository.findByPlanId(planId);
             if (existingLog?.status === 'STARTED') {
                 return (0, interfaces_1.failure)({
@@ -77,12 +83,9 @@ class ProductionService {
                     message: 'Bu plan için üretim zaten devam ediyor'
                 });
             }
-            // 3. Create production log
             const log = await this.repository.create(planId, operatorId);
-            // 4. Update plan status via service client
             await this.optimizationClient.updatePlanStatus(planId, 'IN_PRODUCTION');
             const fullLog = await this.repository.findById(log.id);
-            // 5. Publish production started event
             const eventBus = events_1.EventBus.getInstance();
             await eventBus.publish(events_1.DomainEvents.productionStarted({
                 logId: log.id,
@@ -90,13 +93,13 @@ class ProductionService {
                 planNumber: plan.planNumber,
                 operatorId: operatorId
             }));
-            return (0, interfaces_1.success)(this.toDto(fullLog));
+            return (0, interfaces_1.success)((0, production_mapper_1.toProductionLogDto)(fullLog));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'PRODUCTION_START_ERROR',
                 message: 'Üretim başlatılırken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -120,13 +123,13 @@ class ProductionService {
                 issues: data.issues ? { items: data.issues } : undefined
             });
             const updatedLog = await this.repository.findById(logId);
-            return (0, interfaces_1.success)(this.toDto(updatedLog));
+            return (0, interfaces_1.success)((0, production_mapper_1.toProductionLogDto)(updatedLog));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'PRODUCTION_UPDATE_ERROR',
                 message: 'Üretim güncellenirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -145,14 +148,10 @@ class ProductionService {
                     message: 'Sadece devam eden üretimler tamamlanabilir'
                 });
             }
-            // 1. Complete production log
             await this.repository.complete(logId, data);
-            // 2. Update plan status via service client
             await this.optimizationClient.updatePlanStatus(log.cuttingPlanId, 'COMPLETED');
-            // 3. Consume stock via service client
             await this.consumeStockForPlan(log.cuttingPlanId, logId);
             const completedLog = await this.repository.findById(logId);
-            // 4. Publish production completed event
             const eventBus = events_1.EventBus.getInstance();
             await eventBus.publish(events_1.DomainEvents.productionCompleted({
                 logId: logId,
@@ -160,43 +159,38 @@ class ProductionService {
                 actualWaste: data.actualWaste,
                 actualTime: data.actualTime
             }));
-            return (0, interfaces_1.success)(this.toDto(completedLog));
+            return (0, interfaces_1.success)((0, production_mapper_1.toProductionLogDto)(completedLog));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'PRODUCTION_COMPLETE_ERROR',
                 message: 'Üretim tamamlanırken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
     async getProductionLogs(filter) {
         try {
             const logs = await this.repository.findAll(filter);
-            const dtos = logs.map((log) => this.toDto(log));
+            const dtos = logs.map((log) => (0, production_mapper_1.toProductionLogDto)(log));
             return (0, interfaces_1.success)(dtos);
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'LOGS_FETCH_ERROR',
                 message: 'Üretim kayıtları getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
     async getMachineWorkSummary(_filter) {
         try {
-            // Get all completed production logs
             const logs = await this.repository.findAll({ status: 'COMPLETED' });
-            // Group by machine - for now, we'll aggregate by the plan's assigned machine
-            // This requires data from the cutting plan which has machineId
             const machineWorkMap = new Map();
             for (const log of logs) {
                 if (!log.actualTime)
                     continue;
-                // Get machine info from the cutting plan (via optimization client)
-                const planId = log.cuttingPlanId;
-                const planResult = await this.optimizationClient.getPlanById(planId);
+                const planResult = await this.optimizationClient.getPlanById(log.cuttingPlanId);
                 if (!planResult.success || !planResult.data?.assignedMachineId)
                     continue;
                 const machineId = planResult.data.assignedMachineId;
@@ -215,7 +209,6 @@ class ProductionService {
                     });
                 }
             }
-            // Convert to result array
             const summaries = Array.from(machineWorkMap.values()).map(entry => ({
                 machineId: entry.machineId,
                 machineName: entry.machineName,
@@ -231,192 +224,100 @@ class ProductionService {
             return (0, interfaces_1.failure)({
                 code: 'MACHINE_WORK_SUMMARY_ERROR',
                 message: 'Makine çalışma özeti hesaplanırken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, production_mapper_1.getErrorMessage)(error) }
             });
         }
     }
-    /**
-     * Consume stock via service client - no direct repository access
-     * Uses Promise.allSettled for partial failure handling
-     */
+    // ==================== STOCK CONSUMPTION ====================
     async consumeStockForPlan(planId, productionLogId) {
-        // Get stock items from optimization service
-        const stockItemsResponse = await this.optimizationClient.getPlanStockItems(planId);
-        if (!stockItemsResponse.success || !stockItemsResponse.data) {
-            throw new Error('Failed to get plan stock items');
+        const items = await this.fetchPlanStockItems(planId);
+        if (!items)
+            return;
+        const validItems = await this.validateStockItems(items);
+        if (validItems.length === 0)
+            return;
+        const results = await this.processStockConsumption(validItems, planId, productionLogId);
+        this.logConsumptionResults(results, items.length);
+    }
+    async fetchPlanStockItems(planId) {
+        const response = await this.optimizationClient.getPlanStockItems(planId);
+        if (!response.success || !response.data) {
+            logger.error('Failed to get plan stock items for consumption');
+            return null;
         }
-        const items = stockItemsResponse.data;
-        const consumptionResults = [];
-        // Process all items and track results
-        const consumptionPromises = items.map(async (item) => {
-            try {
-                // Create consumption movement via stock service
-                const movementResponse = await this.stockClient.createMovement({
-                    stockItemId: item.stockItemId,
-                    movementType: 'CONSUMPTION',
-                    quantity: 1,
-                    notes: `Üretim planı: ${planId}`,
-                    productionLogId
-                });
-                if (!movementResponse.success) {
-                    throw new Error(movementResponse.error?.message ?? 'Movement creation failed');
-                }
-                // Update stock quantity via stock service
-                const quantityResponse = await this.stockClient.updateQuantity(item.stockItemId, -1);
-                if (!quantityResponse.success) {
-                    throw new Error(quantityResponse.error?.message ?? 'Quantity update failed');
-                }
-                return { stockItemId: item.stockItemId, success: true };
+        if (response.data.length === 0) {
+            logger.debug('No stock items to consume for plan', { planId });
+            return null;
+        }
+        return response.data;
+    }
+    async validateStockItems(items) {
+        const validationErrors = [];
+        for (const item of items) {
+            const stockCheck = await this.stockClient.getStockById(item.stockItemId);
+            if (!stockCheck.success) {
+                validationErrors.push(item.stockItemId);
             }
-            catch (error) {
-                console.error(`[PRODUCTION] Stock consumption failed for ${item.stockItemId}:`, error);
-                return {
-                    stockItemId: item.stockItemId,
-                    success: false,
-                    error: error instanceof Error ? error.message : 'Unknown error'
-                };
+        }
+        if (validationErrors.length > 0) {
+            logger.warn('Stock validation failed', { failedItems: validationErrors });
+        }
+        return items.filter(i => !validationErrors.includes(i.stockItemId));
+    }
+    async processStockConsumption(items, planId, productionLogId) {
+        const results = [];
+        for (const item of items) {
+            const result = await this.consumeSingleStockItem(item.stockItemId, planId, productionLogId);
+            results.push(result);
+        }
+        return results;
+    }
+    async consumeSingleStockItem(stockItemId, planId, productionLogId) {
+        try {
+            const movementResponse = await this.stockClient.createMovement({
+                stockItemId,
+                movementType: 'CONSUMPTION',
+                quantity: 1,
+                notes: `Üretim planı: ${planId}`,
+                productionLogId
+            });
+            if (!movementResponse.success) {
+                return { stockItemId, success: false };
             }
-        });
-        // Wait for all with settled pattern (doesn't throw on individual failures)
-        const results = await Promise.all(consumptionPromises);
-        consumptionResults.push(...results);
-        // Check for failures
-        const failedItems = consumptionResults.filter(r => !r.success);
+            await this.stockClient.updateQuantity(stockItemId, -1);
+            return { stockItemId, success: true };
+        }
+        catch (error) {
+            logger.error('Stock consumption failed', { stockItemId, error });
+            return { stockItemId, success: false };
+        }
+    }
+    logConsumptionResults(results, totalItems) {
+        const successCount = results.filter(r => r.success).length;
+        const failedItems = results.filter(r => !r.success);
         if (failedItems.length > 0) {
             const failedIds = failedItems.map(f => f.stockItemId).join(', ');
-            console.error(`[PRODUCTION] Partial stock consumption failure: ${failedIds}`);
-            // If all failed, throw error
-            if (failedItems.length === items.length) {
-                throw new Error(`All stock consumptions failed: ${failedIds}`);
-            }
-            // Log warning for partial failure (production continues but needs attention)
-            console.warn(`[PRODUCTION] ${failedItems.length}/${items.length} stock items failed to consume for plan ${planId}`);
+            logger.warn('Partial stock consumption', { successCount, totalItems, failedIds });
+        }
+        else {
+            logger.info('Stock consumption completed', { successCount });
         }
     }
-    toDto(log) {
-        return {
-            id: log.id,
-            cuttingPlanId: log.cuttingPlanId,
-            planNumber: log.cuttingPlan?.planNumber ?? '',
-            operatorName: log.operator
-                ? `${log.operator.firstName} ${log.operator.lastName}`
-                : '',
-            status: log.status,
-            actualWaste: log.actualWaste ?? undefined,
-            actualTime: log.actualTime ?? undefined,
-            startedAt: log.startedAt,
-            completedAt: log.completedAt ?? undefined,
-            notes: log.notes ?? undefined
-        };
-    }
-    getErrorMessage(error) {
-        if (error instanceof Error) {
-            return error.message;
-        }
-        return String(error);
-    }
-    // ==================== DOWNTIME METHODS ====================
+    // ==================== DELEGATED OPERATIONS ====================
     async recordDowntime(input) {
-        try {
-            const downtime = await this.repository.createDowntime(input);
-            return (0, interfaces_1.success)(this.toDowntimeDto({ ...downtime, machine: null }));
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'DOWNTIME_RECORD_ERROR',
-                message: 'Duruş kaydı oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.downtimeService.recordDowntime(input);
     }
     async endDowntime(downtimeId) {
-        try {
-            const endedAt = new Date();
-            // Get original downtime to calculate duration
-            const downtimes = await this.repository.findDowntimesByLogId('');
-            const original = downtimes.find((d) => d.id === downtimeId);
-            const durationMinutes = original
-                ? (endedAt.getTime() - original.startedAt.getTime()) / 60000
-                : 0;
-            const updated = await this.repository.updateDowntime(downtimeId, endedAt, durationMinutes);
-            return (0, interfaces_1.success)(this.toDowntimeDto({ ...updated, machine: null }));
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'DOWNTIME_END_ERROR',
-                message: 'Duruş kaydı sonlandırılırken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.downtimeService.endDowntime(downtimeId);
     }
     async getProductionDowntimes(logId) {
-        try {
-            const downtimes = await this.repository.findDowntimesByLogId(logId);
-            return (0, interfaces_1.success)(downtimes.map((d) => this.toDowntimeDto(d)));
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'DOWNTIME_FETCH_ERROR',
-                message: 'Duruş kayıtları getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.downtimeService.getProductionDowntimes(logId);
     }
-    toDowntimeDto(log) {
-        return {
-            id: log.id,
-            productionLogId: log.productionLogId,
-            machineId: log.machineId ?? undefined,
-            machineName: log.machine?.name ?? undefined,
-            reason: log.reason,
-            startedAt: log.startedAt,
-            endedAt: log.endedAt ?? undefined,
-            durationMinutes: log.durationMinutes ?? undefined,
-            notes: log.notes ?? undefined
-        };
-    }
-    // ==================== QUALITY CHECK METHODS ====================
     async recordQualityCheck(input) {
-        try {
-            const qc = await this.repository.createQualityCheck(input);
-            return (0, interfaces_1.success)(this.toQualityCheckDto({ ...qc, inspector: null }));
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'QC_RECORD_ERROR',
-                message: 'Kalite kontrol kaydı oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.qualityService.recordQualityCheck(input);
     }
     async getQualityChecks(logId) {
-        try {
-            const checks = await this.repository.findQualityChecksByLogId(logId);
-            return (0, interfaces_1.success)(checks.map((c) => this.toQualityCheckDto(c)));
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'QC_FETCH_ERROR',
-                message: 'Kalite kontrol kayıtları getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
-    }
-    toQualityCheckDto(qc) {
-        return {
-            id: qc.id,
-            productionLogId: qc.productionLogId,
-            result: qc.result,
-            passedCount: qc.passedCount,
-            failedCount: qc.failedCount,
-            defectTypes: Array.isArray(qc.defectTypes) ? qc.defectTypes : undefined,
-            inspectorId: qc.inspectorId ?? undefined,
-            inspectorName: qc.inspector
-                ? `${qc.inspector.firstName} ${qc.inspector.lastName}`
-                : undefined,
-            checkedAt: qc.checkedAt,
-            notes: qc.notes ?? undefined
-        };
+        return this.qualityService.getQualityChecks(logId);
     }
 }
 exports.ProductionService = ProductionService;

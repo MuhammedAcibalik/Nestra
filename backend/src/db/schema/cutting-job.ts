@@ -7,11 +7,13 @@ import { pgTable, uuid, real, integer, timestamp, unique } from 'drizzle-orm/pg-
 import { relations } from 'drizzle-orm';
 import { cuttingJobStatusEnum } from './enums';
 import { orderItems } from './order';
+import { tenants } from './tenant';
 
 // ==================== CUTTING JOB ====================
 
 export const cuttingJobs = pgTable('cutting_jobs', {
     id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
     jobNumber: uuid('job_number').unique().notNull(),
     materialTypeId: uuid('material_type_id').notNull(),
     thickness: real('thickness').notNull(),

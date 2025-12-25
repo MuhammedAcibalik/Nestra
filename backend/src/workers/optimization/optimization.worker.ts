@@ -15,6 +15,9 @@ import {
     Optimization2DResult
 } from '../../algorithms/2d/cutting2d';
 import { IOptimization1DPayload, IOptimization2DPayload } from '../pool/worker-task';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('OptimizationWorker');
 
 // ==================== 1D OPTIMIZATION ====================
 
@@ -25,7 +28,7 @@ import { IOptimization1DPayload, IOptimization2DPayload } from '../pool/worker-t
 export function optimize1D(payload: IOptimization1DPayload): Optimization1DResult {
     const { pieces, stockBars, options } = payload;
 
-    console.log(`[WORKER] 1D Optimization: ${pieces.length} pieces, ${stockBars.length} bars`);
+    logger.debug('1D Optimization started', { pieceCount: pieces.length, barCount: stockBars.length });
 
     if (options.algorithm === 'BFD') {
         return bestFitDecreasing(pieces, stockBars, options);
@@ -42,7 +45,7 @@ export function optimize1D(payload: IOptimization1DPayload): Optimization1DResul
 export function optimize2D(payload: IOptimization2DPayload): Optimization2DResult {
     const { pieces, stockSheets, options } = payload;
 
-    console.log(`[WORKER] 2D Optimization: ${pieces.length} pieces, ${stockSheets.length} sheets`);
+    logger.debug('2D Optimization started', { pieceCount: pieces.length, sheetCount: stockSheets.length });
 
     if (options.algorithm === 'GUILLOTINE') {
         return guillotineCutting(pieces, stockSheets, options);

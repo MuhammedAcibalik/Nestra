@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RabbitMQSubscriber = exports.defaultQueues = void 0;
 const rabbitmq_connection_1 = require("./rabbitmq.connection");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('RabbitMQSubscriber');
 // Default queue configurations
 exports.defaultQueues = [
     {
@@ -65,7 +67,7 @@ class RabbitMQSubscriber {
             await this.setupQueue(channel, queue);
         }
         this.initialized = true;
-        console.log('[RABBITMQ SUBSCRIBER] Initialized with queues:', queues.map(q => q.name).join(', '));
+        logger.info('Initialized with queues', { queues: queues.map(q => q.name) });
     }
     /**
      * Subscribe to an event type
@@ -75,7 +77,7 @@ class RabbitMQSubscriber {
             this.handlers.set(eventType, new Set());
         }
         this.handlers.get(eventType).add(handler);
-        console.log(`[RABBITMQ SUBSCRIBER] Handler registered for: ${eventType}`);
+        logger.debug('Handler registered', { eventType });
     }
     /**
      * Start consuming from a queue
@@ -91,7 +93,7 @@ class RabbitMQSubscriber {
             }
         }, { noAck: false });
         this.consumerTags.set(queueName, consumerTag);
-        console.log(`[RABBITMQ SUBSCRIBER] Consuming from: ${queueName}`);
+        logger.info('Consuming started', { queueName });
     }
     /**
      * Start consuming from all default queues
@@ -110,7 +112,7 @@ class RabbitMQSubscriber {
         if (channel && consumerTag) {
             await channel.cancel(consumerTag);
             this.consumerTags.delete(queueName);
-            console.log(`[RABBITMQ SUBSCRIBER] Stopped consuming from: ${queueName}`);
+            logger.info('Consuming stopped', { queueName });
         }
     }
     /**
@@ -126,7 +128,7 @@ class RabbitMQSubscriber {
      */
     unsubscribe(eventType) {
         this.handlers.delete(eventType);
-        console.log(`[RABBITMQ SUBSCRIBER] Unsubscribed from: ${eventType}`);
+        logger.debug('Unsubscribed', { eventType });
     }
     // ==================== PRIVATE METHODS ====================
     /**
@@ -146,7 +148,7 @@ class RabbitMQSubscriber {
         for (const pattern of queue.routingPatterns) {
             await channel.bindQueue(queue.name, this.config.exchange, pattern);
         }
-        console.log(`[RABBITMQ SUBSCRIBER] Queue '${queue.name}' bound to patterns: ${queue.routingPatterns.join(', ')}`);
+        logger.debug('Queue bound', { queueName: queue.name, patterns: queue.routingPatterns });
     }
     /**
      * Handle incoming message
@@ -157,7 +159,7 @@ class RabbitMQSubscriber {
             const event = JSON.parse(content);
             // Restore Date object
             event.timestamp = new Date(event.timestamp);
-            console.log(`[RABBITMQ SUBSCRIBER] Received: ${event.eventType} from ${queueName}`);
+            logger.debug('Event received', { eventType: event.eventType, queueName });
             // Get handlers for this event type
             const handlers = this.handlers.get(event.eventType);
             if (!handlers || handlers.size === 0) {
@@ -171,7 +173,7 @@ class RabbitMQSubscriber {
                     await handler(event);
                 }
                 catch (error) {
-                    console.error(`[RABBITMQ SUBSCRIBER] Handler error for ${event.eventType}:`, error);
+                    logger.error('Handler error', { eventType: event.eventType, error });
                     throw error;
                 }
             });
@@ -180,19 +182,16 @@ class RabbitMQSubscriber {
             channel.ack(msg);
         }
         catch (error) {
-            console.error(`[RABBITMQ SUBSCRIBER] Message processing failed:`, error);
-            // Check retry count
+            logger.error('Message processing failed', { error });
             const retryCount = msg.properties.headers?.['x-retry-count'] ?? 0;
             const maxRetries = 3;
             if (retryCount < maxRetries) {
-                // Requeue with retry count
-                channel.nack(msg, false, false); // Send to DLQ
-                console.warn(`[RABBITMQ SUBSCRIBER] Message sent to DLQ (retry ${retryCount + 1}/${maxRetries})`);
+                channel.nack(msg, false, false);
+                logger.warn('Message sent to DLQ', { retryCount: retryCount + 1, maxRetries });
             }
             else {
-                // Max retries reached, send to dead letter
                 channel.nack(msg, false, false);
-                console.error(`[RABBITMQ SUBSCRIBER] Max retries reached, message sent to dead letter`);
+                logger.error('Max retries reached, message sent to dead letter');
             }
         }
     }

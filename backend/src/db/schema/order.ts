@@ -8,11 +8,13 @@ import { relations } from 'drizzle-orm';
 import { orderStatusEnum, geometryTypeEnum } from './enums';
 import { customers } from './customer';
 import { users } from './auth';
+import { tenants } from './tenant';
 
 // ==================== ORDER ====================
 
 export const orders = pgTable('orders', {
     id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
     orderNumber: text('order_number').unique().notNull(),
     customerId: uuid('customer_id').references(() => customers.id),
     createdById: uuid('created_by_id').notNull().references(() => users.id),

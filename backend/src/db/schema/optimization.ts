@@ -10,11 +10,13 @@ import { users } from './auth';
 import { cuttingJobs } from './cutting-job';
 import { machines } from './machine';
 import { stockItems } from './stock';
+import { tenants } from './tenant';
 
 // ==================== OPTIMIZATION SCENARIO ====================
 
 export const optimizationScenarios = pgTable('optimization_scenarios', {
     id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
     name: text('name').notNull(),
     cuttingJobId: uuid('cutting_job_id').notNull().references(() => cuttingJobs.id),
     createdById: uuid('created_by_id').notNull().references(() => users.id),

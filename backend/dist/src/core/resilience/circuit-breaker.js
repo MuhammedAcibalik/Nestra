@@ -13,6 +13,8 @@ exports.createCircuitBreaker = createCircuitBreaker;
 exports.getCircuitBreakerStats = getCircuitBreakerStats;
 const opossum_1 = __importDefault(require("opossum"));
 const metrics_1 = require("../monitoring/metrics");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('CircuitBreaker');
 // ==================== DEFAULT CONFIG ====================
 exports.defaultCircuitBreakerConfig = {
     timeout: 30000, // 30s timeout
@@ -45,7 +47,7 @@ class CircuitBreakerManager {
         this.setupEventListeners(breaker, config.name);
         // Store for later access
         this.breakers.set(config.name, breaker);
-        console.log(`[CIRCUIT BREAKER] Created: ${config.name}`);
+        logger.info('Created', { name: config.name });
         return breaker;
     }
     /**
@@ -93,25 +95,25 @@ class CircuitBreakerManager {
      */
     static setupEventListeners(breaker, name) {
         breaker.on('open', () => {
-            console.warn(`[CIRCUIT BREAKER] ${name} OPENED`);
+            logger.warn('Circuit opened', { name });
             metrics_1.circuitBreakerStateGauge.labels(name).set(1);
         });
         breaker.on('halfOpen', () => {
-            console.log(`[CIRCUIT BREAKER] ${name} HALF-OPEN`);
+            logger.info('Circuit half-open', { name });
             metrics_1.circuitBreakerStateGauge.labels(name).set(2);
         });
         breaker.on('close', () => {
-            console.log(`[CIRCUIT BREAKER] ${name} CLOSED`);
+            logger.info('Circuit closed', { name });
             metrics_1.circuitBreakerStateGauge.labels(name).set(0);
         });
         breaker.on('fallback', () => {
-            console.log(`[CIRCUIT BREAKER] ${name} fallback executed`);
+            logger.debug('Fallback executed', { name });
         });
         breaker.on('timeout', () => {
-            console.warn(`[CIRCUIT BREAKER] ${name} timeout`);
+            logger.warn('Timeout', { name });
         });
         breaker.on('reject', () => {
-            console.warn(`[CIRCUIT BREAKER] ${name} rejected (circuit open)`);
+            logger.warn('Request rejected (circuit open)', { name });
         });
     }
     /**
@@ -120,7 +122,7 @@ class CircuitBreakerManager {
     static async shutdownAll() {
         for (const [name, breaker] of this.breakers) {
             breaker.shutdown();
-            console.log(`[CIRCUIT BREAKER] ${name} shutdown`);
+            logger.debug('Shutdown', { name });
         }
         this.breakers.clear();
     }

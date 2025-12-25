@@ -12,6 +12,9 @@ import {
     IStockLowPayload,
     IStockUpdatedPayload
 } from './events';
+import { createModuleLogger } from '../core/logger';
+
+const logger = createModuleLogger('NotificationManager');
 
 // ==================== INTERFACES ====================
 
@@ -118,7 +121,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitProductionStarted(payload);
-        console.log(`[Notification] Production started: ${data.planNumber}`);
+        logger.info('Production started', { planNumber: data.planNumber });
     }
 
     notifyProductionProgress(data: IProductionTrackingUpdate): void {
@@ -143,7 +146,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitProductionCompleted(payload);
-        console.log(`[Notification] Production completed: ${data.planNumber}`);
+        logger.info('Production completed', { planNumber: data.planNumber });
     }
 
     notifyProductionPaused(data: IProductionTrackingUpdate): void {
@@ -154,7 +157,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitProductionUpdated(payload);
-        console.log(`[Notification] Production paused: ${data.planNumber}`);
+        logger.info('Production paused', { planNumber: data.planNumber });
     }
 
     // ==================== DOWNTIME ALERTS ====================
@@ -178,7 +181,7 @@ class NotificationManager implements INotificationManager {
             downtimeInfo: payload
         } as IProductionUpdatedPayload);
 
-        console.log(`[Notification] Downtime started on ${data.machineName}: ${data.reason}`);
+        logger.info('Downtime started', { machineName: data.machineName, reason: data.reason });
     }
 
     notifyDowntimeEnded(data: IDowntimeAlertData & { endedAt: Date }): void {
@@ -199,7 +202,7 @@ class NotificationManager implements INotificationManager {
             downtimeInfo: payload
         } as IProductionUpdatedPayload);
 
-        console.log(`[Notification] Downtime ended on ${data.machineName} (${data.durationMinutes} min)`);
+        logger.info('Downtime ended', { machineName: data.machineName, durationMinutes: data.durationMinutes });
     }
 
     // ==================== STOCK ALERTS ====================
@@ -215,7 +218,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitStockLow(payload);
-        console.log(`[Notification] Stock low: ${data.stockCode} (${data.currentQuantity}/${data.minQuantity})`);
+        logger.info('Stock low', { stockCode: data.stockCode, currentQuantity: data.currentQuantity, minQuantity: data.minQuantity });
     }
 
     notifyStockCritical(data: IStockAlertData): void {
@@ -229,7 +232,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitStockLow(payload);
-        console.log(`[Notification] CRITICAL stock: ${data.stockCode} (${data.currentQuantity})`);
+        logger.warn('Critical stock level', { stockCode: data.stockCode, currentQuantity: data.currentQuantity });
     }
 
     notifyStockReplenished(data: IStockAlertData): void {
@@ -241,7 +244,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitStockUpdated(payload);
-        console.log(`[Notification] Stock replenished: ${data.stockCode}`);
+        logger.info('Stock replenished', { stockCode: data.stockCode });
     }
 
     // ==================== QUALITY ALERTS ====================
@@ -263,7 +266,7 @@ class NotificationManager implements INotificationManager {
         };
 
         this.ws.emitProductionUpdated(payload as IProductionUpdatedPayload);
-        console.log(`[Notification] Quality issue on ${data.planNumber}: ${data.failedCount} failed`);
+        logger.warn('Quality issue detected', { planNumber: data.planNumber, failedCount: data.failedCount });
     }
 
     // ==================== SUBSCRIPTIONS ====================
@@ -272,12 +275,12 @@ class NotificationManager implements INotificationManager {
         const existing = this.productionSubscriptions.get(userId) ?? new Set();
         planIds.forEach(id => existing.add(id));
         this.productionSubscriptions.set(userId, existing);
-        console.log(`[Notification] User ${userId} subscribed to ${planIds.length} plans`);
+        logger.debug('User subscribed to production', { userId, planCount: planIds.length });
     }
 
     unsubscribeFromProduction(userId: string): void {
         this.productionSubscriptions.delete(userId);
-        console.log(`[Notification] User ${userId} unsubscribed from production updates`);
+        logger.debug('User unsubscribed from production', { userId });
     }
 
     // ==================== UTILITY ====================

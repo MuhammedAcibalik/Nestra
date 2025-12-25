@@ -39,6 +39,9 @@ import {
     IOptimization1DPayload,
     IOptimization2DPayload
 } from '../../workers';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('OptimizationEngine');
 
 // ==================== TYPE ALIASES ====================
 
@@ -112,7 +115,7 @@ export class OptimizationEngine {
         if (this.useWorkerThreads && !this.pool) {
             this.pool = getOptimizationPool();
             await this.pool.initialize();
-            console.log('[OPTIMIZATION ENGINE] Piscina pool initialized');
+            logger.info('Piscina pool initialized');
         }
     }
 
@@ -187,9 +190,9 @@ export class OptimizationEngine {
             try {
                 const payload: IOptimization1DPayload = { pieces, stockBars: bars, options };
                 result = await this.pool.run1D(payload) as Optimization1DResult;
-                console.log('[OPTIMIZATION ENGINE] 1D completed in Piscina worker');
+                logger.debug('1D optimization completed in Piscina worker');
             } catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
+                logger.warn('Piscina failed, falling back to main thread', { error });
                 result = this.run1DSync(pieces, bars, options);
             }
         } else {
@@ -276,9 +279,9 @@ export class OptimizationEngine {
             try {
                 const payload: IOptimization2DPayload = { pieces, stockSheets: sheets, options };
                 result = await this.pool.run2D(payload) as Optimization2DResult;
-                console.log('[OPTIMIZATION ENGINE] 2D completed in Piscina worker');
+                logger.debug('2D optimization completed in Piscina worker');
             } catch (error) {
-                console.warn('[OPTIMIZATION ENGINE] Piscina failed, falling back to main thread:', error);
+                logger.warn('Piscina failed, falling back to main thread', { error });
                 result = this.run2DSync(pieces, sheets, options);
             }
         } else {

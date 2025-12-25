@@ -58,11 +58,10 @@ exports.apiRateLimiter = (0, express_rate_limit_1.default)({
     max: 500, // 500 requests per window
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => {
-        // Use X-Forwarded-For header if behind proxy, otherwise use IP
-        return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ??
-            req.ip ??
-            'unknown';
+    // Use default keyGenerator which handles IPv6 properly
+    // express-rate-limit v7+ has built-in X-Forwarded-For support
+    validate: {
+        xForwardedForHeader: false // Disable validation warning
     }
 });
 /**

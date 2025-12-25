@@ -2,6 +2,7 @@
  * 2D Cutting Algorithms - Barrel Export
  */
 
+export * from './types';
 export * from './geometry';
 export * from './sheet-manager';
 export * from './unplaced-collector';

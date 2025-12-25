@@ -10,9 +10,11 @@ const drizzle_orm_1 = require("drizzle-orm");
 const enums_1 = require("./enums");
 const customer_1 = require("./customer");
 const auth_1 = require("./auth");
+const tenant_1 = require("./tenant");
 // ==================== ORDER ====================
 exports.orders = (0, pg_core_1.pgTable)('orders', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
+    tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     orderNumber: (0, pg_core_1.text)('order_number').unique().notNull(),
     customerId: (0, pg_core_1.uuid)('customer_id').references(() => customer_1.customers.id),
     createdById: (0, pg_core_1.uuid)('created_by_id').notNull().references(() => auth_1.users.id),

@@ -1,5 +1,6 @@
-import { CuttingJobRepository, CuttingJob } from '../cutting-job.repository';
+import { CuttingJobRepository } from '../cutting-job.repository';
 import { createMockDatabase, MockProxy } from '../../../core/test/db-mock';
+import { createMockCuttingJob } from '../../../core/test/test-factories';
 import { Database } from '../../../db';
 
 describe('CuttingJobRepository', () => {
@@ -19,15 +20,13 @@ describe('CuttingJobRepository', () => {
                 orderItemIds: ['order-item-1']
             };
 
-            const mockJob: CuttingJob = {
+            const mockJob = createMockCuttingJob({
                 id: 'job-1',
                 jobNumber: 'JOB-2305-00001',
                 materialTypeId: 'mat-1',
                 thickness: 18,
-                status: 'PENDING',
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
+                status: 'PENDING'
+            });
 
             (db.insert as jest.Mock).mockReturnValue({
                 values: jest.fn().mockReturnValue({

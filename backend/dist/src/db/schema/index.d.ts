@@ -3,6 +3,7 @@
  */
 export * from './enums';
 export * from './config';
+export * from './tenant';
 export * from './material';
 export * from './location';
 export * from './customer';
@@ -13,5 +14,7 @@ export * from './order';
 export * from './cutting-job';
 export * from './optimization';
 export * from './production';
+export * from './activities';
+export * from './document_locks';
 export * from './settings';
 //# sourceMappingURL=index.d.ts.map

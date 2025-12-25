@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const optimization_controller_1 = require("../optimization.controller");
+const scenario_controller_1 = require("../scenario.controller");
 const interfaces_1 = require("../../../core/interfaces");
 const jest_mock_extended_1 = require("jest-mock-extended");
-describe('OptimizationController', () => {
+describe('ScenarioController', () => {
     let controller;
     let service;
     let req;
@@ -25,12 +25,11 @@ describe('OptimizationController', () => {
         next = jest.fn();
         res.status.mockReturnValue(res);
         res.json.mockReturnValue(res);
-        controller = new optimization_controller_1.OptimizationController(service);
+        controller = new scenario_controller_1.ScenarioController(service);
     });
     describe('createScenario', () => {
         it('should create scenario successfully', async () => {
             const authReq = req;
-            // Cast to any to avoid strict type checks on request user for testing
             authReq.user = { userId: 'user-1', email: 'test@example.com', roleId: 'role-1', roleName: 'admin' };
             authReq.body = { name: 'Test Scenario', cuttingJobId: 'job-1' };
             service.createScenario.mockResolvedValue((0, interfaces_1.success)(mockScenario));
@@ -43,7 +42,6 @@ describe('OptimizationController', () => {
         });
         it('should handle errors', async () => {
             const authReq = req;
-            // Cast to any to avoid strict type checks on request user for testing
             authReq.user = { userId: 'user-1', email: 'test@example.com', roleId: 'role-1', roleName: 'admin' };
             service.createScenario.mockResolvedValue((0, interfaces_1.failure)({ code: 'ERROR', message: 'Error' }));
             await controller.createScenario(authReq, res, next);
@@ -54,8 +52,6 @@ describe('OptimizationController', () => {
     describe('getScenarioById', () => {
         it('should return scenario if found', async () => {
             req.params = { id: 'sc-1' };
-            // Mock with relations if necessary, or just basic object matching the return type
-            // The service returns IResult<ScenarioWithRelations>
             service.getScenarioById.mockResolvedValue((0, interfaces_1.success)(mockScenario));
             await controller.getScenarioById(req, res, next);
             expect(res.json).toHaveBeenCalledWith({

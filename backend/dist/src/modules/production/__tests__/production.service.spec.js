@@ -95,6 +95,7 @@ describe('ProductionService', () => {
             repository.findById.mockResolvedValue(log);
             optimizationClient.getPlanStockItems.mockResolvedValue({ success: true, data: stockItems });
             optimizationClient.updatePlanStatus.mockResolvedValue({ success: true });
+            stockClient.getStockById.mockResolvedValue({ success: true, data: { id: 'stock-1', code: 'STK-1', name: 'Stock', quantity: 10, reservedQty: 0 } });
             stockClient.createMovement.mockResolvedValue({ success: true, data: { id: 'mov-1' } });
             stockClient.updateQuantity.mockResolvedValue({ success: true });
             const completedLog = createMockLog({

@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, getEventAdapter } from '../../core/events';
 import { ICuttingJobRepository } from './cutting-job.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('CuttingJobEventHandler');
 
 export class CuttingJobEventHandler {
     constructor(private readonly cuttingJobRepository: ICuttingJobRepository) { }
@@ -26,7 +29,7 @@ export class CuttingJobEventHandler {
         // Handle production completed - complete cutting job
         adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
-        console.log('[EVENT] CuttingJob event handlers registered');
+        logger.info('Event handlers registered');
     }
 
     /**
@@ -36,10 +39,10 @@ export class CuttingJobEventHandler {
         const payload = event.payload as { orderId: string };
 
         try {
-            console.log(`[CUTTING-JOB EVENT] Order created: ${payload.orderId}`);
+            logger.debug('Order created event received', { orderId: payload.orderId });
             // Could auto-create cutting job based on order items
         } catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling order creation:', error);
+            logger.error('Error handling order creation', { error });
         }
     }
 
@@ -51,7 +54,7 @@ export class CuttingJobEventHandler {
         const adapter = getEventAdapter();
 
         try {
-            console.log(`[CUTTING-JOB EVENT] Optimization completed: ${payload.planId}`);
+            logger.debug('Optimization completed', { planId: payload.planId });
 
             // Publish cutting job created event
             await adapter.publish(DomainEvents.cuttingJobCreated({
@@ -63,7 +66,7 @@ export class CuttingJobEventHandler {
             }));
 
         } catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling optimization completion:', error);
+            logger.error('Error handling optimization completion', { error });
         }
     }
 
@@ -75,7 +78,7 @@ export class CuttingJobEventHandler {
         const adapter = getEventAdapter();
 
         try {
-            console.log(`[CUTTING-JOB EVENT] Production completed: ${payload.logId}`);
+            logger.debug('Production completed', { logId: payload.logId });
 
             await adapter.publish(DomainEvents.cuttingJobCompleted({
                 jobId: `job_${Date.now()}`,
@@ -84,7 +87,7 @@ export class CuttingJobEventHandler {
             }));
 
         } catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling production completion:', error);
+            logger.error('Error handling production completion', { error });
         }
     }
 }

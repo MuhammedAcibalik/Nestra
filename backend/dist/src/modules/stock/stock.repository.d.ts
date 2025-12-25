@@ -1,6 +1,6 @@
 /**
  * Stock Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 import { Database } from '../../db';
 import { stockItems, stockMovements } from '../../db/schema';
@@ -35,6 +35,9 @@ export interface IStockRepository {
 export declare class StockRepository implements IStockRepository {
     private readonly db;
     constructor(db: Database);
+    private getTenantFilter;
+    private withTenantFilter;
+    private getCurrentTenantId;
     findById(id: string): Promise<StockItemWithRelations | null>;
     findAll(filter?: IStockFilter): Promise<StockItemWithRelations[]>;
     findByCode(code: string): Promise<StockItem | null>;

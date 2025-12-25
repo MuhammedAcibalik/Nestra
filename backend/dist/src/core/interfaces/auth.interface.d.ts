@@ -35,6 +35,8 @@ export interface ITokenPayload {
     email: string;
     roleId: string;
     roleName: string;
+    tenantId?: string;
+    tenantSlug?: string;
     iat: number;
     exp: number;
 }

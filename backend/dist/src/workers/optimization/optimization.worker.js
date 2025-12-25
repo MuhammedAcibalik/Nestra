@@ -10,6 +10,8 @@ exports.optimize2D = optimize2D;
 exports.default = handler;
 const cutting1d_1 = require("../../algorithms/1d/cutting1d");
 const cutting2d_1 = require("../../algorithms/2d/cutting2d");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('OptimizationWorker');
 // ==================== 1D OPTIMIZATION ====================
 /**
  * Execute 1D cutting optimization
@@ -17,7 +19,7 @@ const cutting2d_1 = require("../../algorithms/2d/cutting2d");
  */
 function optimize1D(payload) {
     const { pieces, stockBars, options } = payload;
-    console.log(`[WORKER] 1D Optimization: ${pieces.length} pieces, ${stockBars.length} bars`);
+    logger.debug('1D Optimization started', { pieceCount: pieces.length, barCount: stockBars.length });
     if (options.algorithm === 'BFD') {
         return (0, cutting1d_1.bestFitDecreasing)(pieces, stockBars, options);
     }
@@ -30,7 +32,7 @@ function optimize1D(payload) {
  */
 function optimize2D(payload) {
     const { pieces, stockSheets, options } = payload;
-    console.log(`[WORKER] 2D Optimization: ${pieces.length} pieces, ${stockSheets.length} sheets`);
+    logger.debug('2D Optimization started', { pieceCount: pieces.length, sheetCount: stockSheets.length });
     if (options.algorithm === 'GUILLOTINE') {
         return (0, cutting2d_1.guillotineCutting)(pieces, stockSheets, options);
     }

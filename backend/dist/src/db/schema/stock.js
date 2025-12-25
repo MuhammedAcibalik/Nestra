@@ -10,9 +10,11 @@ const drizzle_orm_1 = require("drizzle-orm");
 const enums_1 = require("./enums");
 const material_1 = require("./material");
 const location_1 = require("./location");
+const tenant_1 = require("./tenant");
 // ==================== STOCK ITEM ====================
 exports.stockItems = (0, pg_core_1.pgTable)('stock_items', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
+    tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     code: (0, pg_core_1.text)('code').unique().notNull(),
     name: (0, pg_core_1.text)('name').notNull(),
     materialTypeId: (0, pg_core_1.uuid)('material_type_id').notNull().references(() => material_1.materialTypes.id),

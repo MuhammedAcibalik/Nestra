@@ -1,6 +1,6 @@
 /**
  * Production Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 import { Database } from '../../db';
 import { productionLogs, downtimeLogs, qualityChecks, DowntimeReason, QcResult } from '../../db/schema';
@@ -87,6 +87,9 @@ export interface IProductionRepository {
 export declare class ProductionRepository implements IProductionRepository {
     private readonly db;
     constructor(db: Database);
+    private getTenantFilter;
+    private withTenantFilter;
+    private getCurrentTenantId;
     findById(id: string): Promise<ProductionLogWithRelations | null>;
     findByPlanId(planId: string): Promise<ProductionLogWithRelations | null>;
     findAll(filter?: IProductionFilter): Promise<ProductionLogWithRelations[]>;

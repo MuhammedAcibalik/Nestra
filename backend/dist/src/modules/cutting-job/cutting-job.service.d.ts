@@ -1,40 +1,18 @@
 /**
  * CuttingJob Service
- * Following SOLID principles with proper types
+ * Following Single Responsibility Principle (SRP)
+ * Core CRUD operations only
+ * Generator and Operations are delegated to specialized services
  */
 import { IResult } from '../../core/interfaces';
-import { ICuttingJobRepository, ICuttingJobFilter, ICreateCuttingJobInput } from './cutting-job.repository';
-export interface ICuttingJobDto {
-    id: string;
-    jobNumber: string;
-    materialTypeId: string;
-    thickness: number;
-    status: string;
-    itemCount: number;
-    scenarioCount: number;
-    createdAt: Date;
-    items?: ICuttingJobItemDto[];
-}
-export interface ICuttingJobItemDto {
-    id: string;
-    orderItemId: string;
-    itemCode: string | null;
-    itemName: string | null;
-    geometryType: string;
-    dimensions: {
-        length?: number | null;
-        width?: number | null;
-        height?: number | null;
-    };
-    quantity: number;
-}
-export interface IAutoGenerateResult {
-    createdJobs: ICuttingJobDto[];
-    skippedItems: {
-        orderItemId: string;
-        reason: string;
-    }[];
-}
+import { ICuttingJobRepository, ICreateCuttingJobInput, ICuttingJobFilter } from './cutting-job.repository';
+import { ICuttingJobDto, IAutoGenerateResult } from './cutting-job.mapper';
+import { ICuttingJobGeneratorService } from './cutting-job-generator.service';
+import { ICuttingJobOperationsService } from './cutting-job-operations.service';
+export { ICuttingJobDto, ICuttingJobItemDto, IAutoGenerateResult, ISplitJobInput } from './cutting-job.mapper';
+/**
+ * CuttingJob Service Interface
+ */
 export interface ICuttingJobService {
     getJobs(filter?: ICuttingJobFilter): Promise<IResult<ICuttingJobDto[]>>;
     getJobById(id: string): Promise<IResult<ICuttingJobDto>>;
@@ -50,34 +28,24 @@ export interface ICuttingJobService {
         quantity: number;
     }[]): Promise<IResult<ICuttingJobDto>>;
 }
-/** Input for job split operation */
-export interface ISplitJobInput {
-    itemId: string;
-    quantity: number;
-}
+/**
+ * CuttingJob Service Implementation
+ * Composes generator and operations services
+ */
 export declare class CuttingJobService implements ICuttingJobService {
     private readonly repository;
-    constructor(repository: ICuttingJobRepository);
+    private readonly generatorService;
+    private readonly operationsService;
+    constructor(repository: ICuttingJobRepository, generatorService?: ICuttingJobGeneratorService, operationsService?: ICuttingJobOperationsService);
     getJobs(filter?: ICuttingJobFilter): Promise<IResult<ICuttingJobDto[]>>;
     getJobById(id: string): Promise<IResult<ICuttingJobDto>>;
     createJob(data: ICreateCuttingJobInput): Promise<IResult<ICuttingJobDto>>;
     updateJobStatus(id: string, status: string): Promise<IResult<ICuttingJobDto>>;
     deleteJob(id: string): Promise<IResult<void>>;
-    autoGenerateFromOrders(confirmedOnly?: boolean): Promise<IResult<IAutoGenerateResult>>;
     addItemToJob(jobId: string, orderItemId: string, quantity: number): Promise<IResult<ICuttingJobDto>>;
     removeItemFromJob(jobId: string, orderItemId: string): Promise<IResult<void>>;
-    private toDto;
-    private getErrorMessage;
-    /**
-     * Merge multiple jobs into one
-     * All items from source jobs will be moved to target job
-     * Source jobs will be deleted after merge
-     */
+    autoGenerateFromOrders(confirmedOnly?: boolean): Promise<IResult<IAutoGenerateResult>>;
     mergeJobs(sourceJobIds: string[], targetJobId?: string): Promise<IResult<ICuttingJobDto>>;
-    /**
-     * Split a job by moving specified items to a new job
-     * Returns the newly created job
-     */
     splitJob(jobId: string, itemsToSplit: {
         itemId: string;
         quantity: number;

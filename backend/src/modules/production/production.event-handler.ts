@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, getEventAdapter } from '../../core/events';
 import { IProductionRepository } from './production.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('ProductionEventHandler');
 
 export class ProductionEventHandler {
     constructor(private readonly productionRepository: IProductionRepository) { }
@@ -23,7 +26,7 @@ export class ProductionEventHandler {
         // Handle stock consumed - update production progress
         adapter.subscribe(EventTypes.STOCK_CONSUMED, this.handleStockConsumed.bind(this));
 
-        console.log('[EVENT] Production event handlers registered');
+        logger.info('Production event handlers registered');
     }
 
     /**
@@ -34,7 +37,7 @@ export class ProductionEventHandler {
         const adapter = getEventAdapter();
 
         try {
-            console.log(`[PRODUCTION EVENT] Plan approved: ${payload.planId}`);
+            logger.info('Plan approved', { planId: payload.planId });
 
             // Publish production started event with correct payload
             await adapter.publish(DomainEvents.productionStarted({
@@ -45,7 +48,7 @@ export class ProductionEventHandler {
             }));
 
         } catch (error) {
-            console.error('[PRODUCTION EVENT] Error handling plan approval:', error);
+            logger.error('Error handling plan approval', { error, planId: payload.planId });
         }
     }
 
@@ -56,10 +59,10 @@ export class ProductionEventHandler {
         const payload = event.payload as { stockItemId: string; quantity: number };
 
         try {
-            console.log(`[PRODUCTION EVENT] Stock consumed: ${payload.stockItemId} x ${payload.quantity}`);
+            logger.debug('Stock consumed', { stockItemId: payload.stockItemId, quantity: payload.quantity });
             // Update production progress metrics
         } catch (error) {
-            console.error('[PRODUCTION EVENT] Error handling stock consumption:', error);
+            logger.error('Error handling stock consumption', { error });
         }
     }
 }

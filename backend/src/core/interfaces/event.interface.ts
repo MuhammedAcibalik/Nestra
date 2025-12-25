@@ -3,14 +3,36 @@
  * For microservices communication
  */
 
-export interface IDomainEvent {
+// ==================== DOMAIN EVENT ====================
+
+/**
+ * Domain event with optional generic payload type
+ * Use generic version for type-safe event handling
+ */
+export interface IDomainEvent<T extends Record<string, unknown> = Record<string, unknown>> {
     eventId: string;
     eventType: string;
     timestamp: Date;
-    payload: Record<string, unknown>;
+    payload: T;
     aggregateId: string;
     aggregateType: string;
 }
+
+// ==================== TYPED EVENT HELPERS ====================
+
+/**
+ * Create a typed event interface for a specific payload
+ */
+export type TypedDomainEvent<T extends Record<string, unknown>> = IDomainEvent<T>;
+
+/**
+ * Handler for typed events
+ */
+export type TypedEventHandler<T extends Record<string, unknown>> = (
+    event: IDomainEvent<T>
+) => Promise<void>;
+
+// ==================== EVENT PUBLISHER/SUBSCRIBER ====================
 
 export interface IEventPublisher {
     publish(event: IDomainEvent): Promise<void>;
@@ -20,4 +42,18 @@ export interface IEventPublisher {
 export interface IEventSubscriber {
     subscribe(eventType: string, handler: (event: IDomainEvent) => Promise<void>): void;
     unsubscribe(eventType: string): void;
+}
+
+// ==================== TYPED EVENT PUBLISHER ====================
+
+/**
+ * Type-safe event publisher with generic support
+ */
+export interface ITypedEventPublisher extends IEventPublisher {
+    publishTyped<T extends Record<string, unknown>>(
+        eventType: string,
+        aggregateType: string,
+        aggregateId: string,
+        payload: T
+    ): Promise<void>;
 }

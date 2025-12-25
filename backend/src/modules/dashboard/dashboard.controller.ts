@@ -1,7 +1,51 @@
 /**
  * Dashboard Controller
  * Handles HTTP requests for dashboard analytics
- * Refactored to use proper service injection
+ * @openapi
+ * components:
+ *   schemas:
+ *     DashboardStats:
+ *       type: object
+ *       properties:
+ *         totalOrders:
+ *           type: integer
+ *         pendingOrders:
+ *           type: integer
+ *         completedJobs:
+ *           type: integer
+ *         activeJobs:
+ *           type: integer
+ *         averageEfficiency:
+ *           type: number
+ *         totalWaste:
+ *           type: number
+ *     Activity:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         type:
+ *           type: string
+ *           enum: [ORDER, JOB, PRODUCTION, STOCK]
+ *         message:
+ *           type: string
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *     WasteAnalytics:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               date:
+ *                 type: string
+ *               waste:
+ *                 type: number
+ *               efficiency:
+ *                 type: number
  */
 
 import { Router, Request, Response } from 'express';
@@ -24,19 +68,35 @@ export class DashboardController implements IDashboardController {
     }
 
     private initializeRoutes(): void {
-        // GET /api/dashboard/stats - Get overall dashboard statistics
         this.router.get('/stats', this.getStats.bind(this));
-
-        // GET /api/dashboard/activity - Get recent activity
         this.router.get('/activity', this.getRecentActivity.bind(this));
-
-        // GET /api/dashboard/waste-analytics - Get waste analytics over time
         this.router.get('/waste-analytics', this.getWasteAnalytics.bind(this));
-
-        // GET /api/dashboard/material-usage - Get material usage statistics
         this.router.get('/material-usage', this.getMaterialUsage.bind(this));
     }
 
+    /**
+     * @openapi
+     * /dashboard/stats:
+     *   get:
+     *     tags: [Dashboard]
+     *     summary: Genel istatistikleri getir
+     *     security:
+     *       - BearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Dashboard istatistikleri
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/DashboardStats'
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async getStats(_req: Request, res: Response): Promise<void> {
         try {
             const stats = await this.dashboardService.getStats();
@@ -50,6 +110,38 @@ export class DashboardController implements IDashboardController {
         }
     }
 
+    /**
+     * @openapi
+     * /dashboard/activity:
+     *   get:
+     *     tags: [Dashboard]
+     *     summary: Son aktiviteleri getir
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - name: limit
+     *         in: query
+     *         schema:
+     *           type: integer
+     *           default: 10
+     *           maximum: 50
+     *     responses:
+     *       200:
+     *         description: Son aktiviteler
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Activity'
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async getRecentActivity(req: Request, res: Response): Promise<void> {
         try {
             const limit = Number.parseInt(req.query.limit as string, 10) || 10;
@@ -64,6 +156,37 @@ export class DashboardController implements IDashboardController {
         }
     }
 
+    /**
+     * @openapi
+     * /dashboard/waste-analytics:
+     *   get:
+     *     tags: [Dashboard]
+     *     summary: Fire analizi getir
+     *     description: Belirli gün sayısı için fire ve verimlilik trend verilerini döner
+     *     security:
+     *       - BearerAuth: []
+     *     parameters:
+     *       - name: days
+     *         in: query
+     *         schema:
+     *           type: integer
+     *           default: 30
+     *           maximum: 365
+     *     responses:
+     *       200:
+     *         description: Fire analizi
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/WasteAnalytics'
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async getWasteAnalytics(req: Request, res: Response): Promise<void> {
         try {
             const days = Number.parseInt(req.query.days as string, 10) || 30;
@@ -78,6 +201,20 @@ export class DashboardController implements IDashboardController {
         }
     }
 
+    /**
+     * @openapi
+     * /dashboard/material-usage:
+     *   get:
+     *     tags: [Dashboard]
+     *     summary: Malzeme kullanım istatistikleri
+     *     security:
+     *       - BearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Malzeme kullanım verileri
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async getMaterialUsage(_req: Request, res: Response): Promise<void> {
         try {
             const usage = await this.dashboardService.getMaterialUsage();

@@ -8,11 +8,13 @@ import { relations } from 'drizzle-orm';
 import { stockTypeEnum, movementTypeEnum } from './enums';
 import { materialTypes, thicknessRanges } from './material';
 import { locations } from './location';
+import { tenants } from './tenant';
 
 // ==================== STOCK ITEM ====================
 
 export const stockItems = pgTable('stock_items', {
     id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
     code: text('code').unique().notNull(),
     name: text('name').notNull(),
     materialTypeId: uuid('material_type_id').notNull().references(() => materialTypes.id),

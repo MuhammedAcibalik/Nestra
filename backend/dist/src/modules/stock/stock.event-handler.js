@@ -8,6 +8,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StockEventHandler = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('StockEventHandler');
 class StockEventHandler {
     stockRepository;
     constructor(stockRepository) {
@@ -24,7 +26,7 @@ class StockEventHandler {
         adapter.subscribe(events_1.EventTypes.STOCK_RESERVE_REQUESTED, this.handleReserveRequested.bind(this));
         // Handle production completed - may trigger low stock alerts
         adapter.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
-        console.log('[EVENT] Stock event handlers registered');
+        logger.info('Stock event handlers registered');
     }
     /**
      * Handle stock consume request from another module
@@ -100,12 +102,12 @@ class StockEventHandler {
         try {
             const stock = await this.stockRepository.findById(payload.stockItemId);
             if (!stock) {
-                console.error(`[STOCK] Reserve failed: stock ${payload.stockItemId} not found`);
+                logger.error('Reserve failed: stock not found', { stockItemId: payload.stockItemId });
                 return;
             }
             const available = stock.quantity - stock.reservedQty;
             if (available < payload.quantity) {
-                console.error(`[STOCK] Reserve failed: insufficient available (${available}/${payload.quantity})`);
+                logger.error('Reserve failed: insufficient available', { available, requested: payload.quantity });
                 return;
             }
             // Update reserved quantity
@@ -118,7 +120,7 @@ class StockEventHandler {
             }));
         }
         catch (error) {
-            console.error('[STOCK] Reserve failed:', error);
+            logger.error('Reserve failed', { error });
         }
     }
     /**
@@ -126,7 +128,7 @@ class StockEventHandler {
      */
     async handleProductionCompleted(event) {
         // Log for monitoring
-        console.log(`[STOCK] Production completed: ${event.aggregateId}`);
+        logger.info('Production completed', { aggregateId: event.aggregateId });
     }
 }
 exports.StockEventHandler = StockEventHandler;

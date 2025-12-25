@@ -12,9 +12,11 @@ const auth_1 = require("./auth");
 const cutting_job_1 = require("./cutting-job");
 const machine_1 = require("./machine");
 const stock_1 = require("./stock");
+const tenant_1 = require("./tenant");
 // ==================== OPTIMIZATION SCENARIO ====================
 exports.optimizationScenarios = (0, pg_core_1.pgTable)('optimization_scenarios', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
+    tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     name: (0, pg_core_1.text)('name').notNull(),
     cuttingJobId: (0, pg_core_1.uuid)('cutting_job_id').notNull().references(() => cutting_job_1.cuttingJobs.id),
     createdById: (0, pg_core_1.uuid)('created_by_id').notNull().references(() => auth_1.users.id),

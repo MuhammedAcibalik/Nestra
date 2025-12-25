@@ -107,7 +107,7 @@ describe('OrderService', () => {
             // Verify event
             expect(eventBusPublishSpy).toHaveBeenCalled();
             const event = eventBusPublishSpy.mock.calls[0][0];
-            expect(event.eventType).toBe('order.confirmed');
+            expect(event.eventType).toBe('order.status-updated');
         });
 
         it('should fail if order not found', async () => {

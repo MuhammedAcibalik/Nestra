@@ -48,6 +48,8 @@ const node_postgres_1 = require("drizzle-orm/node-postgres");
 const pg_1 = require("pg");
 const schema = __importStar(require("./schema"));
 exports.schema = schema;
+const logger_1 = require("../core/logger");
+const logger = (0, logger_1.createModuleLogger)('Database');
 // Database connection pool
 let pool = null;
 /**
@@ -66,7 +68,7 @@ function getPool() {
             connectionTimeoutMillis: 10000,
         });
         pool.on('error', (err) => {
-            console.error('[DB] Unexpected error on idle client', err);
+            logger.error('Unexpected error on idle client', { error: err });
         });
     }
     return pool;
@@ -84,7 +86,7 @@ async function closeDb() {
     if (pool) {
         await pool.end();
         pool = null;
-        console.log('[DB] Connection pool closed');
+        logger.info('Connection pool closed');
     }
 }
 /**

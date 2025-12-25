@@ -1,7 +1,7 @@
 /**
  * Application Bootstrap
  * Following Dependency Inversion Principle (DIP)
- * All dependencies are wired up here at the composition root
+ * Simplified entry point using modular bootstrap configuration
  */
 /**
  * Application class - Single Responsibility: Application lifecycle management
@@ -11,35 +11,8 @@ export declare class Application {
     private readonly httpServer;
     private readonly db;
     private readonly port;
-    private materialService;
-    private stockService;
-    private authService;
-    private orderService;
-    private optimizationService;
-    private productionService;
-    private reportService;
-    private cuttingJobService;
-    private importService;
-    private machineService;
-    private customerService;
-    private locationService;
+    private services;
     constructor();
-    /**
-     * Initialize all dependencies - Composition Root
-     */
-    private initializeDependencies;
-    /**
-     * Initialize Express middleware
-     */
-    private initializeMiddleware;
-    /**
-     * Initialize routes with dependency injection
-     */
-    private initializeRoutes;
-    /**
-     * Initialize error handling
-     */
-    private initializeErrorHandling;
     /**
      * Connect to database
      */
@@ -48,6 +21,10 @@ export declare class Application {
      * Start the application
      */
     start(): Promise<void>;
+    /**
+     * Initialize job queue with optimization processor
+     */
+    private initializeJobQueue;
     /**
      * Graceful shutdown
      */

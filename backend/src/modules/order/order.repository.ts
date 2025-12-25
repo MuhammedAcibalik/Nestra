@@ -1,13 +1,15 @@
 /**
  * Order Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 
 import { Database } from '../../db';
 import { orders, orderItems } from '../../db/schema';
 import { OrderStatus, GeometryType } from '../../db/schema/enums';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, SQL } from 'drizzle-orm';
 import { ICreateOrderInput, ICreateOrderItemInput, IUpdateOrderInput, IOrderFilter } from '../../core/interfaces';
+import { createFilter } from '../../core/database';
+import { getCurrentTenantIdOptional } from '../../core/tenant';
 
 // Type definitions
 export type Order = typeof orders.$inferSelect;
@@ -39,9 +41,41 @@ export class OrderRepository implements IOrderRepository {
 
     constructor(private readonly db: Database) { }
 
+    // ==================== TENANT FILTERING ====================
+
+    /**
+     * Get tenant filter condition if in tenant context
+     */
+    private getTenantFilter(): SQL | undefined {
+        const tenantId = getCurrentTenantIdOptional();
+        if (!tenantId) return undefined;
+        return eq(orders.tenantId, tenantId);
+    }
+
+    /**
+     * Combine tenant filter with additional conditions
+     */
+    private withTenantFilter(conditions: SQL[]): SQL | undefined {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter) conditions.push(tenantFilter);
+        return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    /**
+     * Get current tenant ID for create operations
+     */
+    private getCurrentTenantId(): string | undefined {
+        return getCurrentTenantIdOptional();
+    }
+
+    // ==================== READ OPERATIONS ====================
+
     async findById(id: string): Promise<OrderWithRelations | null> {
+        const conditions = [eq(orders.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.orders.findFirst({
-            where: eq(orders.id, id),
+            where,
             with: {
                 items: true,
                 customer: true,
@@ -52,13 +86,14 @@ export class OrderRepository implements IOrderRepository {
     }
 
     async findAll(filter?: IOrderFilter): Promise<OrderWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.status) conditions.push(eq(orders.status, filter.status as OrderStatus));
-        if (filter?.customerId) conditions.push(eq(orders.customerId, filter.customerId));
+        const where = createFilter()
+            .eq(orders.status, filter?.status as OrderStatus | undefined)
+            .eq(orders.customerId, filter?.customerId)
+            .eq(orders.tenantId, this.getCurrentTenantId())
+            .build();
 
         return this.db.query.orders.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 items: true,
                 customer: true,
@@ -69,11 +104,16 @@ export class OrderRepository implements IOrderRepository {
     }
 
     async findByOrderNumber(orderNumber: string): Promise<Order | null> {
+        const conditions = [eq(orders.orderNumber, orderNumber)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.orders.findFirst({
-            where: eq(orders.orderNumber, orderNumber)
+            where
         });
         return result ?? null;
     }
+
+    // ==================== WRITE OPERATIONS ====================
 
     async create(data: ICreateOrderInput, userId: string): Promise<Order> {
         // Generate order number if not provided
@@ -81,6 +121,7 @@ export class OrderRepository implements IOrderRepository {
 
         const [result] = await this.db.insert(orders).values({
             orderNumber,
+            tenantId: this.getCurrentTenantId(), // Auto-inject tenant ID
             customerId: data.customerId,
             createdById: userId,
             priority: data.priority ?? 5,
@@ -91,6 +132,10 @@ export class OrderRepository implements IOrderRepository {
     }
 
     async update(id: string, data: IUpdateOrderInput): Promise<Order> {
+        // Verify ownership via tenant filter
+        const conditions = [eq(orders.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(orders)
             .set({
                 status: data.status as OrderStatus,
@@ -99,25 +144,33 @@ export class OrderRepository implements IOrderRepository {
                 notes: data.notes,
                 updatedAt: new Date()
             })
-            .where(eq(orders.id, id))
+            .where(where ?? eq(orders.id, id))
             .returning();
         return result;
     }
 
     async updateStatus(id: string, status: string): Promise<Order> {
+        const conditions = [eq(orders.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(orders)
             .set({
                 status: status as OrderStatus,
                 updatedAt: new Date()
             })
-            .where(eq(orders.id, id))
+            .where(where ?? eq(orders.id, id))
             .returning();
         return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.db.delete(orders).where(eq(orders.id, id));
+        const conditions = [eq(orders.id, id)];
+        const where = this.withTenantFilter(conditions);
+
+        await this.db.delete(orders).where(where ?? eq(orders.id, id));
     }
+
+    // ==================== ORDER ITEMS ====================
 
     async addItem(orderId: string, data: ICreateOrderItemInput): Promise<OrderItem> {
         const [result] = await this.db.insert(orderItems).values({
@@ -137,3 +190,4 @@ export class OrderRepository implements IOrderRepository {
         return result;
     }
 }
+

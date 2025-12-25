@@ -1,20 +1,41 @@
 "use strict";
 /**
  * Production Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionRepository = void 0;
 const schema_1 = require("../../db/schema");
 const drizzle_orm_1 = require("drizzle-orm");
+const database_1 = require("../../core/database");
+const tenant_1 = require("../../core/tenant");
 class ProductionRepository {
     db;
     constructor(db) {
         this.db = db;
     }
+    // ==================== TENANT FILTERING ====================
+    getTenantFilter() {
+        const tenantId = (0, tenant_1.getCurrentTenantIdOptional)();
+        if (!tenantId)
+            return undefined;
+        return (0, drizzle_orm_1.eq)(schema_1.productionLogs.tenantId, tenantId);
+    }
+    withTenantFilter(conditions) {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter)
+            conditions.push(tenantFilter);
+        return conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined;
+    }
+    getCurrentTenantId() {
+        return (0, tenant_1.getCurrentTenantIdOptional)();
+    }
+    // ==================== PRODUCTION LOG OPERATIONS ====================
     async findById(id) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id)];
+        const where = this.withTenantFilter(conditions);
         const result = await this.db.query.productionLogs.findFirst({
-            where: (0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id),
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -23,8 +44,10 @@ class ProductionRepository {
         return result ?? null;
     }
     async findByPlanId(planId) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.cuttingPlanId, planId)];
+        const where = this.withTenantFilter(conditions);
         const result = await this.db.query.productionLogs.findFirst({
-            where: (0, drizzle_orm_1.eq)(schema_1.productionLogs.cuttingPlanId, planId),
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -33,16 +56,14 @@ class ProductionRepository {
         return result ?? null;
     }
     async findAll(filter) {
-        const conditions = [];
-        if (filter?.status) {
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.status, filter.status));
-        }
-        if (filter?.cuttingPlanId)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.cuttingPlanId, filter.cuttingPlanId));
-        if (filter?.operatorId)
-            conditions.push((0, drizzle_orm_1.eq)(schema_1.productionLogs.operatorId, filter.operatorId));
+        const where = (0, database_1.createFilter)()
+            .eq(schema_1.productionLogs.status, filter?.status)
+            .eq(schema_1.productionLogs.cuttingPlanId, filter?.cuttingPlanId)
+            .eq(schema_1.productionLogs.operatorId, filter?.operatorId)
+            .eq(schema_1.productionLogs.tenantId, this.getCurrentTenantId())
+            .build();
         return this.db.query.productionLogs.findMany({
-            where: conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined,
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -52,6 +73,7 @@ class ProductionRepository {
     }
     async create(planId, operatorId) {
         const [result] = await this.db.insert(schema_1.productionLogs).values({
+            tenantId: this.getCurrentTenantId(),
             cuttingPlanId: planId,
             operatorId: operatorId,
             startedAt: new Date()
@@ -59,6 +81,8 @@ class ProductionRepository {
         return result;
     }
     async update(id, data) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id)];
+        const where = this.withTenantFilter(conditions);
         const [result] = await this.db.update(schema_1.productionLogs)
             .set({
             actualWaste: data.actualWaste,
@@ -69,11 +93,13 @@ class ProductionRepository {
             issues: data.issues,
             updatedAt: new Date()
         })
-            .where((0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id))
+            .where(where ?? (0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id))
             .returning();
         return result;
     }
     async complete(logId, data) {
+        const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.id, logId)];
+        const where = this.withTenantFilter(conditions);
         const [result] = await this.db.update(schema_1.productionLogs)
             .set({
             actualWaste: data.actualWaste,
@@ -84,7 +110,7 @@ class ProductionRepository {
             completedAt: new Date(),
             updatedAt: new Date()
         })
-            .where((0, drizzle_orm_1.eq)(schema_1.productionLogs.id, logId))
+            .where(where ?? (0, drizzle_orm_1.eq)(schema_1.productionLogs.id, logId))
             .returning();
         return result;
     }

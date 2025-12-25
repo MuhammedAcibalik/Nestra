@@ -1,32 +1,29 @@
 /**
  * Drizzle Database Mock Utilities
- * For use in unit tests - replaces prisma-mock.ts
+ * For use in unit tests
  */
 
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Database } from '../../db';
 
-export interface MockDatabaseContext {
-    db: MockProxy<Database>;
-    query: {
-        [key: string]: {
-            findFirst: jest.Mock;
-            findMany: jest.Mock;
-        };
-    };
-}
+// ==================== FACTORY ====================
 
+/**
+ * Create a mock database instance for testing.
+ * Uses jest-mock-extended with proper type assertions.
+ */
 export const createMockDatabase = (): MockProxy<Database> => {
     const mockDb = mock<Database>();
 
-    // Create mock query object
+    // Create mock query object with type assertion
     const createQueryMock = () => ({
         findFirst: jest.fn(),
         findMany: jest.fn()
     });
 
     // Setup query mocks for common tables
-    (mockDb as any).query = {
+    // Using type assertion since mock doesn't have query property by default
+    (mockDb as unknown as { query: Record<string, ReturnType<typeof createQueryMock>> }).query = {
         users: createQueryMock(),
         roles: createQueryMock(),
         cuttingJobs: createQueryMock(),
@@ -43,7 +40,10 @@ export const createMockDatabase = (): MockProxy<Database> => {
         optimizationScenarios: createQueryMock(),
         cuttingPlans: createQueryMock(),
         cuttingPlanStocks: createQueryMock(),
-        productionLogs: createQueryMock()
+        productionLogs: createQueryMock(),
+        tenants: createQueryMock(),
+        activities: createQueryMock(),
+        documentLocks: createQueryMock()
     };
 
     // Setup common Drizzle methods
@@ -69,7 +69,7 @@ export const createMockDatabase = (): MockProxy<Database> => {
                 where: jest.fn().mockResolvedValue([])
             })
         })
-    }) as any;
+    }) as MockProxy<Database>['select'];
 
     mockDb.insert = jest.fn().mockReturnValue({
         values: jest.fn().mockReturnValue({
@@ -78,7 +78,7 @@ export const createMockDatabase = (): MockProxy<Database> => {
                 returning: jest.fn().mockResolvedValue([])
             })
         })
-    }) as any;
+    }) as MockProxy<Database>['insert'];
 
     mockDb.update = jest.fn().mockReturnValue({
         set: jest.fn().mockReturnValue({
@@ -86,11 +86,11 @@ export const createMockDatabase = (): MockProxy<Database> => {
                 returning: jest.fn().mockResolvedValue([])
             })
         })
-    }) as any;
+    }) as MockProxy<Database>['update'];
 
     mockDb.delete = jest.fn().mockReturnValue({
         where: jest.fn().mockResolvedValue(undefined)
-    }) as any;
+    }) as MockProxy<Database>['delete'];
 
     return mockDb;
 };

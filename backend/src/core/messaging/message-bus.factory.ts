@@ -9,6 +9,9 @@ import { EventBus } from '../events/event-bus';
 import { RabbitMQConnection } from './rabbitmq.connection';
 import { RabbitMQPublisher } from './rabbitmq.publisher';
 import { RabbitMQSubscriber } from './rabbitmq.subscriber';
+import { createModuleLogger } from '../logger';
+
+const logger = createModuleLogger('MessageBus');
 
 // ==================== CONFIG ====================
 
@@ -52,11 +55,11 @@ function createInMemoryBus(): IMessageBus {
         subscriber: eventBus,
 
         async connect(): Promise<void> {
-            console.log('[MESSAGE BUS] Using in-memory EventBus');
+            logger.info('Using in-memory EventBus');
         },
 
         async disconnect(): Promise<void> {
-            console.log('[MESSAGE BUS] In-memory EventBus disconnected');
+            logger.info('In-memory EventBus disconnected');
         },
 
         isConnected(): boolean {
@@ -83,13 +86,13 @@ function createRabbitMQBus(url?: string): IMessageBus {
             await connection.connect();
             await subscriber.initialize();
             await subscriber.startConsumingAll();
-            console.log('[MESSAGE BUS] RabbitMQ connected and consuming');
+            logger.info('RabbitMQ connected and consuming');
         },
 
         async disconnect(): Promise<void> {
             await subscriber.stopAllConsumers();
             await connection.disconnect();
-            console.log('[MESSAGE BUS] RabbitMQ disconnected');
+            logger.info('RabbitMQ disconnected');
         },
 
         isConnected(): boolean {

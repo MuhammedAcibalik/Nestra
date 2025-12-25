@@ -1,6 +1,6 @@
 /**
  * Optimization Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 import { Database } from '../../db';
 import { optimizationScenarios, cuttingPlans, cuttingPlanStocks } from '../../db/schema';
@@ -71,7 +71,6 @@ export interface ICreatePlanData {
         layoutJson?: unknown;
     }>;
 }
-/** Layout data for cutting plan visualization */
 export interface ILayoutData {
     pieces?: Array<{
         x: number;
@@ -109,6 +108,9 @@ export declare class OptimizationRepository implements IOptimizationRepository {
     private readonly db;
     private planCounter;
     constructor(db: Database);
+    private getTenantFilter;
+    private withTenantFilter;
+    private getCurrentTenantId;
     findScenarioById(id: string): Promise<ScenarioWithRelations | null>;
     findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]>;
     createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario>;

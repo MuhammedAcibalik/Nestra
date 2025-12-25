@@ -26,12 +26,19 @@ class UserRepository {
         return result ?? null;
     }
     async create(data) {
-        // Find default role
-        const defaultRole = await this.db.query.roles.findFirst({
+        // Find default role, create if not exists
+        let defaultRole = await this.db.query.roles.findFirst({
             where: (0, drizzle_orm_1.eq)(schema_1.roles.name, 'OPERATOR')
         });
+        // Auto-create OPERATOR role if missing (prevents crash on fresh installation)
         if (!defaultRole) {
-            throw new Error('Default role OPERATOR not found');
+            const [newRole] = await this.db.insert(schema_1.roles).values({
+                name: 'OPERATOR',
+                displayName: 'Operator',
+                permissions: ['read', 'production.operate']
+            }).returning();
+            defaultRole = newRole;
+            console.log('✅ Created default OPERATOR role');
         }
         const [user] = await this.db.insert(schema_1.users).values({
             email: data.email,

@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderEventHandler = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('OrderEventHandler');
 class OrderEventHandler {
     repository;
     constructor(repository) {
@@ -23,7 +25,7 @@ class OrderEventHandler {
         adapter.subscribe(events_1.EventTypes.CUTTING_JOB_COMPLETED, this.handleCuttingJobCompleted.bind(this));
         // Handle production completed - may complete order
         adapter.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
-        console.log('[EVENT] Order event handlers registered');
+        logger.info('Event handlers registered');
     }
     /**
      * Handle order status update request
@@ -34,7 +36,7 @@ class OrderEventHandler {
         try {
             const order = await this.repository.findById(payload.orderId);
             if (!order) {
-                console.error(`[ORDER] Status update failed: order ${payload.orderId} not found`);
+                logger.error('Status update failed: order not found', { orderId: payload.orderId });
                 return;
             }
             const oldStatus = order.status;
@@ -45,10 +47,14 @@ class OrderEventHandler {
                 newStatus: payload.newStatus,
                 correlationId: payload.correlationId
             }));
-            console.log(`[ORDER] Order ${payload.orderId} status: ${oldStatus} → ${payload.newStatus}`);
+            logger.info('Order status updated', {
+                orderId: payload.orderId,
+                oldStatus,
+                newStatus: payload.newStatus
+            });
         }
         catch (error) {
-            console.error('[ORDER] Status update failed:', error);
+            logger.error('Status update failed', { error });
         }
     }
     /**
@@ -56,14 +62,14 @@ class OrderEventHandler {
      */
     async handleCuttingJobCompleted(event) {
         const payload = event.payload;
-        console.log(`[ORDER] Cutting job completed: ${payload.jobNumber}`);
+        logger.debug('Cutting job completed', { jobNumber: payload.jobNumber });
     }
     /**
      * Handle production completed
      */
     async handleProductionCompleted(event) {
         const payload = event.payload;
-        console.log(`[ORDER] Production completed for plan: ${payload.planId}`);
+        logger.debug('Production completed', { planId: payload.planId });
     }
 }
 exports.OrderEventHandler = OrderEventHandler;

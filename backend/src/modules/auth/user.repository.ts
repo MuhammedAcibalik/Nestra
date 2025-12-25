@@ -39,13 +39,20 @@ export class UserRepository implements IUserRepository {
     }
 
     async create(data: IRegisterInput & { password: string }): Promise<UserWithRole> {
-        // Find default role
-        const defaultRole = await this.db.query.roles.findFirst({
+        // Find default role, create if not exists
+        let defaultRole = await this.db.query.roles.findFirst({
             where: eq(roles.name, 'OPERATOR')
         });
 
+        // Auto-create OPERATOR role if missing (prevents crash on fresh installation)
         if (!defaultRole) {
-            throw new Error('Default role OPERATOR not found');
+            const [newRole] = await this.db.insert(roles).values({
+                name: 'OPERATOR',
+                displayName: 'Operator',
+                permissions: ['read', 'production.operate']
+            }).returning();
+            defaultRole = newRole;
+            console.log('✅ Created default OPERATOR role');
         }
 
         const [user] = await this.db.insert(users).values({

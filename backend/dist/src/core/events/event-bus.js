@@ -7,8 +7,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EventBus = void 0;
 exports.createDomainEvent = createDomainEvent;
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('EventBus');
 /**
- * In-Memory Event Bus
+ * In-Memory Event Bus with type-safe publishing
  * For production, this can be replaced with Redis/RabbitMQ implementation
  */
 class EventBus {
@@ -34,7 +36,7 @@ class EventBus {
     async publish(event) {
         // Log event
         this.logEvent(event);
-        console.log(`[EVENT] ${event.eventType}: ${event.aggregateType}#${event.aggregateId}`);
+        logger.debug('Event published', { eventType: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId });
         // Get handlers for this event type
         const handlers = this.handlers.get(event.eventType);
         if (!handlers || handlers.size === 0) {
@@ -46,7 +48,7 @@ class EventBus {
                 await handler(event);
             }
             catch (error) {
-                console.error(`[EVENT ERROR] Handler failed for ${event.eventType}:`, error);
+                logger.error('Handler failed', { eventType: event.eventType, error });
             }
         });
         // Wait for all handlers to complete
@@ -61,6 +63,21 @@ class EventBus {
         }
     }
     /**
+     * Type-safe publish with automatic event ID and timestamp
+     * Eliminates need for `as unknown as` casts in event handlers
+     */
+    async publishTyped(eventType, aggregateType, aggregateId, payload) {
+        const event = {
+            eventId: generateEventId(),
+            eventType,
+            timestamp: new Date(),
+            aggregateType,
+            aggregateId,
+            payload
+        };
+        await this.publish(event);
+    }
+    /**
      * Subscribe to an event type
      */
     subscribe(eventType, handler) {
@@ -68,14 +85,20 @@ class EventBus {
             this.handlers.set(eventType, new Set());
         }
         this.handlers.get(eventType).add(handler);
-        console.log(`[EVENT] Subscribed to: ${eventType}`);
+        logger.debug('Subscribed to event', { eventType });
+    }
+    /**
+     * Subscribe with typed handler
+     */
+    subscribeTyped(eventType, handler) {
+        this.subscribe(eventType, handler);
     }
     /**
      * Unsubscribe from an event type (removes all handlers)
      */
     unsubscribe(eventType) {
         this.handlers.delete(eventType);
-        console.log(`[EVENT] Unsubscribed from: ${eventType}`);
+        logger.debug('Unsubscribed from event', { eventType });
     }
     /**
      * Unsubscribe a specific handler

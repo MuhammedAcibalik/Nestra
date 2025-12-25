@@ -8,6 +8,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, PlanStatusUpdateRequestedPayload, getEventAdapter } from '../../core/events';
 import { IOptimizationRepository } from './optimization.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('OptimizationEventHandler');
 
 export class OptimizationEventHandler {
     constructor(private readonly repository: IOptimizationRepository) { }
@@ -27,7 +30,7 @@ export class OptimizationEventHandler {
         // Handle production completed - update plan status
         adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
-        console.log('[EVENT] Optimization event handlers registered');
+        logger.info('Event handlers registered');
     }
 
     /**
@@ -41,7 +44,7 @@ export class OptimizationEventHandler {
             const plan = await this.repository.findPlanById(payload.planId);
 
             if (!plan) {
-                console.error(`[OPTIMIZATION] Plan status update failed: plan ${payload.planId} not found`);
+                logger.error('Plan status update failed: plan not found', { planId: payload.planId });
                 return;
             }
 
@@ -55,10 +58,14 @@ export class OptimizationEventHandler {
                 correlationId: payload.correlationId
             }));
 
-            console.log(`[OPTIMIZATION] Plan ${payload.planId} status: ${oldStatus} → ${payload.newStatus}`);
+            logger.info('Plan status updated', {
+                planId: payload.planId,
+                oldStatus,
+                newStatus: payload.newStatus
+            });
 
         } catch (error) {
-            console.error('[OPTIMIZATION] Plan status update failed:', error);
+            logger.error('Plan status update failed', { error });
         }
     }
 
@@ -67,7 +74,7 @@ export class OptimizationEventHandler {
      */
     private async handleProductionStarted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { planId: string; planNumber: string };
-        console.log(`[OPTIMIZATION] Production started for plan: ${payload.planNumber}`);
+        logger.debug('Production started', { planNumber: payload.planNumber });
     }
 
     /**
@@ -75,6 +82,6 @@ export class OptimizationEventHandler {
      */
     private async handleProductionCompleted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { planId: string; actualWaste: number };
-        console.log(`[OPTIMIZATION] Production completed for plan: ${payload.planId}, waste: ${payload.actualWaste}`);
+        logger.debug('Production completed', { planId: payload.planId, actualWaste: payload.actualWaste });
     }
 }

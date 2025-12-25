@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OptimizationConsumer = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('OptimizationConsumer');
 // ==================== CONSUMER CLASS ====================
 class OptimizationConsumer {
     engine;
@@ -20,7 +22,7 @@ class OptimizationConsumer {
         const adapter = (0, events_1.getEventAdapter)();
         // Listen for optimization run requests
         adapter.subscribe(events_1.EventTypes.OPTIMIZATION_RUN_REQUESTED, this.handleOptimizationRequest.bind(this));
-        console.log('[OPTIMIZATION CONSUMER] Registered for optimization requests');
+        logger.info('Registered for optimization requests');
     }
     /**
      * Handle incoming optimization request
@@ -28,7 +30,7 @@ class OptimizationConsumer {
     async handleOptimizationRequest(event) {
         const payload = event.payload;
         const adapter = (0, events_1.getEventAdapter)();
-        console.log(`[OPTIMIZATION CONSUMER] Received request: ${payload.cuttingJobId}`);
+        logger.debug('Received optimization request', { cuttingJobId: payload.cuttingJobId });
         try {
             // Prepare input
             const input = {
@@ -52,7 +54,7 @@ class OptimizationConsumer {
                     efficiency: result.planData.efficiency,
                     wastePercentage: result.planData.wastePercentage
                 }));
-                console.log(`[OPTIMIZATION CONSUMER] Completed: ${payload.correlationId}`);
+                logger.info('Optimization completed', { correlationId: payload.correlationId });
             }
             else {
                 // Publish failure event
@@ -60,7 +62,7 @@ class OptimizationConsumer {
                     scenarioId: payload.scenarioId,
                     reason: result.error ?? 'Unknown error'
                 }));
-                console.error(`[OPTIMIZATION CONSUMER] Failed: ${result.error}`);
+                logger.error('Optimization failed', { error: result.error });
             }
         }
         catch (error) {
@@ -69,7 +71,7 @@ class OptimizationConsumer {
                 scenarioId: payload.scenarioId,
                 reason: errorMessage
             }));
-            console.error(`[OPTIMIZATION CONSUMER] Error:`, error);
+            logger.error('Optimization consumer error', { error });
         }
     }
     /**

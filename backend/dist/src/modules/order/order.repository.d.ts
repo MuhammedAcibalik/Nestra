@@ -1,6 +1,6 @@
 /**
  * Order Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 import { Database } from '../../db';
 import { orders, orderItems } from '../../db/schema';
@@ -38,6 +38,18 @@ export declare class OrderRepository implements IOrderRepository {
     private readonly db;
     private orderCounter;
     constructor(db: Database);
+    /**
+     * Get tenant filter condition if in tenant context
+     */
+    private getTenantFilter;
+    /**
+     * Combine tenant filter with additional conditions
+     */
+    private withTenantFilter;
+    /**
+     * Get current tenant ID for create operations
+     */
+    private getCurrentTenantId;
     findById(id: string): Promise<OrderWithRelations | null>;
     findAll(filter?: IOrderFilter): Promise<OrderWithRelations[]>;
     findByOrderNumber(orderNumber: string): Promise<Order | null>;

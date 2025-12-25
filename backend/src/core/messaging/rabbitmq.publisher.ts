@@ -7,6 +7,9 @@
 import * as amqp from 'amqplib';
 import { IEventPublisher, IDomainEvent } from '../interfaces/event.interface';
 import { RabbitMQConnection } from './rabbitmq.connection';
+import { createModuleLogger } from '../logger';
+
+const logger = createModuleLogger('RabbitMQPublisher');
 
 // ==================== PUBLISHER CLASS ====================
 
@@ -26,20 +29,20 @@ export class RabbitMQPublisher implements IEventPublisher {
         const channel = this.connection.getConfirmChannel();
 
         if (!channel) {
-            console.error('[RABBITMQ PUBLISHER] No channel available, event dropped:', event.eventType);
+            logger.error('No channel available, event dropped', { eventType: event.eventType });
             throw new Error('RabbitMQ channel not available');
         }
 
         try {
-            const routingKey = event.eventType; // e.g., 'order.created'
+            const routingKey = event.eventType;
             const message = Buffer.from(JSON.stringify(event));
 
             await this.publishWithConfirm(channel, routingKey, message, event);
 
-            console.log(`[RABBITMQ PUBLISHER] Published: ${event.eventType} -> ${this.exchange}`);
+            logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
 
         } catch (error) {
-            console.error(`[RABBITMQ PUBLISHER] Failed to publish ${event.eventType}:`, error);
+            logger.error('Failed to publish event', { eventType: event.eventType, error });
             throw error;
         }
     }

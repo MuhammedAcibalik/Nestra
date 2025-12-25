@@ -18,7 +18,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OptimizationEventHandler = exports.OptimizationServiceHandler = exports.OptimizationStrategyRegistry = exports.createOptimizationController = exports.OptimizationController = exports.OptimizationService = exports.OptimizationEngine = exports.OptimizationRepository = exports.optimizationEventEmitter = exports.OptimizationEventEmitter = exports.OptimizationValidator = exports.OptimizationFacade = exports.GuillotineStrategy = exports.BottomLeftStrategy = exports.BFDStrategy = exports.FFDStrategy = exports.getAlgorithmRegistry = exports.AlgorithmRegistry = exports.StrategyExecutor = void 0;
+exports.OptimizationEventHandler = exports.OptimizationServiceHandler = exports.OptimizationStrategyRegistry = exports.createPlanController = exports.PlanController = exports.createScenarioController = exports.ScenarioController = exports.createOptimizationController = exports.OptimizationController = exports.OptimizationService = exports.OptimizationEngine = exports.OptimizationRepository = exports.optimizationEventEmitter = exports.OptimizationEventEmitter = exports.OptimizationValidator = exports.OptimizationFacade = exports.GuillotineStrategy = exports.BottomLeftStrategy = exports.BFDStrategy = exports.FFDStrategy = exports.getAlgorithmRegistry = exports.AlgorithmRegistry = exports.StrategyExecutor = void 0;
 // ==================== INTERFACES ====================
 __exportStar(require("./interfaces"), exports);
 // ==================== DOMAIN ====================
@@ -51,6 +51,10 @@ Object.defineProperty(exports, "OptimizationService", { enumerable: true, get: f
 var optimization_controller_1 = require("./optimization.controller");
 Object.defineProperty(exports, "OptimizationController", { enumerable: true, get: function () { return optimization_controller_1.OptimizationController; } });
 Object.defineProperty(exports, "createOptimizationController", { enumerable: true, get: function () { return optimization_controller_1.createOptimizationController; } });
+Object.defineProperty(exports, "ScenarioController", { enumerable: true, get: function () { return optimization_controller_1.ScenarioController; } });
+Object.defineProperty(exports, "createScenarioController", { enumerable: true, get: function () { return optimization_controller_1.createScenarioController; } });
+Object.defineProperty(exports, "PlanController", { enumerable: true, get: function () { return optimization_controller_1.PlanController; } });
+Object.defineProperty(exports, "createPlanController", { enumerable: true, get: function () { return optimization_controller_1.createPlanController; } });
 var optimization_strategy_1 = require("./optimization.strategy");
 Object.defineProperty(exports, "OptimizationStrategyRegistry", { enumerable: true, get: function () { return optimization_strategy_1.OptimizationStrategyRegistry; } });
 // ==================== MICROSERVICE ====================

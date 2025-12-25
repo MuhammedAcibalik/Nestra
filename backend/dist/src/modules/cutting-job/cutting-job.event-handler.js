@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CuttingJobEventHandler = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('CuttingJobEventHandler');
 class CuttingJobEventHandler {
     cuttingJobRepository;
     constructor(cuttingJobRepository) {
@@ -23,7 +25,7 @@ class CuttingJobEventHandler {
         adapter.subscribe(events_1.EventTypes.OPTIMIZATION_COMPLETED, this.handleOptimizationCompleted.bind(this));
         // Handle production completed - complete cutting job
         adapter.subscribe(events_1.EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
-        console.log('[EVENT] CuttingJob event handlers registered');
+        logger.info('Event handlers registered');
     }
     /**
      * Handle order created - may trigger cutting job creation
@@ -31,11 +33,11 @@ class CuttingJobEventHandler {
     async handleOrderCreated(event) {
         const payload = event.payload;
         try {
-            console.log(`[CUTTING-JOB EVENT] Order created: ${payload.orderId}`);
+            logger.debug('Order created event received', { orderId: payload.orderId });
             // Could auto-create cutting job based on order items
         }
         catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling order creation:', error);
+            logger.error('Error handling order creation', { error });
         }
     }
     /**
@@ -45,7 +47,7 @@ class CuttingJobEventHandler {
         const payload = event.payload;
         const adapter = (0, events_1.getEventAdapter)();
         try {
-            console.log(`[CUTTING-JOB EVENT] Optimization completed: ${payload.planId}`);
+            logger.debug('Optimization completed', { planId: payload.planId });
             // Publish cutting job created event
             await adapter.publish(events_1.DomainEvents.cuttingJobCreated({
                 jobId: `job_${Date.now()}`,
@@ -56,7 +58,7 @@ class CuttingJobEventHandler {
             }));
         }
         catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling optimization completion:', error);
+            logger.error('Error handling optimization completion', { error });
         }
     }
     /**
@@ -66,7 +68,7 @@ class CuttingJobEventHandler {
         const payload = event.payload;
         const adapter = (0, events_1.getEventAdapter)();
         try {
-            console.log(`[CUTTING-JOB EVENT] Production completed: ${payload.logId}`);
+            logger.debug('Production completed', { logId: payload.logId });
             await adapter.publish(events_1.DomainEvents.cuttingJobCompleted({
                 jobId: `job_${Date.now()}`,
                 jobNumber: `CJ-${Date.now()}`,
@@ -74,7 +76,7 @@ class CuttingJobEventHandler {
             }));
         }
         catch (error) {
-            console.error('[CUTTING-JOB EVENT] Error handling production completion:', error);
+            logger.error('Error handling production completion', { error });
         }
     }
 }

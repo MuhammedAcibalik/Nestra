@@ -1,13 +1,15 @@
 /**
  * Optimization Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 
 import { Database } from '../../db';
 import { optimizationScenarios, cuttingPlans, cuttingPlanStocks } from '../../db/schema';
 import { ScenarioStatus, PlanStatus } from '../../db/schema/enums';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, SQL } from 'drizzle-orm';
 import { IOptimizationParameters } from '../../core/interfaces';
+import { createFilter } from '../../core/database';
+import { getCurrentTenantIdOptional } from '../../core/tenant';
 
 // Type definitions
 export type OptimizationScenario = typeof optimizationScenarios.$inferSelect;
@@ -64,7 +66,6 @@ export interface ICreatePlanData {
     }>;
 }
 
-/** Layout data for cutting plan visualization */
 export interface ILayoutData {
     pieces?: Array<{ x: number; y: number; width: number; height: number; itemId: string }>;
     cuts?: Array<{ x1: number; y1: number; x2: number; y2: number }>;
@@ -89,9 +90,32 @@ export class OptimizationRepository implements IOptimizationRepository {
 
     constructor(private readonly db: Database) { }
 
+    // ==================== TENANT FILTERING ====================
+
+    private getTenantFilter(): SQL | undefined {
+        const tenantId = getCurrentTenantIdOptional();
+        if (!tenantId) return undefined;
+        return eq(optimizationScenarios.tenantId, tenantId);
+    }
+
+    private withTenantFilter(conditions: SQL[]): SQL | undefined {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter) conditions.push(tenantFilter);
+        return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    private getCurrentTenantId(): string | undefined {
+        return getCurrentTenantIdOptional();
+    }
+
+    // ==================== SCENARIO OPERATIONS ====================
+
     async findScenarioById(id: string): Promise<ScenarioWithRelations | null> {
+        const conditions = [eq(optimizationScenarios.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.optimizationScenarios.findFirst({
-            where: eq(optimizationScenarios.id, id),
+            where,
             with: {
                 results: true,
                 cuttingJob: true,
@@ -102,14 +126,15 @@ export class OptimizationRepository implements IOptimizationRepository {
     }
 
     async findAllScenarios(filter?: IScenarioFilter): Promise<ScenarioWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.status) conditions.push(eq(optimizationScenarios.status, filter.status as ScenarioStatus));
-        if (filter?.cuttingJobId) conditions.push(eq(optimizationScenarios.cuttingJobId, filter.cuttingJobId));
-        if (filter?.createdById) conditions.push(eq(optimizationScenarios.createdById, filter.createdById));
+        const where = createFilter()
+            .eq(optimizationScenarios.status, filter?.status as ScenarioStatus | undefined)
+            .eq(optimizationScenarios.cuttingJobId, filter?.cuttingJobId)
+            .eq(optimizationScenarios.createdById, filter?.createdById)
+            .eq(optimizationScenarios.tenantId, this.getCurrentTenantId())
+            .build();
 
         return this.db.query.optimizationScenarios.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 results: true,
                 cuttingJob: true,
@@ -121,6 +146,7 @@ export class OptimizationRepository implements IOptimizationRepository {
 
     async createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario> {
         const [result] = await this.db.insert(optimizationScenarios).values({
+            tenantId: this.getCurrentTenantId(),
             name: data.name,
             cuttingJobId: data.cuttingJobId,
             createdById: userId,
@@ -133,15 +159,20 @@ export class OptimizationRepository implements IOptimizationRepository {
     }
 
     async updateScenarioStatus(id: string, status: string): Promise<OptimizationScenario> {
+        const conditions = [eq(optimizationScenarios.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(optimizationScenarios)
             .set({
                 status: status as ScenarioStatus,
                 updatedAt: new Date()
             })
-            .where(eq(optimizationScenarios.id, id))
+            .where(where ?? eq(optimizationScenarios.id, id))
             .returning();
         return result;
     }
+
+    // ==================== PLAN OPERATIONS ====================
 
     async findPlanById(id: string): Promise<PlanWithRelations | null> {
         const result = await this.db.query.cuttingPlans.findFirst({
@@ -153,18 +184,17 @@ export class OptimizationRepository implements IOptimizationRepository {
             }
         });
         if (!result) return null;
-        // Add stockUsed as alias for stockItems
         return { ...result, stockUsed: result.stockItems };
     }
 
     async findAllPlans(filter?: IPlanFilter): Promise<PlanWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.status) conditions.push(eq(cuttingPlans.status, filter.status as PlanStatus));
-        if (filter?.scenarioId) conditions.push(eq(cuttingPlans.scenarioId, filter.scenarioId));
+        const where = createFilter()
+            .eq(cuttingPlans.status, filter?.status as PlanStatus | undefined)
+            .eq(cuttingPlans.scenarioId, filter?.scenarioId)
+            .build();
 
         const plans = await this.db.query.cuttingPlans.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 stockItems: true,
                 scenario: true,
@@ -189,7 +219,6 @@ export class OptimizationRepository implements IOptimizationRepository {
             estimatedCost: data.estimatedCost
         }).returning();
 
-        // Insert layout data as stock items
         if (data.layoutData && data.layoutData.length > 0) {
             await this.db.insert(cuttingPlanStocks).values(
                 data.layoutData.map(layout => ({
@@ -225,3 +254,4 @@ export class OptimizationRepository implements IOptimizationRepository {
             .where(eq(cuttingPlanStocks.cuttingPlanId, planId));
     }
 }
+

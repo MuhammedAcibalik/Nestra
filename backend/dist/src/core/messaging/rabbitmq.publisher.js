@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RabbitMQPublisher = void 0;
 const rabbitmq_connection_1 = require("./rabbitmq.connection");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('RabbitMQPublisher');
 // ==================== PUBLISHER CLASS ====================
 class RabbitMQPublisher {
     connection;
@@ -21,17 +23,17 @@ class RabbitMQPublisher {
     async publish(event) {
         const channel = this.connection.getConfirmChannel();
         if (!channel) {
-            console.error('[RABBITMQ PUBLISHER] No channel available, event dropped:', event.eventType);
+            logger.error('No channel available, event dropped', { eventType: event.eventType });
             throw new Error('RabbitMQ channel not available');
         }
         try {
-            const routingKey = event.eventType; // e.g., 'order.created'
+            const routingKey = event.eventType;
             const message = Buffer.from(JSON.stringify(event));
             await this.publishWithConfirm(channel, routingKey, message, event);
-            console.log(`[RABBITMQ PUBLISHER] Published: ${event.eventType} -> ${this.exchange}`);
+            logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
         }
         catch (error) {
-            console.error(`[RABBITMQ PUBLISHER] Failed to publish ${event.eventType}:`, error);
+            logger.error('Failed to publish event', { eventType: event.eventType, error });
             throw error;
         }
     }

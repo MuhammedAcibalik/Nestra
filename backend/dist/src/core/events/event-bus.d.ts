@@ -3,13 +3,13 @@
  * Following Singleton Pattern for global event handling
  * Enables loose coupling between modules (microservices communication)
  */
-import { IDomainEvent, IEventPublisher, IEventSubscriber } from '../interfaces/event.interface';
+import { IDomainEvent, IEventSubscriber, ITypedEventPublisher } from '../interfaces/event.interface';
 type EventHandler = (event: IDomainEvent) => Promise<void>;
 /**
- * In-Memory Event Bus
+ * In-Memory Event Bus with type-safe publishing
  * For production, this can be replaced with Redis/RabbitMQ implementation
  */
-export declare class EventBus implements IEventPublisher, IEventSubscriber {
+export declare class EventBus implements ITypedEventPublisher, IEventSubscriber {
     private static instance;
     private readonly handlers;
     private eventLog;
@@ -28,9 +28,18 @@ export declare class EventBus implements IEventPublisher, IEventSubscriber {
      */
     publishMany(events: IDomainEvent[]): Promise<void>;
     /**
+     * Type-safe publish with automatic event ID and timestamp
+     * Eliminates need for `as unknown as` casts in event handlers
+     */
+    publishTyped<T extends Record<string, unknown>>(eventType: string, aggregateType: string, aggregateId: string, payload: T): Promise<void>;
+    /**
      * Subscribe to an event type
      */
     subscribe(eventType: string, handler: EventHandler): void;
+    /**
+     * Subscribe with typed handler
+     */
+    subscribeTyped<T extends Record<string, unknown>>(eventType: string, handler: (event: IDomainEvent<T>) => Promise<void>): void;
     /**
      * Unsubscribe from an event type (removes all handlers)
      */

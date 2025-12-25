@@ -128,6 +128,22 @@ services:
     depends_on:
       - prometheus
 
+  # ==================== TRACING ====================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: nestra-jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14268:14268" # HTTP collector
+      - "6831:6831/udp" # UDP agent
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    networks:
+      - nestra-network
+
 # ==================== NETWORKS ====================
 networks:
   nestra-network:

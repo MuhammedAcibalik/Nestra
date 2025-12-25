@@ -7,6 +7,9 @@
 
 import Piscina from 'piscina';
 import path from 'node:path';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('Piscina');
 
 // ==================== INTERFACES ====================
 
@@ -119,7 +122,7 @@ export class OptimizationPool {
         });
 
         this.initialized = true;
-        console.log(`[PISCINA] Pool initialized: ${this.config.minThreads}-${this.config.maxThreads} threads`);
+        logger.info('Pool initialized', { minThreads: this.config.minThreads, maxThreads: this.config.maxThreads });
     }
 
     /**
@@ -301,11 +304,11 @@ export class OptimizationPool {
      */
     async shutdown(): Promise<void> {
         if (this.pool) {
-            console.log('[PISCINA] Waiting for pending tasks...');
+            logger.info('Waiting for pending tasks...');
             await this.pool.destroy();
             this.pool = null;
             this.initialized = false;
-            console.log('[PISCINA] Pool destroyed');
+            logger.info('Pool destroyed');
         }
     }
 

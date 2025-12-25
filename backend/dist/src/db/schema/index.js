@@ -21,6 +21,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./enums"), exports);
 // Configuration
 __exportStar(require("./config"), exports);
+// Multi-tenant
+__exportStar(require("./tenant"), exports);
 // Core entities
 __exportStar(require("./material"), exports);
 __exportStar(require("./location"), exports);
@@ -33,6 +35,9 @@ __exportStar(require("./order"), exports);
 __exportStar(require("./cutting-job"), exports);
 __exportStar(require("./optimization"), exports);
 __exportStar(require("./production"), exports);
+// Collaboration
+__exportStar(require("./activities"), exports);
+__exportStar(require("./document_locks"), exports);
 // Settings
 __exportStar(require("./settings"), exports);
 //# sourceMappingURL=index.js.map

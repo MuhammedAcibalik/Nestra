@@ -7,6 +7,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaterialEventHandler = void 0;
 const events_1 = require("../../core/events");
+const logger_1 = require("../../core/logger");
+const logger = (0, logger_1.createModuleLogger)('MaterialEventHandler');
 class MaterialEventHandler {
     materialRepository;
     constructor(materialRepository) {
@@ -21,7 +23,7 @@ class MaterialEventHandler {
         adapter.subscribe(events_1.EventTypes.STOCK_CREATED, this.handleStockCreated.bind(this));
         // Handle low stock alert - may trigger reorder
         adapter.subscribe(events_1.EventTypes.STOCK_LOW_ALERT, this.handleLowStockAlert.bind(this));
-        console.log('[EVENT] Material event handlers registered');
+        logger.info('Event handlers registered');
     }
     /**
      * Handle stock created - validate material type exists
@@ -31,11 +33,11 @@ class MaterialEventHandler {
         try {
             const material = await this.materialRepository.findById(payload.materialTypeId);
             if (!material) {
-                console.warn(`[MATERIAL EVENT] Stock created with unknown material type: ${payload.materialTypeId}`);
+                logger.warn('Stock created with unknown material type', { materialTypeId: payload.materialTypeId });
             }
         }
         catch (error) {
-            console.error('[MATERIAL EVENT] Error handling stock creation:', error);
+            logger.error('Error handling stock creation', { error });
         }
     }
     /**
@@ -44,11 +46,11 @@ class MaterialEventHandler {
     async handleLowStockAlert(event) {
         const payload = event.payload;
         try {
-            console.log(`[MATERIAL EVENT] Low stock alert: ${payload.stockItemId} (${payload.currentQuantity} remaining)`);
+            logger.info('Low stock alert', { stockItemId: payload.stockItemId, currentQuantity: payload.currentQuantity });
             // Could trigger reorder workflow or notifications
         }
         catch (error) {
-            console.error('[MATERIAL EVENT] Error handling low stock alert:', error);
+            logger.error('Error handling low stock alert', { error });
         }
     }
 }

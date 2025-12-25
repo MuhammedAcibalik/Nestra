@@ -1,13 +1,15 @@
 /**
  * Stock Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 
 import { Database } from '../../db';
 import { stockItems, stockMovements } from '../../db/schema';
 import { StockType, MovementType } from '../../db/schema/enums';
-import { eq, desc, gte, and, lte } from 'drizzle-orm';
+import { eq, desc, and, SQL } from 'drizzle-orm';
 import { IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter } from '../../core/interfaces';
+import { createFilter } from '../../core/database';
+import { getCurrentTenantIdOptional } from '../../core/tenant';
 
 // Type definitions
 export type StockItem = typeof stockItems.$inferSelect;
@@ -34,9 +36,32 @@ export interface IStockRepository {
 export class StockRepository implements IStockRepository {
     constructor(private readonly db: Database) { }
 
+    // ==================== TENANT FILTERING ====================
+
+    private getTenantFilter(): SQL | undefined {
+        const tenantId = getCurrentTenantIdOptional();
+        if (!tenantId) return undefined;
+        return eq(stockItems.tenantId, tenantId);
+    }
+
+    private withTenantFilter(conditions: SQL[]): SQL | undefined {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter) conditions.push(tenantFilter);
+        return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    private getCurrentTenantId(): string | undefined {
+        return getCurrentTenantIdOptional();
+    }
+
+    // ==================== READ OPERATIONS ====================
+
     async findById(id: string): Promise<StockItemWithRelations | null> {
+        const conditions = [eq(stockItems.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.stockItems.findFirst({
-            where: eq(stockItems.id, id),
+            where,
             with: {
                 materialType: true,
                 thicknessRange: true,
@@ -47,15 +72,16 @@ export class StockRepository implements IStockRepository {
     }
 
     async findAll(filter?: IStockFilter): Promise<StockItemWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.materialTypeId) conditions.push(eq(stockItems.materialTypeId, filter.materialTypeId));
-        if (filter?.stockType) conditions.push(eq(stockItems.stockType, filter.stockType as StockType));
-        if (filter?.locationId) conditions.push(eq(stockItems.locationId, filter.locationId));
-        if (filter?.minQuantity !== undefined) conditions.push(gte(stockItems.quantity, filter.minQuantity));
+        const where = createFilter()
+            .eq(stockItems.materialTypeId, filter?.materialTypeId)
+            .eq(stockItems.stockType, filter?.stockType as StockType | undefined)
+            .eq(stockItems.locationId, filter?.locationId)
+            .gte(stockItems.quantity, filter?.minQuantity)
+            .eq(stockItems.tenantId, this.getCurrentTenantId())
+            .build();
 
         return this.db.query.stockItems.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 materialType: true,
                 thicknessRange: true,
@@ -66,14 +92,20 @@ export class StockRepository implements IStockRepository {
     }
 
     async findByCode(code: string): Promise<StockItem | null> {
+        const conditions = [eq(stockItems.code, code)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.stockItems.findFirst({
-            where: eq(stockItems.code, code)
+            where
         });
         return result ?? null;
     }
 
+    // ==================== WRITE OPERATIONS ====================
+
     async create(data: ICreateStockInput): Promise<StockItem> {
         const [result] = await this.db.insert(stockItems).values({
+            tenantId: this.getCurrentTenantId(),
             code: data.code,
             name: data.name,
             materialTypeId: data.materialTypeId,
@@ -91,6 +123,9 @@ export class StockRepository implements IStockRepository {
     }
 
     async update(id: string, data: IUpdateStockInput): Promise<StockItem> {
+        const conditions = [eq(stockItems.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(stockItems)
             .set({
                 code: data.code,
@@ -104,19 +139,24 @@ export class StockRepository implements IStockRepository {
                 unitPrice: data.unitPrice,
                 updatedAt: new Date()
             })
-            .where(eq(stockItems.id, id))
+            .where(where ?? eq(stockItems.id, id))
             .returning();
         return result;
     }
 
     async delete(id: string): Promise<void> {
-        await this.db.delete(stockItems).where(eq(stockItems.id, id));
+        const conditions = [eq(stockItems.id, id)];
+        const where = this.withTenantFilter(conditions);
+
+        await this.db.delete(stockItems).where(where ?? eq(stockItems.id, id));
     }
 
     async updateQuantity(id: string, quantityDelta: number, reservedDelta = 0): Promise<StockItem> {
-        // Get current values
+        const conditions = [eq(stockItems.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const current = await this.db.query.stockItems.findFirst({
-            where: eq(stockItems.id, id)
+            where
         });
 
         if (!current) throw new Error('Stock item not found');
@@ -127,10 +167,12 @@ export class StockRepository implements IStockRepository {
                 reservedQty: current.reservedQty + reservedDelta,
                 updatedAt: new Date()
             })
-            .where(eq(stockItems.id, id))
+            .where(where ?? eq(stockItems.id, id))
             .returning();
         return result;
     }
+
+    // ==================== MOVEMENTS ====================
 
     async createMovement(data: ICreateMovementInput): Promise<StockMovement> {
         const [result] = await this.db.insert(stockMovements).values({
@@ -144,16 +186,17 @@ export class StockRepository implements IStockRepository {
     }
 
     async getMovements(filter?: IMovementFilter): Promise<StockMovement[]> {
-        const conditions = [];
-
-        if (filter?.stockItemId) conditions.push(eq(stockMovements.stockItemId, filter.stockItemId));
-        if (filter?.movementType) conditions.push(eq(stockMovements.movementType, filter.movementType as MovementType));
-        if (filter?.startDate) conditions.push(gte(stockMovements.createdAt, filter.startDate));
-        if (filter?.endDate) conditions.push(lte(stockMovements.createdAt, filter.endDate));
+        const where = createFilter()
+            .eq(stockMovements.stockItemId, filter?.stockItemId)
+            .eq(stockMovements.movementType, filter?.movementType as MovementType | undefined)
+            .gte(stockMovements.createdAt, filter?.startDate)
+            .lte(stockMovements.createdAt, filter?.endDate)
+            .build();
 
         return this.db.select().from(stockMovements)
-            .where(conditions.length > 0 ? and(...conditions) : undefined)
+            .where(where)
             .orderBy(desc(stockMovements.createdAt))
             .limit(100);
     }
 }
+

@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, DomainEvents, OrderStatusUpdateRequestedPayload, getEventAdapter } from '../../core/events';
 import { IOrderRepository } from './order.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('OrderEventHandler');
 
 export class OrderEventHandler {
     constructor(private readonly repository: IOrderRepository) { }
@@ -26,7 +29,7 @@ export class OrderEventHandler {
         // Handle production completed - may complete order
         adapter.subscribe(EventTypes.PRODUCTION_COMPLETED, this.handleProductionCompleted.bind(this));
 
-        console.log('[EVENT] Order event handlers registered');
+        logger.info('Event handlers registered');
     }
 
     /**
@@ -40,7 +43,7 @@ export class OrderEventHandler {
             const order = await this.repository.findById(payload.orderId);
 
             if (!order) {
-                console.error(`[ORDER] Status update failed: order ${payload.orderId} not found`);
+                logger.error('Status update failed: order not found', { orderId: payload.orderId });
                 return;
             }
 
@@ -54,10 +57,14 @@ export class OrderEventHandler {
                 correlationId: payload.correlationId
             }));
 
-            console.log(`[ORDER] Order ${payload.orderId} status: ${oldStatus} → ${payload.newStatus}`);
+            logger.info('Order status updated', {
+                orderId: payload.orderId,
+                oldStatus,
+                newStatus: payload.newStatus
+            });
 
         } catch (error) {
-            console.error('[ORDER] Status update failed:', error);
+            logger.error('Status update failed', { error });
         }
     }
 
@@ -66,7 +73,7 @@ export class OrderEventHandler {
      */
     private async handleCuttingJobCompleted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { jobId: string; jobNumber: string };
-        console.log(`[ORDER] Cutting job completed: ${payload.jobNumber}`);
+        logger.debug('Cutting job completed', { jobNumber: payload.jobNumber });
     }
 
     /**
@@ -74,6 +81,6 @@ export class OrderEventHandler {
      */
     private async handleProductionCompleted(event: IDomainEvent): Promise<void> {
         const payload = event.payload as { planId: string };
-        console.log(`[ORDER] Production completed for plan: ${payload.planId}`);
+        logger.debug('Production completed', { planId: payload.planId });
     }
 }

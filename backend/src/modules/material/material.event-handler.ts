@@ -7,6 +7,9 @@
 import { IDomainEvent } from '../../core/interfaces';
 import { EventTypes, getEventAdapter } from '../../core/events';
 import { IMaterialRepository } from './material.repository';
+import { createModuleLogger } from '../../core/logger';
+
+const logger = createModuleLogger('MaterialEventHandler');
 
 export class MaterialEventHandler {
     constructor(private readonly materialRepository: IMaterialRepository) { }
@@ -23,7 +26,7 @@ export class MaterialEventHandler {
         // Handle low stock alert - may trigger reorder
         adapter.subscribe(EventTypes.STOCK_LOW_ALERT, this.handleLowStockAlert.bind(this));
 
-        console.log('[EVENT] Material event handlers registered');
+        logger.info('Event handlers registered');
     }
 
     /**
@@ -35,10 +38,10 @@ export class MaterialEventHandler {
         try {
             const material = await this.materialRepository.findById(payload.materialTypeId);
             if (!material) {
-                console.warn(`[MATERIAL EVENT] Stock created with unknown material type: ${payload.materialTypeId}`);
+                logger.warn('Stock created with unknown material type', { materialTypeId: payload.materialTypeId });
             }
         } catch (error) {
-            console.error('[MATERIAL EVENT] Error handling stock creation:', error);
+            logger.error('Error handling stock creation', { error });
         }
     }
 
@@ -49,10 +52,10 @@ export class MaterialEventHandler {
         const payload = event.payload as { stockItemId: string; currentQuantity: number };
 
         try {
-            console.log(`[MATERIAL EVENT] Low stock alert: ${payload.stockItemId} (${payload.currentQuantity} remaining)`);
+            logger.info('Low stock alert', { stockItemId: payload.stockItemId, currentQuantity: payload.currentQuantity });
             // Could trigger reorder workflow or notifications
         } catch (error) {
-            console.error('[MATERIAL EVENT] Error handling low stock alert:', error);
+            logger.error('Error handling low stock alert', { error });
         }
     }
 }

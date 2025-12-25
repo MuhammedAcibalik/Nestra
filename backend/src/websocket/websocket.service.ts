@@ -6,6 +6,7 @@
 import { Server as HttpServer } from 'node:http';
 import { Server as SocketServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { createModuleLogger } from '../core/logger';
 import {
     WebSocketEvents,
     IOptimizationStartedPayload,
@@ -27,6 +28,8 @@ interface IJwtPayload {
     email: string;
     roleId?: string;
     roleName?: string;
+    tenantId?: string;
+    tenantSlug?: string;
     iat?: number;
     exp?: number;
 }
@@ -37,6 +40,7 @@ interface IAuthenticatedSocket extends Socket {
         userId?: string;
         email?: string;
         roleName?: string;
+        tenantId?: string;
         authenticated: boolean;
     };
 }
@@ -62,7 +66,13 @@ export interface IWebSocketService {
     // Job events
     emitCuttingJobCreated(payload: ICuttingJobCreatedPayload): void;
     emitCuttingJobStatusChanged(payload: ICuttingJobStatusChangedPayload): void;
+
+    // Tenant-scoped events
+    emitToTenant<T>(tenantId: string, event: string, payload: T): void;
+    emitToUser<T>(userId: string, event: string, payload: T): void;
 }
+
+const logger = createModuleLogger('WebSocketService');
 
 class WebSocketService implements IWebSocketService {
     private io: SocketServer | null = null;
@@ -86,7 +96,7 @@ class WebSocketService implements IWebSocketService {
             const authSocket = socket as IAuthenticatedSocket;
             authSocket.data = { authenticated: false };
 
-            console.log(`[WebSocket] Client connected: ${socket.id}`);
+            logger.info('Client connected', { socketId: socket.id });
             this.connectedClients.set(socket.id, authSocket);
 
             // Handle JWT authentication
@@ -99,20 +109,36 @@ class WebSocketService implements IWebSocketService {
                         userId: decoded.userId,
                         email: decoded.email,
                         roleName: decoded.roleName,
+                        tenantId: decoded.tenantId,
                         authenticated: true
                     };
 
                     // Join user-specific room for targeted events
                     socket.join(`user:${decoded.userId}`);
 
-                    console.log(`[WebSocket] Client ${socket.id} authenticated as ${decoded.email}`);
+                    // Join tenant room for tenant-scoped broadcasts
+                    if (decoded.tenantId) {
+                        socket.join(`tenant:${decoded.tenantId}`);
+                        // Also join dashboard room by default
+                        socket.join(`dashboard:${decoded.tenantId}`);
+                    }
+
+                    logger.info('Client authenticated', {
+                        socketId: socket.id,
+                        email: decoded.email,
+                        tenantId: decoded.tenantId ?? 'none'
+                    });
                     socket.emit('authenticated', {
                         success: true,
                         userId: decoded.userId,
-                        email: decoded.email
+                        email: decoded.email,
+                        tenantId: decoded.tenantId
                     });
                 } catch (error) {
-                    console.warn(`[WebSocket] Authentication failed for ${socket.id}:`, error instanceof Error ? error.message : 'Unknown error');
+                    logger.warn('Authentication failed', {
+                        socketId: socket.id,
+                        error: error instanceof Error ? error.message : 'Unknown error'
+                    });
                     socket.emit('authenticated', {
                         success: false,
                         error: 'Invalid or expired token'
@@ -121,7 +147,7 @@ class WebSocketService implements IWebSocketService {
             });
 
             socket.on(WebSocketEvents.DISCONNECT, () => {
-                console.log(`[WebSocket] Client disconnected: ${socket.id}`);
+                logger.info('Client disconnected', { socketId: socket.id });
                 this.connectedClients.delete(socket.id);
             });
 
@@ -133,12 +159,12 @@ class WebSocketService implements IWebSocketService {
             });
         });
 
-        console.log('[WebSocket] Service initialized with JWT authentication');
+        logger.info('Service initialized with JWT authentication');
     }
 
     private emit<T>(event: WebSocketEvents, payload: T): void {
         if (!this.io) {
-            console.warn('[WebSocket] Attempted to emit before initialization');
+            logger.warn('Attempted to emit before initialization');
             return;
         }
         this.io.emit(event, payload);
@@ -199,6 +225,32 @@ class WebSocketService implements IWebSocketService {
 
     isInitialized(): boolean {
         return this.io !== null;
+    }
+
+    // Tenant-scoped events
+    emitToTenant<T>(tenantId: string, event: string, payload: T): void {
+        if (!this.io) {
+            logger.warn('Attempted to emit before initialization');
+            return;
+        }
+        this.io.to(`tenant:${tenantId}`).emit(event, payload);
+    }
+
+    emitToUser<T>(userId: string, event: string, payload: T): void {
+        if (!this.io) {
+            logger.warn('Attempted to emit before initialization');
+            return;
+        }
+        this.io.to(`user:${userId}`).emit(event, payload);
+    }
+
+    // Dashboard room management
+    emitToDashboard<T>(tenantId: string, event: string, payload: T): void {
+        if (!this.io) {
+            logger.warn('Attempted to emit before initialization');
+            return;
+        }
+        this.io.to(`dashboard:${tenantId}`).emit(event, payload);
     }
 }
 

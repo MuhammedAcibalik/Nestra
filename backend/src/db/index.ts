@@ -5,6 +5,9 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import { createModuleLogger } from '../core/logger';
+
+const logger = createModuleLogger('Database');
 
 // Database connection pool
 let pool: Pool | null = null;
@@ -27,7 +30,7 @@ export function getPool(): Pool {
         });
 
         pool.on('error', (err) => {
-            console.error('[DB] Unexpected error on idle client', err);
+            logger.error('Unexpected error on idle client', { error: err });
         });
     }
     return pool;
@@ -52,7 +55,7 @@ export async function closeDb(): Promise<void> {
     if (pool) {
         await pool.end();
         pool = null;
-        console.log('[DB] Connection pool closed');
+        logger.info('Connection pool closed');
     }
 }
 

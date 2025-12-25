@@ -1,32 +1,43 @@
 "use strict";
 /**
  * Order Service
- * Following SOLID principles - properly typed without any usage
+ * Following Single Responsibility Principle (SRP)
+ * Core order CRUD operations only
+ * Import and Template operations are delegated to specialized services
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderService = void 0;
-const xlsx_1 = __importDefault(require("xlsx"));
 const interfaces_1 = require("../../core/interfaces");
 const events_1 = require("../../core/events");
+const order_mapper_1 = require("./order.mapper");
+const order_import_service_1 = require("./order-import.service");
+const order_template_service_1 = require("./order-template.service");
+/**
+ * Order Service Implementation
+ * Composes import and template services following Composition over Inheritance
+ */
 class OrderService {
     orderRepository;
-    constructor(orderRepository) {
+    importService;
+    templateService;
+    constructor(orderRepository, importService, templateService) {
         this.orderRepository = orderRepository;
+        // Allow injection for testing, use defaults otherwise
+        this.importService = importService ?? new order_import_service_1.OrderImportService();
+        this.templateService = templateService ?? new order_template_service_1.OrderTemplateService();
     }
+    // ==================== CORE CRUD OPERATIONS ====================
     async getOrders(filter) {
         try {
             const orders = await this.orderRepository.findAll(filter);
-            const dtos = orders.map((order) => this.toDto(order));
+            const dtos = orders.map((order) => (0, order_mapper_1.toOrderDto)(order));
             return (0, interfaces_1.success)(dtos);
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_FETCH_ERROR',
                 message: 'Siparişler getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -39,13 +50,13 @@ class OrderService {
                     message: 'Sipariş bulunamadı'
                 });
             }
-            return (0, interfaces_1.success)(this.toDto(order));
+            return (0, interfaces_1.success)((0, order_mapper_1.toOrderDto)(order));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_FETCH_ERROR',
                 message: 'Sipariş getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -72,13 +83,13 @@ class OrderService {
                 itemCount: data.items?.length ?? 0,
                 createdById: userId
             }));
-            return (0, interfaces_1.success)(this.toDto(fullOrder));
+            return (0, interfaces_1.success)((0, order_mapper_1.toOrderDto)(fullOrder));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_CREATE_ERROR',
                 message: 'Sipariş oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -93,23 +104,23 @@ class OrderService {
             }
             const order = await this.orderRepository.update(id, data);
             const fullOrder = await this.orderRepository.findById(order.id);
-            // Publish order confirmed event if status changed to CONFIRMED
-            if (data.status === 'CONFIRMED' && existing.status !== 'CONFIRMED') {
+            // Publish status update event if status changed
+            if (data.status && data.status !== existing.status) {
                 const eventBus = events_1.EventBus.getInstance();
-                await eventBus.publish(events_1.DomainEvents.orderConfirmed({
+                await eventBus.publish(events_1.DomainEvents.orderStatusUpdated({
                     orderId: order.id,
-                    orderNumber: order.orderNumber,
-                    itemCount: fullOrder?.items?.length ?? 0,
-                    confirmedById: 'system' // TODO: pass actual user ID
+                    oldStatus: existing.status,
+                    newStatus: data.status,
+                    correlationId: order.id
                 }));
             }
-            return (0, interfaces_1.success)(this.toDto(fullOrder));
+            return (0, interfaces_1.success)((0, order_mapper_1.toOrderDto)(fullOrder));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_UPDATE_ERROR',
                 message: 'Sipariş güncellenirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -129,7 +140,7 @@ class OrderService {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_DELETE_ERROR',
                 message: 'Sipariş silinirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
@@ -142,316 +153,51 @@ class OrderService {
                     message: 'Sipariş bulunamadı'
                 });
             }
-            if (!data.materialTypeId || !data.quantity) {
-                return (0, interfaces_1.failure)({
-                    code: 'VALIDATION_ERROR',
-                    message: 'Malzeme türü ve miktar zorunludur'
-                });
-            }
             const item = await this.orderRepository.addItem(orderId, data);
-            return (0, interfaces_1.success)(this.toItemDto(item));
+            return (0, interfaces_1.success)((0, order_mapper_1.toOrderItemDto)(item));
         }
         catch (error) {
             return (0, interfaces_1.failure)({
                 code: 'ORDER_ITEM_CREATE_ERROR',
                 message: 'Sipariş satırı oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
+                details: { error: (0, order_mapper_1.getErrorMessage)(error) }
             });
         }
     }
+    // ==================== DELEGATED OPERATIONS ====================
+    /**
+     * Import orders from Excel/CSV file
+     * Delegates parsing to OrderImportService
+     */
     async importFromFile(file, mapping, userId) {
-        try {
-            const workbook = xlsx_1.default.read(file, { type: 'buffer' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const data = xlsx_1.default.utils.sheet_to_json(worksheet);
-            if (data.length === 0) {
-                return (0, interfaces_1.failure)({
-                    code: 'EMPTY_FILE',
-                    message: 'Dosyada veri bulunamadı'
-                });
-            }
-            const items = data.map((row) => this.mapRowToOrderItem(row, mapping));
-            const orderInput = {
-                notes: `İçe aktarılan dosyadan ${data.length} satır`,
-                items
-            };
-            return this.createOrder(orderInput, userId);
+        const importResult = await this.importService.importFromFile(file, mapping, userId);
+        if (!importResult.success) {
+            return (0, interfaces_1.failure)(importResult.error);
         }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'IMPORT_ERROR',
-                message: 'Dosya içe aktarılırken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.createOrder(importResult.data, userId);
     }
-    mapRowToOrderItem(row, mapping) {
-        return {
-            itemCode: mapping.itemCode ? String(row[mapping.itemCode] ?? '') : undefined,
-            itemName: mapping.itemName ? String(row[mapping.itemName] ?? '') : undefined,
-            geometryType: mapping.geometryType ? String(row[mapping.geometryType] ?? 'RECTANGLE') : 'RECTANGLE',
-            length: mapping.length ? this.parseNumber(row[mapping.length]) : undefined,
-            width: mapping.width ? this.parseNumber(row[mapping.width]) : undefined,
-            height: mapping.height ? this.parseNumber(row[mapping.height]) : undefined,
-            materialTypeId: mapping.materialTypeId ? String(row[mapping.materialTypeId] ?? '') : '',
-            thickness: mapping.thickness ? this.parseNumber(row[mapping.thickness]) ?? 0 : 0,
-            quantity: mapping.quantity ? this.parseInt(row[mapping.quantity]) ?? 1 : 1,
-            canRotate: mapping.canRotate ? row[mapping.canRotate] !== 'false' : true
-        };
-    }
-    parseNumber(value) {
-        if (typeof value !== 'string' && typeof value !== 'number')
-            return undefined;
-        if (value === '')
-            return undefined;
-        const num = Number.parseFloat(String(value));
-        return Number.isNaN(num) ? undefined : num;
-    }
-    parseInt(value) {
-        if (typeof value !== 'string' && typeof value !== 'number')
-            return undefined;
-        if (value === '')
-            return undefined;
-        const num = Number.parseInt(String(value), 10);
-        return Number.isNaN(num) ? undefined : num;
-    }
-    toDto(order) {
-        const customer = order.customer
-            ? {
-                id: order.customer.id,
-                code: order.customer.code,
-                name: order.customer.name
-            }
-            : undefined;
-        return {
-            id: order.id,
-            orderNumber: order.orderNumber,
-            customer,
-            status: order.status,
-            priority: order.priority,
-            dueDate: order.dueDate ?? undefined,
-            items: (order.items ?? []).map((item) => this.toItemDto(item)),
-            itemCount: order._count?.items ?? order.items?.length ?? 0,
-            createdAt: order.createdAt
-        };
-    }
-    toItemDto(item) {
-        return {
-            id: item.id,
-            itemCode: item.itemCode ?? undefined,
-            itemName: item.itemName ?? undefined,
-            geometryType: item.geometryType,
-            length: item.length ?? undefined,
-            width: item.width ?? undefined,
-            height: item.height ?? undefined,
-            diameter: item.diameter ?? undefined,
-            thickness: item.thickness,
-            quantity: item.quantity,
-            producedQty: item.producedQty,
-            canRotate: item.canRotate
-        };
-    }
-    getErrorMessage(error) {
-        if (error instanceof Error) {
-            return error.message;
-        }
-        return String(error);
-    }
-    // ==================== ORDER TEMPLATES ====================
-    // In-memory template storage (should be database in production)
-    templates = new Map();
+    // ==================== TEMPLATE OPERATIONS ====================
     async getTemplates() {
-        try {
-            const templates = Array.from(this.templates.values()).map(t => ({
-                ...t,
-                itemCount: t.items.length
-            }));
-            return (0, interfaces_1.success)(templates);
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'TEMPLATE_FETCH_ERROR',
-                message: 'Şablonlar getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.templateService.getTemplates();
     }
     async getTemplateById(id) {
-        try {
-            const template = this.templates.get(id);
-            if (!template) {
-                return (0, interfaces_1.failure)({
-                    code: 'TEMPLATE_NOT_FOUND',
-                    message: 'Şablon bulunamadı'
-                });
-            }
-            return (0, interfaces_1.success)({
-                ...template,
-                itemCount: template.items.length
-            });
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'TEMPLATE_FETCH_ERROR',
-                message: 'Şablon getirilirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.templateService.getTemplateById(id);
     }
     async createTemplate(data) {
-        try {
-            const id = crypto.randomUUID();
-            const now = new Date();
-            const template = {
-                id,
-                name: data.name,
-                description: data.description,
-                defaultCustomerId: data.defaultCustomerId,
-                defaultPriority: data.defaultPriority ?? 1,
-                items: data.items.map(item => ({
-                    id: crypto.randomUUID(),
-                    itemCode: item.itemCode,
-                    itemName: item.itemName,
-                    geometryType: item.geometryType,
-                    length: item.length,
-                    width: item.width,
-                    height: item.height,
-                    materialTypeId: item.materialTypeId,
-                    thickness: item.thickness,
-                    quantity: item.quantity,
-                    canRotate: item.canRotate ?? true
-                })),
-                usageCount: 0,
-                createdAt: now,
-                updatedAt: now
-            };
-            this.templates.set(id, template);
-            console.log(`[Order] Template created: ${data.name}`);
-            return (0, interfaces_1.success)({
-                ...template,
-                itemCount: template.items.length
-            });
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'TEMPLATE_CREATE_ERROR',
-                message: 'Şablon oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.templateService.createTemplate(data);
     }
     async updateTemplate(id, data) {
-        try {
-            const template = this.templates.get(id);
-            if (!template) {
-                return (0, interfaces_1.failure)({
-                    code: 'TEMPLATE_NOT_FOUND',
-                    message: 'Şablon bulunamadı'
-                });
-            }
-            const updated = {
-                ...template,
-                name: data.name ?? template.name,
-                description: data.description ?? template.description,
-                defaultCustomerId: data.defaultCustomerId ?? template.defaultCustomerId,
-                defaultPriority: data.defaultPriority ?? template.defaultPriority,
-                items: data.items ? data.items.map(item => ({
-                    id: crypto.randomUUID(),
-                    itemCode: item.itemCode,
-                    itemName: item.itemName,
-                    geometryType: item.geometryType,
-                    length: item.length,
-                    width: item.width,
-                    height: item.height,
-                    materialTypeId: item.materialTypeId,
-                    thickness: item.thickness,
-                    quantity: item.quantity,
-                    canRotate: item.canRotate ?? true
-                })) : template.items,
-                updatedAt: new Date()
-            };
-            this.templates.set(id, updated);
-            console.log(`[Order] Template updated: ${updated.name}`);
-            return (0, interfaces_1.success)({
-                ...updated,
-                itemCount: updated.items.length
-            });
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'TEMPLATE_UPDATE_ERROR',
-                message: 'Şablon güncellenirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.templateService.updateTemplate(id, data);
     }
     async deleteTemplate(id) {
-        try {
-            if (!this.templates.has(id)) {
-                return (0, interfaces_1.failure)({
-                    code: 'TEMPLATE_NOT_FOUND',
-                    message: 'Şablon bulunamadı'
-                });
-            }
-            this.templates.delete(id);
-            console.log(`[Order] Template deleted: ${id}`);
-            return (0, interfaces_1.success)(undefined);
-        }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'TEMPLATE_DELETE_ERROR',
-                message: 'Şablon silinirken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.templateService.deleteTemplate(id);
     }
     async createOrderFromTemplate(templateId, overrides, userId) {
-        try {
-            const template = this.templates.get(templateId);
-            if (!template) {
-                return (0, interfaces_1.failure)({
-                    code: 'TEMPLATE_NOT_FOUND',
-                    message: 'Şablon bulunamadı'
-                });
-            }
-            // Convert template items to order items
-            const orderItems = template.items.map(item => ({
-                itemCode: item.itemCode,
-                itemName: item.itemName,
-                geometryType: item.geometryType,
-                length: item.length,
-                width: item.width,
-                height: item.height,
-                materialTypeId: item.materialTypeId,
-                thickness: item.thickness,
-                quantity: item.quantity,
-                canRotate: item.canRotate
-            }));
-            // Create order with template defaults, allow overrides
-            const orderInput = {
-                customerId: overrides.customerId ?? template.defaultCustomerId,
-                priority: overrides.priority ?? template.defaultPriority,
-                dueDate: overrides.dueDate,
-                notes: overrides.notes ?? `Şablondan oluşturuldu: ${template.name}`,
-                items: overrides.items ?? orderItems
-            };
-            const result = await this.createOrder(orderInput, userId);
-            if (result.success) {
-                // Increment usage count
-                template.usageCount++;
-                this.templates.set(templateId, template);
-                console.log(`[Order] Order created from template: ${template.name}`);
-            }
-            return result;
+        const inputResult = await this.templateService.createOrderInputFromTemplate(templateId, overrides);
+        if (!inputResult.success) {
+            return (0, interfaces_1.failure)(inputResult.error);
         }
-        catch (error) {
-            return (0, interfaces_1.failure)({
-                code: 'ORDER_FROM_TEMPLATE_ERROR',
-                message: 'Şablondan sipariş oluşturulurken hata oluştu',
-                details: { error: this.getErrorMessage(error) }
-            });
-        }
+        return this.createOrder(inputResult.data, userId);
     }
 }
 exports.OrderService = OrderService;

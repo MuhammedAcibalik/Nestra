@@ -9,3 +9,4 @@ export { MaterialController, createMaterialController } from './material.control
 
 // Microservice
 export { MaterialServiceHandler } from './material.service-handler';
+export { MaterialEventHandler } from './material.event-handler';

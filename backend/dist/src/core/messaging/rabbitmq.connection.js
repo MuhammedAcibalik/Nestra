@@ -41,6 +41,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RabbitMQConnection = exports.defaultRabbitMQConfig = void 0;
 const amqp = __importStar(require("amqplib"));
 const node_events_1 = require("node:events");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('RabbitMQ');
 // ==================== DEFAULT CONFIG ====================
 exports.defaultRabbitMQConfig = {
     url: process.env.RABBITMQ_URL ?? 'amqp://localhost:5672',
@@ -79,11 +81,11 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
      */
     async connect() {
         if (this.connection && this.channel) {
-            console.log('[RABBITMQ] Already connected');
+            logger.debug('Already connected');
             return;
         }
         try {
-            console.log(`[RABBITMQ] Connecting to ${this.config.url}...`);
+            logger.info('Connecting...', { url: this.config.url });
             this.connection = await amqp.connect(this.config.url);
             // Create regular channel
             this.channel = await this.connection.createChannel();
@@ -94,12 +96,11 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
             await this.setupExchange();
             // Setup event handlers
             this.setupConnectionHandlers();
-            this.reconnectAttempts = 0;
-            console.log('[RABBITMQ] Connected successfully');
+            logger.info('Connected successfully');
             this.emit('connected');
         }
         catch (error) {
-            console.error('[RABBITMQ] Connection failed:', error);
+            logger.error('Connection failed', { error });
             await this.handleReconnect();
         }
     }
@@ -121,11 +122,11 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
                 await this.connection.close();
                 this.connection = null;
             }
-            console.log('[RABBITMQ] Disconnected');
+            logger.info('Disconnected');
             this.emit('disconnected');
         }
         catch (error) {
-            console.error('[RABBITMQ] Disconnect error:', error);
+            logger.error('Disconnect error', { error });
         }
     }
     /**
@@ -166,7 +167,7 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
         // Dead letter queue
         await this.channel.assertQueue(`${this.config.exchange}.dead-letter`, { durable: true });
         await this.channel.bindQueue(`${this.config.exchange}.dead-letter`, `${this.config.exchange}.dlx`, '');
-        console.log(`[RABBITMQ] Exchange '${this.config.exchange}' ready`);
+        logger.debug('Exchange ready', { exchange: this.config.exchange });
     }
     /**
      * Setup connection event handlers
@@ -175,22 +176,22 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
         if (!this.connection)
             return;
         this.connection.on('error', (error) => {
-            console.error('[RABBITMQ] Connection error:', error);
+            logger.error('Connection error', { error });
             this.emit('error', error);
         });
         this.connection.on('close', () => {
             if (!this.shuttingDown) {
-                console.warn('[RABBITMQ] Connection closed unexpectedly');
+                logger.warn('Connection closed unexpectedly');
                 this.handleReconnect();
             }
         });
         if (this.channel) {
             this.channel.on('error', (error) => {
-                console.error('[RABBITMQ] Channel error:', error);
+                logger.error('Channel error', { error });
             });
             this.channel.on('close', () => {
                 if (!this.shuttingDown) {
-                    console.warn('[RABBITMQ] Channel closed');
+                    logger.warn('Channel closed');
                 }
             });
         }
@@ -206,14 +207,14 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
         this.channel = null;
         this.confirmChannel = null;
         if (this.reconnectAttempts >= this.config.maxRetries) {
-            console.error(`[RABBITMQ] Max reconnect attempts (${this.config.maxRetries}) reached`);
+            logger.error('Max reconnect attempts reached', { maxRetries: this.config.maxRetries });
             this.emit('maxRetriesReached');
             this.isReconnecting = false;
             return;
         }
         this.reconnectAttempts++;
         const delay = this.config.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-        console.log(`[RABBITMQ] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.config.maxRetries})`);
+        logger.info('Reconnecting...', { delay, attempt: this.reconnectAttempts, maxRetries: this.config.maxRetries });
         await new Promise(resolve => setTimeout(resolve, delay));
         this.isReconnecting = false;
         await this.connect();

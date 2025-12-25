@@ -1,11 +1,13 @@
 /**
  * Production Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 
 import { Database } from '../../db';
 import { productionLogs, downtimeLogs, qualityChecks, DowntimeReason, QcResult } from '../../db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, SQL } from 'drizzle-orm';
+import { createFilter } from '../../core/database';
+import { getCurrentTenantIdOptional } from '../../core/tenant';
 
 // Type definitions
 export type ProductionLog = typeof productionLogs.$inferSelect;
@@ -77,13 +79,9 @@ export interface IProductionRepository {
     create(planId: string, operatorId: string): Promise<ProductionLog>;
     update(id: string, data: IUpdateProductionLogInput): Promise<ProductionLog>;
     complete(logId: string, data: ICompleteProductionInput): Promise<ProductionLog>;
-
-    // Downtime methods
     createDowntime(input: ICreateDowntimeInput): Promise<DowntimeLog>;
     updateDowntime(id: string, endedAt: Date, durationMinutes: number): Promise<DowntimeLog>;
     findDowntimesByLogId(productionLogId: string): Promise<DowntimeLogWithRelations[]>;
-
-    // Quality check methods
     createQualityCheck(input: ICreateQualityCheckInput): Promise<QualityCheck>;
     findQualityChecksByLogId(productionLogId: string): Promise<QualityCheckWithRelations[]>;
 }
@@ -91,9 +89,32 @@ export interface IProductionRepository {
 export class ProductionRepository implements IProductionRepository {
     constructor(private readonly db: Database) { }
 
+    // ==================== TENANT FILTERING ====================
+
+    private getTenantFilter(): SQL | undefined {
+        const tenantId = getCurrentTenantIdOptional();
+        if (!tenantId) return undefined;
+        return eq(productionLogs.tenantId, tenantId);
+    }
+
+    private withTenantFilter(conditions: SQL[]): SQL | undefined {
+        const tenantFilter = this.getTenantFilter();
+        if (tenantFilter) conditions.push(tenantFilter);
+        return conditions.length > 0 ? and(...conditions) : undefined;
+    }
+
+    private getCurrentTenantId(): string | undefined {
+        return getCurrentTenantIdOptional();
+    }
+
+    // ==================== PRODUCTION LOG OPERATIONS ====================
+
     async findById(id: string): Promise<ProductionLogWithRelations | null> {
+        const conditions = [eq(productionLogs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.productionLogs.findFirst({
-            where: eq(productionLogs.id, id),
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -103,8 +124,11 @@ export class ProductionRepository implements IProductionRepository {
     }
 
     async findByPlanId(planId: string): Promise<ProductionLogWithRelations | null> {
+        const conditions = [eq(productionLogs.cuttingPlanId, planId)];
+        const where = this.withTenantFilter(conditions);
+
         const result = await this.db.query.productionLogs.findFirst({
-            where: eq(productionLogs.cuttingPlanId, planId),
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -114,16 +138,15 @@ export class ProductionRepository implements IProductionRepository {
     }
 
     async findAll(filter?: IProductionFilter): Promise<ProductionLogWithRelations[]> {
-        const conditions = [];
-
-        if (filter?.status) {
-            conditions.push(eq(productionLogs.status, filter.status as 'STARTED' | 'PAUSED' | 'COMPLETED' | 'CANCELLED'));
-        }
-        if (filter?.cuttingPlanId) conditions.push(eq(productionLogs.cuttingPlanId, filter.cuttingPlanId));
-        if (filter?.operatorId) conditions.push(eq(productionLogs.operatorId, filter.operatorId));
+        const where = createFilter()
+            .eq(productionLogs.status, filter?.status as 'STARTED' | 'PAUSED' | 'COMPLETED' | 'CANCELLED' | undefined)
+            .eq(productionLogs.cuttingPlanId, filter?.cuttingPlanId)
+            .eq(productionLogs.operatorId, filter?.operatorId)
+            .eq(productionLogs.tenantId, this.getCurrentTenantId())
+            .build();
 
         return this.db.query.productionLogs.findMany({
-            where: conditions.length > 0 ? and(...conditions) : undefined,
+            where,
             with: {
                 cuttingPlan: true,
                 operator: true
@@ -134,6 +157,7 @@ export class ProductionRepository implements IProductionRepository {
 
     async create(planId: string, operatorId: string): Promise<ProductionLog> {
         const [result] = await this.db.insert(productionLogs).values({
+            tenantId: this.getCurrentTenantId(),
             cuttingPlanId: planId,
             operatorId: operatorId,
             startedAt: new Date()
@@ -142,6 +166,9 @@ export class ProductionRepository implements IProductionRepository {
     }
 
     async update(id: string, data: IUpdateProductionLogInput): Promise<ProductionLog> {
+        const conditions = [eq(productionLogs.id, id)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(productionLogs)
             .set({
                 actualWaste: data.actualWaste,
@@ -152,12 +179,15 @@ export class ProductionRepository implements IProductionRepository {
                 issues: data.issues,
                 updatedAt: new Date()
             })
-            .where(eq(productionLogs.id, id))
+            .where(where ?? eq(productionLogs.id, id))
             .returning();
         return result;
     }
 
     async complete(logId: string, data: ICompleteProductionInput): Promise<ProductionLog> {
+        const conditions = [eq(productionLogs.id, logId)];
+        const where = this.withTenantFilter(conditions);
+
         const [result] = await this.db.update(productionLogs)
             .set({
                 actualWaste: data.actualWaste,
@@ -168,7 +198,7 @@ export class ProductionRepository implements IProductionRepository {
                 completedAt: new Date(),
                 updatedAt: new Date()
             })
-            .where(eq(productionLogs.id, logId))
+            .where(where ?? eq(productionLogs.id, logId))
             .returning();
         return result;
     }
@@ -233,4 +263,3 @@ export class ProductionRepository implements IProductionRepository {
         });
     }
 }
-

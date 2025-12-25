@@ -17,6 +17,8 @@ export interface IWebSocketService {
     emitStockUpdated(payload: IStockUpdatedPayload): void;
     emitCuttingJobCreated(payload: ICuttingJobCreatedPayload): void;
     emitCuttingJobStatusChanged(payload: ICuttingJobStatusChangedPayload): void;
+    emitToTenant<T>(tenantId: string, event: string, payload: T): void;
+    emitToUser<T>(userId: string, event: string, payload: T): void;
 }
 declare class WebSocketService implements IWebSocketService {
     private io;
@@ -38,6 +40,9 @@ declare class WebSocketService implements IWebSocketService {
     emitCuttingJobStatusChanged(payload: ICuttingJobStatusChangedPayload): void;
     getConnectedCount(): number;
     isInitialized(): boolean;
+    emitToTenant<T>(tenantId: string, event: string, payload: T): void;
+    emitToUser<T>(userId: string, event: string, payload: T): void;
+    emitToDashboard<T>(tenantId: string, event: string, payload: T): void;
 }
 export declare const websocketService: WebSocketService;
 export {};

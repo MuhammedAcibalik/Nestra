@@ -19,7 +19,7 @@ module.exports = {
 
     // Transform ESM modules from node_modules
     transformIgnorePatterns: [
-        'node_modules/(?!(xlsx)/)'
+        'node_modules/(?!(xlsx|uuid)/)'
     ],
 
     // Global Test Setup
@@ -30,7 +30,8 @@ module.exports = {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^src/(.*)$': '<rootDir>/src/$1',
         '^@shared/(.*)$': '<rootDir>/src/shared/$1',
-        '^@test/(.*)$': '<rootDir>/test/$1'
+        '^@test/(.*)$': '<rootDir>/test/$1',
+        '^uuid$': '<rootDir>/test/__mocks__/uuid.ts'
     },
 
     // Coverage Configuration

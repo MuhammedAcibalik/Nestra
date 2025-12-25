@@ -1,19 +1,25 @@
 "use strict";
 /**
  * Drizzle Database Mock Utilities
- * For use in unit tests - replaces prisma-mock.ts
+ * For use in unit tests
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createMockDatabase = void 0;
 const jest_mock_extended_1 = require("jest-mock-extended");
+// ==================== FACTORY ====================
+/**
+ * Create a mock database instance for testing.
+ * Uses jest-mock-extended with proper type assertions.
+ */
 const createMockDatabase = () => {
     const mockDb = (0, jest_mock_extended_1.mock)();
-    // Create mock query object
+    // Create mock query object with type assertion
     const createQueryMock = () => ({
         findFirst: jest.fn(),
         findMany: jest.fn()
     });
     // Setup query mocks for common tables
+    // Using type assertion since mock doesn't have query property by default
     mockDb.query = {
         users: createQueryMock(),
         roles: createQueryMock(),
@@ -31,7 +37,10 @@ const createMockDatabase = () => {
         optimizationScenarios: createQueryMock(),
         cuttingPlans: createQueryMock(),
         cuttingPlanStocks: createQueryMock(),
-        productionLogs: createQueryMock()
+        productionLogs: createQueryMock(),
+        tenants: createQueryMock(),
+        activities: createQueryMock(),
+        documentLocks: createQueryMock()
     };
     // Setup common Drizzle methods
     mockDb.select = jest.fn().mockReturnValue({

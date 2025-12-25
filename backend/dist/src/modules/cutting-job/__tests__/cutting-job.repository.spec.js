@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const cutting_job_repository_1 = require("../cutting-job.repository");
 const db_mock_1 = require("../../../core/test/db-mock");
+const test_factories_1 = require("../../../core/test/test-factories");
 describe('CuttingJobRepository', () => {
     let repository;
     let db;
@@ -16,15 +17,13 @@ describe('CuttingJobRepository', () => {
                 thickness: 18,
                 orderItemIds: ['order-item-1']
             };
-            const mockJob = {
+            const mockJob = (0, test_factories_1.createMockCuttingJob)({
                 id: 'job-1',
                 jobNumber: 'JOB-2305-00001',
                 materialTypeId: 'mat-1',
                 thickness: 18,
-                status: 'PENDING',
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
+                status: 'PENDING'
+            });
             db.insert.mockReturnValue({
                 values: jest.fn().mockReturnValue({
                     returning: jest.fn().mockResolvedValue([mockJob])

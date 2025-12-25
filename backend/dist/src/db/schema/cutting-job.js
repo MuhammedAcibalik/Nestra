@@ -9,9 +9,11 @@ const pg_core_1 = require("drizzle-orm/pg-core");
 const drizzle_orm_1 = require("drizzle-orm");
 const enums_1 = require("./enums");
 const order_1 = require("./order");
+const tenant_1 = require("./tenant");
 // ==================== CUTTING JOB ====================
 exports.cuttingJobs = (0, pg_core_1.pgTable)('cutting_jobs', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
+    tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     jobNumber: (0, pg_core_1.uuid)('job_number').unique().notNull(),
     materialTypeId: (0, pg_core_1.uuid)('material_type_id').notNull(),
     thickness: (0, pg_core_1.real)('thickness').notNull(),

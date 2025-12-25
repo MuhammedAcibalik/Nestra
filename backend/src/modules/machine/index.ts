@@ -8,3 +8,4 @@ export { MachineController } from './machine.controller';
 
 // Microservice
 export { MachineServiceHandler } from './machine.service-handler';
+export { MachineEventHandler } from './machine.event-handler';

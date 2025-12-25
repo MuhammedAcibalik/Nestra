@@ -1,6 +1,6 @@
 /**
  * Cutting Job Repository
- * Migrated to Drizzle ORM
+ * Migrated to Drizzle ORM with Tenant Filtering
  */
 import { Database } from '../../db';
 import { cuttingJobs, cuttingJobItems } from '../../db/schema';
@@ -67,8 +67,12 @@ export declare class CuttingJobRepository implements ICuttingJobRepository {
     private readonly db;
     private jobCounter;
     constructor(db: Database);
+    private getTenantFilter;
+    private withTenantFilter;
+    private getCurrentTenantId;
     findById(id: string): Promise<CuttingJobWithRelations | null>;
     findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]>;
+    findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
     create(data: ICreateCuttingJobInput): Promise<CuttingJob>;
     update(id: string, data: IUpdateCuttingJobInput): Promise<CuttingJob>;
     updateStatus(id: string, status: string): Promise<CuttingJob>;
@@ -76,7 +80,6 @@ export declare class CuttingJobRepository implements ICuttingJobRepository {
     addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem>;
     removeItem(jobId: string, orderItemId: string): Promise<void>;
     getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]>;
-    findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
     getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]>;
 }
 //# sourceMappingURL=cutting-job.repository.d.ts.map

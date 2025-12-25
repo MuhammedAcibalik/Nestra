@@ -3,6 +3,41 @@
  * Health Controller
  * Provides liveness and readiness probes for Kubernetes/Docker
  * Following Microservice Pattern: Health Checks
+ * @openapi
+ * components:
+ *   schemas:
+ *     HealthStatus:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *           enum: [healthy, unhealthy, degraded]
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *         version:
+ *           type: string
+ *         uptime:
+ *           type: integer
+ *           description: Uptime in seconds
+ *         checks:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/HealthCheck'
+ *     HealthCheck:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           enum: [database, rabbitmq, memory]
+ *         status:
+ *           type: string
+ *           enum: [pass, fail, warn]
+ *         latency:
+ *           type: integer
+ *           description: Latency in milliseconds
+ *         message:
+ *           type: string
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -111,20 +146,63 @@ class HealthController {
         this.setupRoutes();
     }
     setupRoutes() {
-        // Liveness probe - is the service running?
         this.router.get('/health', this.getLiveness.bind(this));
         this.router.get('/health/live', this.getLiveness.bind(this));
-        // Readiness probe - is the service ready to accept traffic?
         this.router.get('/health/ready', this.getReadiness.bind(this));
-        // Detailed health status
         this.router.get('/health/detailed', this.getDetailedHealth.bind(this));
     }
+    /**
+     * @openapi
+     * /health:
+     *   get:
+     *     tags: [Health]
+     *     summary: Liveness probe
+     *     description: Servisin çalışıp çalışmadığını kontrol eder
+     *     responses:
+     *       200:
+     *         description: Servis çalışıyor
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: ok
+     *                 timestamp:
+     *                   type: string
+     *                   format: date-time
+     */
     getLiveness(_req, res) {
         res.status(200).json({
             status: 'ok',
             timestamp: new Date().toISOString()
         });
     }
+    /**
+     * @openapi
+     * /health/ready:
+     *   get:
+     *     tags: [Health]
+     *     summary: Readiness probe
+     *     description: Servisin trafik almaya hazır olup olmadığını kontrol eder
+     *     responses:
+     *       200:
+     *         description: Servis hazır
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: string
+     *                   example: ready
+     *                 timestamp:
+     *                   type: string
+     *                   format: date-time
+     *       503:
+     *         description: Servis hazır değil
+     */
     async getReadiness(_req, res) {
         try {
             const dbCheck = await checkDatabase();
@@ -149,6 +227,23 @@ class HealthController {
             });
         }
     }
+    /**
+     * @openapi
+     * /health/detailed:
+     *   get:
+     *     tags: [Health]
+     *     summary: Detaylı sağlık durumu
+     *     description: Database, RabbitMQ ve memory durumunu içeren detaylı sağlık raporu
+     *     responses:
+     *       200:
+     *         description: Sağlık durumu (healthy veya degraded)
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/HealthStatus'
+     *       503:
+     *         description: Servis sağlıksız
+     */
     async getDetailedHealth(_req, res) {
         try {
             const checks = await Promise.all([

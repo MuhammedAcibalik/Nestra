@@ -1,6 +1,36 @@
 /**
  * Import Controller
  * Handles file upload and import endpoints
+ * @openapi
+ * components:
+ *   schemas:
+ *     ImportResult:
+ *       type: object
+ *       properties:
+ *         importedCount:
+ *           type: integer
+ *           description: İçe aktarılan kayıt sayısı
+ *         skippedCount:
+ *           type: integer
+ *           description: Atlanan kayıt sayısı
+ *         errors:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               row:
+ *                 type: integer
+ *               message:
+ *                 type: string
+ *     FileHeaders:
+ *       type: object
+ *       properties:
+ *         headers:
+ *           type: array
+ *           items:
+ *             type: string
+ *         suggestedMapping:
+ *           type: object
  */
 
 import { Router, Request, Response } from 'express';
@@ -53,16 +83,55 @@ export class ImportController {
     }
 
     private initializeRoutes(): void {
-        // POST /api/import/orders - Import orders from file
         this.router.post('/orders', upload.single('file'), this.importOrders.bind(this));
-
-        // POST /api/import/headers - Get file headers for mapping
         this.router.post('/headers', upload.single('file'), this.getHeaders.bind(this));
-
-        // POST /api/import/suggest-mapping - Suggest column mapping
         this.router.post('/suggest-mapping', this.suggestMapping.bind(this));
     }
 
+    /**
+     * @openapi
+     * /import/orders:
+     *   post:
+     *     tags: [Import]
+     *     summary: Dosyadan sipariş içe aktar
+     *     description: Excel veya CSV dosyasından siparişleri içe aktarır
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - file
+     *             properties:
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *                 description: Excel (.xlsx, .xls) veya CSV dosyası (max 10MB)
+     *               mapping:
+     *                 type: string
+     *                 description: JSON formatında kolon eşleştirmesi
+     *               notes:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: İçe aktarma başarılı
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/ImportResult'
+     *       400:
+     *         description: Dosya veya format hatası
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async importOrders(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.file) {
@@ -76,7 +145,6 @@ export class ImportController {
                 return;
             }
 
-            // Get user ID from auth
             const userId = req.user?.id ?? req.user?.userId;
             if (!userId) {
                 res.status(401).json({
@@ -89,7 +157,6 @@ export class ImportController {
                 return;
             }
 
-            // Parse mapping from request body
             let mapping: IColumnMapping;
             try {
                 if (req.body.mapping) {
@@ -166,6 +233,44 @@ export class ImportController {
         }
     }
 
+    /**
+     * @openapi
+     * /import/headers:
+     *   post:
+     *     tags: [Import]
+     *     summary: Dosya başlıklarını getir
+     *     description: Kolon eşleştirme için dosya başlıklarını ve önerilen eşleştirmeyi döner
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         multipart/form-data:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - file
+     *             properties:
+     *               file:
+     *                 type: string
+     *                 format: binary
+     *     responses:
+     *       200:
+     *         description: Başlıklar ve önerilen eşleştirme
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/FileHeaders'
+     *       400:
+     *         description: Dosya hatası
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private async getHeaders(req: Request, res: Response): Promise<void> {
         try {
             if (!req.file) {
@@ -195,7 +300,6 @@ export class ImportController {
             const result = await this.service.getFileHeaders(req.file.buffer, fileType);
 
             if (result.success) {
-                // Also suggest mapping
                 const suggestedMapping = this.service.suggestMapping(result.data!);
 
                 res.json({
@@ -223,6 +327,36 @@ export class ImportController {
         }
     }
 
+    /**
+     * @openapi
+     * /import/suggest-mapping:
+     *   post:
+     *     tags: [Import]
+     *     summary: Kolon eşleştirmesi öner
+     *     description: Verilen başlıklar için otomatik kolon eşleştirmesi önerir
+     *     security:
+     *       - BearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - headers
+     *             properties:
+     *               headers:
+     *                 type: array
+     *                 items:
+     *                   type: string
+     *     responses:
+     *       200:
+     *         description: Önerilen eşleştirme
+     *       400:
+     *         description: Geçersiz başlık listesi
+     *       401:
+     *         $ref: '#/components/responses/Unauthorized'
+     */
     private suggestMapping(req: Request, res: Response): void {
         const { headers } = req.body;
 

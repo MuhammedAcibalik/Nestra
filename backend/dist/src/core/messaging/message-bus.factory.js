@@ -13,6 +13,8 @@ const event_bus_1 = require("../events/event-bus");
 const rabbitmq_connection_1 = require("./rabbitmq.connection");
 const rabbitmq_publisher_1 = require("./rabbitmq.publisher");
 const rabbitmq_subscriber_1 = require("./rabbitmq.subscriber");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('MessageBus');
 // ==================== FACTORY FUNCTION ====================
 /**
  * Create message bus based on configuration
@@ -31,10 +33,10 @@ function createInMemoryBus() {
         publisher: eventBus,
         subscriber: eventBus,
         async connect() {
-            console.log('[MESSAGE BUS] Using in-memory EventBus');
+            logger.info('Using in-memory EventBus');
         },
         async disconnect() {
-            console.log('[MESSAGE BUS] In-memory EventBus disconnected');
+            logger.info('In-memory EventBus disconnected');
         },
         isConnected() {
             return true; // Always connected for in-memory
@@ -55,12 +57,12 @@ function createRabbitMQBus(url) {
             await connection.connect();
             await subscriber.initialize();
             await subscriber.startConsumingAll();
-            console.log('[MESSAGE BUS] RabbitMQ connected and consuming');
+            logger.info('RabbitMQ connected and consuming');
         },
         async disconnect() {
             await subscriber.stopAllConsumers();
             await connection.disconnect();
-            console.log('[MESSAGE BUS] RabbitMQ disconnected');
+            logger.info('RabbitMQ disconnected');
         },
         isConnected() {
             return connection.isConnected();

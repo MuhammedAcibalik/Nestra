@@ -8,6 +8,9 @@ export * from './enums';
 // Configuration
 export * from './config';
 
+// Multi-tenant
+export * from './tenant';
+
 // Core entities
 export * from './material';
 export * from './location';
@@ -22,5 +25,10 @@ export * from './cutting-job';
 export * from './optimization';
 export * from './production';
 
+// Collaboration
+export * from './activities';
+export * from './document_locks';
+
 // Settings
 export * from './settings';
+

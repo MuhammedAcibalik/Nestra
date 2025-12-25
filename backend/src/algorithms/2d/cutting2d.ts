@@ -626,9 +626,18 @@ export function optimize2D(
             return bottomLeftFill(pieces, stockSheets, options);
         case 'GUILLOTINE':
             return guillotineCutting(pieces, stockSheets, options);
-        case 'MAXRECTS':
-            // For now, use guillotine as fallback
-            return guillotineCutting(pieces, stockSheets, options);
+        case 'MAXRECTS': {
+            // Use enhanced MAXRECTS implementation
+            const { optimize2DEnhanced } = require('./enhanced-optimizer');
+            const result = optimize2DEnhanced(pieces, stockSheets, {
+                algorithm: 'MAXRECTS_BEST',
+                kerf: options.kerf,
+                allowRotation: options.allowRotation,
+                respectGrainDirection: options.respectGrainDirection,
+                heuristic: 'BEST'
+            });
+            return result;
+        }
         default:
             return bottomLeftFill(pieces, stockSheets, options);
     }

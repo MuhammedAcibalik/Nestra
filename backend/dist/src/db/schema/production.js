@@ -12,9 +12,11 @@ const optimization_1 = require("./optimization");
 const auth_1 = require("./auth");
 const stock_1 = require("./stock");
 const machine_1 = require("./machine");
+const tenant_1 = require("./tenant");
 // ==================== PRODUCTION LOG ====================
 exports.productionLogs = (0, pg_core_1.pgTable)('production_logs', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
+    tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     cuttingPlanId: (0, pg_core_1.uuid)('cutting_plan_id').notNull().references(() => optimization_1.cuttingPlans.id),
     operatorId: (0, pg_core_1.uuid)('operator_id').notNull().references(() => auth_1.users.id),
     actualWaste: (0, pg_core_1.real)('actual_waste'),

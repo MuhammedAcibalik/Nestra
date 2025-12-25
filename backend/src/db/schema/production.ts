@@ -10,11 +10,13 @@ import { cuttingPlans } from './optimization';
 import { users } from './auth';
 import { stockMovements } from './stock';
 import { machines } from './machine';
+import { tenants } from './tenant';
 
 // ==================== PRODUCTION LOG ====================
 
 export const productionLogs = pgTable('production_logs', {
     id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
     cuttingPlanId: uuid('cutting_plan_id').notNull().references(() => cuttingPlans.id),
     operatorId: uuid('operator_id').notNull().references(() => users.id),
     actualWaste: real('actual_waste'),
