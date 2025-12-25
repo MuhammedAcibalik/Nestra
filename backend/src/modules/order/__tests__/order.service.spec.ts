@@ -3,9 +3,8 @@ import { IOrderRepository } from '../order.repository';
 import { EventBus } from '../../../core/events';
 import { mock, MockProxy } from 'jest-mock-extended';
 
-
 // Don't mock the whole module, just spy on what we need
-// jest.mock('../../../core/events'); 
+// jest.mock('../../../core/events');
 
 describe('OrderService', () => {
     let service: OrderService;
@@ -94,7 +93,8 @@ describe('OrderService', () => {
             const existingOrder = createMockOrder({ status: 'PENDING' });
             const updatedOrder = createMockOrder({ status: 'CONFIRMED' });
 
-            repository.findById.mockResolvedValueOnce(existingOrder as any) // Check existing
+            repository.findById
+                .mockResolvedValueOnce(existingOrder as any) // Check existing
                 .mockResolvedValueOnce(updatedOrder as any); // Return updated
 
             repository.update.mockResolvedValue(updatedOrder as any);

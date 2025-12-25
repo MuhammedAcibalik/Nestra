@@ -14,9 +14,7 @@ describe('1D Cutting Algorithm', () => {
                 { id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' },
                 { id: 'p2', length: 500, quantity: 1, orderItemId: 'o2' }
             ];
-            const stock: StockBar1D[] = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const stock: StockBar1D[] = [{ id: 's1', length: 1000, available: 1 }];
 
             const result = optimize1D(pieces, stock, defaultOptions);
 
@@ -33,12 +31,8 @@ describe('1D Cutting Algorithm', () => {
             // Pos 0: Piece 1 (0-495). Next pos: 495 + 10 = 505.
             // Pos 505: Piece 2 (505-1000). Total used: 1000.
 
-            const pieces: CuttingPiece1D[] = [
-                { id: 'p1', length: 495, quantity: 2, orderItemId: 'o1' }
-            ];
-            const stock: StockBar1D[] = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces: CuttingPiece1D[] = [{ id: 'p1', length: 495, quantity: 2, orderItemId: 'o1' }];
+            const stock: StockBar1D[] = [{ id: 's1', length: 1000, available: 1 }];
 
             const result = optimize1D(pieces, stock, { ...defaultOptions, kerf: 10 });
 
@@ -49,12 +43,8 @@ describe('1D Cutting Algorithm', () => {
         });
 
         it('should report unplaced pieces when stock is insufficient', () => {
-            const pieces: CuttingPiece1D[] = [
-                { id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock: StockBar1D[] = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces: CuttingPiece1D[] = [{ id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }];
+            const stock: StockBar1D[] = [{ id: 's1', length: 1000, available: 1 }];
 
             const result = optimize1D(pieces, stock, defaultOptions);
 
@@ -64,12 +54,8 @@ describe('1D Cutting Algorithm', () => {
         });
 
         it('should expand quantity correctly', () => {
-            const pieces: CuttingPiece1D[] = [
-                { id: 'p1', length: 100, quantity: 5, orderItemId: 'o1' }
-            ];
-            const stock: StockBar1D[] = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces: CuttingPiece1D[] = [{ id: 'p1', length: 100, quantity: 5, orderItemId: 'o1' }];
+            const stock: StockBar1D[] = [{ id: 's1', length: 1000, available: 1 }];
 
             const result = optimize1D(pieces, stock, defaultOptions);
 

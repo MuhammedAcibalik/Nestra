@@ -3,11 +3,7 @@
  * Following SOLID principles with proper types
  */
 
-import {
-    IResult,
-    success,
-    failure
-} from '../../core/interfaces';
+import { IResult, success, failure } from '../../core/interfaces';
 import {
     IMachineRepository,
     MachineWithRelations,
@@ -57,7 +53,7 @@ export interface IMachineService {
 }
 
 export class MachineService implements IMachineService {
-    constructor(private readonly repository: IMachineRepository) { }
+    constructor(private readonly repository: IMachineRepository) {}
 
     async getMachines(filter?: IMachineFilter): Promise<IResult<IMachineDto[]>> {
         try {
@@ -199,7 +195,7 @@ export class MachineService implements IMachineService {
 
             // Fetch full compatibility with relations
             const compatibilities = await this.repository.getCompatibilities(machineId);
-            const fullCompatibility = compatibilities.find(c => c.id === compatibility.id);
+            const fullCompatibility = compatibilities.find((c) => c.id === compatibility.id);
 
             return success(this.toCompatibilityDto(fullCompatibility!));
         } catch (error) {

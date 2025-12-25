@@ -133,9 +133,9 @@ function isRetryableError(error: unknown): boolean {
     ];
 
     const message = error.message.toLowerCase();
-    return retryablePatterns.some(pattern => message.includes(pattern));
+    return retryablePatterns.some((pattern) => message.includes(pattern));
 }
 
 function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

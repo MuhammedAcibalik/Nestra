@@ -12,7 +12,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('OrderEventHandler');
 
 export class OrderEventHandler {
-    constructor(private readonly repository: IOrderRepository) { }
+    constructor(private readonly repository: IOrderRepository) {}
 
     /**
      * Register all event handlers
@@ -50,19 +50,20 @@ export class OrderEventHandler {
             const oldStatus = order.status;
             await this.repository.updateStatus(payload.orderId, payload.newStatus);
 
-            await adapter.publish(DomainEvents.orderStatusUpdated({
-                orderId: payload.orderId,
-                oldStatus,
-                newStatus: payload.newStatus,
-                correlationId: payload.correlationId
-            }));
+            await adapter.publish(
+                DomainEvents.orderStatusUpdated({
+                    orderId: payload.orderId,
+                    oldStatus,
+                    newStatus: payload.newStatus,
+                    correlationId: payload.correlationId
+                })
+            );
 
             logger.info('Order status updated', {
                 orderId: payload.orderId,
                 oldStatus,
                 newStatus: payload.newStatus
             });
-
         } catch (error) {
             logger.error('Status update failed', { error });
         }

@@ -30,11 +30,7 @@ export interface IOrderImportService {
     /**
      * Import orders from Excel/CSV file
      */
-    importFromFile(
-        file: Buffer,
-        mapping: IColumnMapping,
-        userId: string
-    ): Promise<IResult<ICreateOrderInput>>;
+    importFromFile(file: Buffer, mapping: IColumnMapping, userId: string): Promise<IResult<ICreateOrderInput>>;
 }
 
 /**
@@ -45,11 +41,7 @@ export class OrderImportService implements IOrderImportService {
      * Import orders from Excel/CSV file
      * Parses the file and creates order input data
      */
-    async importFromFile(
-        file: Buffer,
-        mapping: IColumnMapping,
-        _userId: string
-    ): Promise<IResult<ICreateOrderInput>> {
+    async importFromFile(file: Buffer, mapping: IColumnMapping, _userId: string): Promise<IResult<ICreateOrderInput>> {
         try {
             const workbook = xlsx.read(file, { type: 'buffer' });
             const sheetName = workbook.SheetNames[0];
@@ -63,9 +55,7 @@ export class OrderImportService implements IOrderImportService {
                 });
             }
 
-            const items: ICreateOrderItemInput[] = data.map((row) =>
-                this.mapRowToOrderItem(row, mapping)
-            );
+            const items: ICreateOrderItemInput[] = data.map((row) => this.mapRowToOrderItem(row, mapping));
 
             const orderInput: ICreateOrderInput = {
                 notes: `İçe aktarılan dosyadan ${data.length} satır`,
@@ -94,8 +84,8 @@ export class OrderImportService implements IOrderImportService {
             width: mapping.width ? this.parseNumber(row[mapping.width]) : undefined,
             height: mapping.height ? this.parseNumber(row[mapping.height]) : undefined,
             materialTypeId: mapping.materialTypeId ? String(row[mapping.materialTypeId] ?? '') : '',
-            thickness: mapping.thickness ? this.parseNumber(row[mapping.thickness]) ?? 0 : 0,
-            quantity: mapping.quantity ? this.parseInt(row[mapping.quantity]) ?? 1 : 1,
+            thickness: mapping.thickness ? (this.parseNumber(row[mapping.thickness]) ?? 0) : 0,
+            quantity: mapping.quantity ? (this.parseInt(row[mapping.quantity]) ?? 1) : 1,
             canRotate: mapping.canRotate ? row[mapping.canRotate] !== 'false' : true
         };
     }

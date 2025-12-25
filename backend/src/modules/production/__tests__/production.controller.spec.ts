@@ -95,16 +95,18 @@ describe('ProductionController', () => {
 
     describe('getApprovedPlans', () => {
         it('should return approved plans', async () => {
-            const mockPlans: ICuttingPlanDto[] = [{
-                id: 'plan-1',
-                planNumber: 'PN-001',
-                status: 'APPROVED',
-                scenarioId: 'sc-1',
-                totalWaste: 0,
-                wastePercentage: 0,
-                stockUsedCount: 0,
-                layoutItems: []
-            }];
+            const mockPlans: ICuttingPlanDto[] = [
+                {
+                    id: 'plan-1',
+                    planNumber: 'PN-001',
+                    status: 'APPROVED',
+                    scenarioId: 'sc-1',
+                    totalWaste: 0,
+                    wastePercentage: 0,
+                    stockUsedCount: 0,
+                    layoutItems: []
+                }
+            ];
             service.getApprovedPlans.mockResolvedValue(success(mockPlans));
 
             await controller.getApprovedPlans(req, res, next);

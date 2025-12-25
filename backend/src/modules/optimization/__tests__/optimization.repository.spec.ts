@@ -37,13 +37,15 @@ describe('OptimizationRepository', () => {
 
     describe('createPlan', () => {
         it('should create cutting plan', async () => {
-            const layoutData = [{
-                stockItemId: 'item-1',
-                sequence: 1,
-                waste: 10,
-                wastePercentage: 5,
-                layoutJson: '{}'
-            }];
+            const layoutData = [
+                {
+                    stockItemId: 'item-1',
+                    sequence: 1,
+                    waste: 10,
+                    wastePercentage: 5,
+                    layoutJson: '{}'
+                }
+            ];
             const input = {
                 totalWaste: 10,
                 wastePercentage: 5,

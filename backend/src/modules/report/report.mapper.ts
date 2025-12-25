@@ -26,9 +26,8 @@ export function calculateWasteSummary(data: WasteReportData[]): IWasteSummary {
     const totalActualWaste = actualWasteData.reduce((sum, d) => sum + (d.actualWaste ?? 0), 0);
     const avgWastePercentage = data.reduce((sum, d) => sum + d.wastePercentage, 0) / data.length;
 
-    const wasteVariance = actualWasteData.length > 0
-        ? ((totalActualWaste - totalPlannedWaste) / totalPlannedWaste) * 100
-        : 0;
+    const wasteVariance =
+        actualWasteData.length > 0 ? ((totalActualWaste - totalPlannedWaste) / totalPlannedWaste) * 100 : 0;
 
     return {
         totalPlans: data.length,
@@ -42,10 +41,7 @@ export function calculateWasteSummary(data: WasteReportData[]): IWasteSummary {
 /**
  * Group waste data by period (day, week, month)
  */
-export function groupWasteByPeriod(
-    data: WasteReportData[],
-    groupBy: 'day' | 'week' | 'month'
-): IWastePeriod[] {
+export function groupWasteByPeriod(data: WasteReportData[], groupBy: 'day' | 'week' | 'month'): IWastePeriod[] {
     const groups = new Map<string, WasteReportData[]>();
 
     for (const item of data) {
@@ -107,7 +103,7 @@ export function getWeekNumber(date: Date): number {
  */
 export function calculateTrendDirection(data: ITrendDataPoint[]): {
     direction: 'UP' | 'DOWN' | 'STABLE';
-    changePercentage: number
+    changePercentage: number;
 } {
     if (data.length < 2) {
         return { direction: 'STABLE', changePercentage: 0 };
@@ -177,7 +173,7 @@ export function groupDataByPeriod(
                 count = items.length;
                 break;
             case 'EFFICIENCY':
-                value = 100 - (items.reduce((sum, d) => sum + d.wastePercentage, 0) / items.length);
+                value = 100 - items.reduce((sum, d) => sum + d.wastePercentage, 0) / items.length;
                 count = items.length;
                 break;
             case 'PLAN_COUNT':

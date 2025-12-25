@@ -5,11 +5,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import {
-    httpRequestsTotal,
-    httpRequestDuration,
-    httpActiveRequests
-} from '../core/monitoring';
+import { httpRequestsTotal, httpRequestDuration, httpActiveRequests } from '../core/monitoring';
 
 /**
  * HTTP Metrics Middleware

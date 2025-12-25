@@ -164,8 +164,6 @@ export class ScenarioController {
     }
 }
 
-export function createScenarioController(
-    optimizationService: IOptimizationService
-): ScenarioController {
+export function createScenarioController(optimizationService: IOptimizationService): ScenarioController {
     return new ScenarioController(optimizationService);
 }

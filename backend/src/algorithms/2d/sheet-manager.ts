@@ -101,13 +101,7 @@ export function createGuillotineSheet(
 /**
  * Check if a piece can be placed at a position
  */
-export function canPlaceAt(
-    sheet: IActiveSheet,
-    pos: IPosition,
-    width: number,
-    height: number,
-    kerf: number
-): boolean {
+export function canPlaceAt(sheet: IActiveSheet, pos: IPosition, width: number, height: number, kerf: number): boolean {
     const newRect = createRectangle(pos, width, height);
 
     // Check bounds
@@ -162,12 +156,7 @@ export function tryPlaceBottomLeft(
     piece: IExpanded2DPiece,
     options: I2DAlgorithmOptions
 ): boolean {
-    const orientations = getOrientations(
-        piece.width,
-        piece.height,
-        piece.canRotate,
-        options.allowRotation
-    );
+    const orientations = getOrientations(piece.width, piece.height, piece.canRotate, options.allowRotation);
 
     for (const orient of orientations) {
         const pos = findBottomLeftPosition(sheet, orient.width, orient.height, options.kerf);

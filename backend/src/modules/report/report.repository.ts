@@ -79,7 +79,7 @@ export interface IReportRepository {
 // ==================== REPOSITORY ====================
 
 export class ReportRepository implements IReportRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async getProductionStats(filter?: IReportFilter): Promise<IProductionStats> {
         const conditions = [];
@@ -87,11 +87,12 @@ export class ReportRepository implements IReportRepository {
         if (filter?.startDate) conditions.push(gte(cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate) conditions.push(lte(cuttingPlans.createdAt, filter.endDate));
 
-        const result = await this.db.select({
-            totalProduction: sql<number>`count(*)`,
-            completedCount: sql<number>`sum(case when ${cuttingPlans.status} = 'COMPLETED' then 1 else 0 end)`,
-            averageWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`
-        })
+        const result = await this.db
+            .select({
+                totalProduction: sql<number>`count(*)`,
+                completedCount: sql<number>`sum(case when ${cuttingPlans.status} = 'COMPLETED' then 1 else 0 end)`,
+                averageWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`
+            })
             .from(cuttingPlans)
             .where(conditions.length > 0 ? and(...conditions) : undefined);
 
@@ -108,16 +109,17 @@ export class ReportRepository implements IReportRepository {
         if (filter?.startDate) conditions.push(gte(cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate) conditions.push(lte(cuttingPlans.createdAt, filter.endDate));
 
-        const results = await this.db.select({
-            createdAt: cuttingPlans.createdAt,
-            totalWaste: cuttingPlans.totalWaste,
-            wastePercentage: cuttingPlans.wastePercentage
-        })
+        const results = await this.db
+            .select({
+                createdAt: cuttingPlans.createdAt,
+                totalWaste: cuttingPlans.totalWaste,
+                wastePercentage: cuttingPlans.wastePercentage
+            })
             .from(cuttingPlans)
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(cuttingPlans.createdAt));
 
-        return results.map(row => ({
+        return results.map((row) => ({
             date: row.createdAt,
             createdAt: row.createdAt,
             materialTypeName: 'All Materials',
@@ -136,24 +138,27 @@ export class ReportRepository implements IReportRepository {
         if (filter?.endDate) conditions.push(lte(cuttingPlans.createdAt, filter.endDate));
 
         // Get plan stats
-        const results = await this.db.select({
-            planCount: sql<number>`count(*)`,
-            avgWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`,
-            totalWaste: sql<number>`sum(${cuttingPlans.totalWaste})`,
-            stockUsed: sql<number>`sum(${cuttingPlans.stockUsedCount})`
-        })
+        const results = await this.db
+            .select({
+                planCount: sql<number>`count(*)`,
+                avgWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`,
+                totalWaste: sql<number>`sum(${cuttingPlans.totalWaste})`,
+                stockUsed: sql<number>`sum(${cuttingPlans.stockUsedCount})`
+            })
             .from(cuttingPlans)
             .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-        return [{
-            materialTypeId: 'all',
-            materialTypeName: 'All Materials',
-            materialName: 'All Materials',
-            avgEfficiency: 100 - Number(results[0]?.avgWaste ?? 0),
-            planCount: Number(results[0]?.planCount ?? 0),
-            totalWaste: Number(results[0]?.totalWaste ?? 0),
-            totalStockUsed: Number(results[0]?.stockUsed ?? 0)
-        }];
+        return [
+            {
+                materialTypeId: 'all',
+                materialTypeName: 'All Materials',
+                materialName: 'All Materials',
+                avgEfficiency: 100 - Number(results[0]?.avgWaste ?? 0),
+                planCount: Number(results[0]?.planCount ?? 0),
+                totalWaste: Number(results[0]?.totalWaste ?? 0),
+                totalStockUsed: Number(results[0]?.stockUsed ?? 0)
+            }
+        ];
     }
 
     async getTotalPlanCount(filter?: IReportFilter): Promise<number> {
@@ -162,9 +167,10 @@ export class ReportRepository implements IReportRepository {
         if (filter?.startDate) conditions.push(gte(cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate) conditions.push(lte(cuttingPlans.createdAt, filter.endDate));
 
-        const result = await this.db.select({
-            count: sql<number>`count(*)`
-        })
+        const result = await this.db
+            .select({
+                count: sql<number>`count(*)`
+            })
             .from(cuttingPlans)
             .where(conditions.length > 0 ? and(...conditions) : undefined);
 
@@ -178,18 +184,19 @@ export class ReportRepository implements IReportRepository {
         if (filter?.endDate) conditions.push(lte(orders.createdAt, filter.endDate));
         if (filter?.customerId) conditions.push(eq(orders.customerId, filter.customerId));
 
-        const results = await this.db.select({
-            customerId: customers.id,
-            customerName: customers.name,
-            customerCode: customers.code,
-            orderCount: sql<number>`count(distinct ${orders.id})`
-        })
+        const results = await this.db
+            .select({
+                customerId: customers.id,
+                customerName: customers.name,
+                customerCode: customers.code,
+                orderCount: sql<number>`count(distinct ${orders.id})`
+            })
             .from(customers)
             .leftJoin(orders, eq(customers.id, orders.customerId))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .groupBy(customers.id, customers.name, customers.code);
 
-        return results.map(row => ({
+        return results.map((row) => ({
             customerId: row.customerId,
             customerName: row.customerName,
             customerCode: row.customerCode,
@@ -206,20 +213,21 @@ export class ReportRepository implements IReportRepository {
         if (filter?.startDate) conditions.push(gte(cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate) conditions.push(lte(cuttingPlans.createdAt, filter.endDate));
 
-        const results = await this.db.select({
-            machineId: machines.id,
-            machineName: machines.name,
-            machineCode: machines.code,
-            machineType: machines.machineType,
-            planCount: sql<number>`count(${cuttingPlans.id})`,
-            avgWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`
-        })
+        const results = await this.db
+            .select({
+                machineId: machines.id,
+                machineName: machines.name,
+                machineCode: machines.code,
+                machineType: machines.machineType,
+                planCount: sql<number>`count(${cuttingPlans.id})`,
+                avgWaste: sql<number>`avg(${cuttingPlans.wastePercentage})`
+            })
             .from(machines)
             .leftJoin(cuttingPlans, eq(machines.id, cuttingPlans.machineId))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .groupBy(machines.id, machines.name, machines.code, machines.machineType);
 
-        return results.map(row => ({
+        return results.map((row) => ({
             machineId: row.machineId,
             machineName: row.machineName,
             machineCode: row.machineCode,

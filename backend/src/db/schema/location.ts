@@ -11,7 +11,7 @@ export const locations = pgTable('locations', {
     description: text('description'),
     address: text('address'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 export const locationsRelations = relations(locations, ({ many }) => ({

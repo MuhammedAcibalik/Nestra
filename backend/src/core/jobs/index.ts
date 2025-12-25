@@ -3,11 +3,7 @@
  * Factory functions for job queue management
  */
 
-import {
-    IJobData,
-    JobType,
-    IOptimizationJobData
-} from './job-queue.interface';
+import { IJobData, JobType, IOptimizationJobData } from './job-queue.interface';
 import { BullMQManager, BullMQQueue, IBullMQConfig } from './bullmq.queue';
 import { createOptimizationJobProcessor } from './optimization.job';
 import { createModuleLogger } from '../logger';
@@ -28,12 +24,27 @@ export {
     IImportJobData
 } from './job-queue.interface';
 
-export { BullMQManager, BullMQQueue, IBullMQConfig } from './bullmq.queue';
+// Enhanced interfaces
 export {
-    OptimizationJobProcessor,
-    IOptimizationJobResult,
-    createOptimizationJobProcessor
-} from './optimization.job';
+    IJobResult,
+    IJobProgress,
+    IJobInfo,
+    IQueueStats,
+    IEmailJobData,
+    ICleanupJobData,
+    JobStatus
+} from './interfaces';
+
+// In-memory queue (for development/testing)
+export {
+    InMemoryJobQueue,
+    createQueue as createInMemoryQueue,
+    getQueue as getInMemoryQueue,
+    shutdownAllQueues as shutdownInMemoryQueues
+} from './memory-queue';
+
+export { BullMQManager, BullMQQueue, IBullMQConfig } from './bullmq.queue';
+export { OptimizationJobProcessor, IOptimizationJobResult, createOptimizationJobProcessor } from './optimization.job';
 
 // ==================== SINGLETON ====================
 
@@ -172,13 +183,16 @@ export async function shutdownJobQueue(): Promise<void> {
 /**
  * Get job queue statistics
  */
-export async function getJobQueueStats(): Promise<Record<string, {
-    waiting: number;
-    active: number;
-    completed: number;
-    failed: number;
-    delayed: number;
-}> | null> {
+export async function getJobQueueStats(): Promise<Record<
+    string,
+    {
+        waiting: number;
+        active: number;
+        completed: number;
+        failed: number;
+        delayed: number;
+    }
+> | null> {
     if (!queueManager) {
         return null;
     }

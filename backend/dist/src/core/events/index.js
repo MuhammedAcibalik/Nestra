@@ -21,4 +21,5 @@ __exportStar(require("./event-bus"), exports);
 __exportStar(require("./domain-events"), exports);
 __exportStar(require("./event-subscriptions"), exports);
 __exportStar(require("./event-adapter"), exports);
+__exportStar(require("./event-store.repository"), exports);
 //# sourceMappingURL=index.js.map

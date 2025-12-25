@@ -4,11 +4,7 @@
  * Following ISP - only exposes operations needed by other modules
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { ICustomerRepository } from './customer.repository';
 
 // ==================== INTERFACES ====================
@@ -24,7 +20,7 @@ export interface ICustomerSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class CustomerServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: ICustomerRepository) { }
+    constructor(private readonly repository: ICustomerRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path } = request;
@@ -93,7 +89,7 @@ export class CustomerServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: customers.map(c => ({
+                data: customers.map((c) => ({
                     id: c.id,
                     name: c.name,
                     code: c.code,

@@ -14,18 +14,23 @@ exports.OptimizationEngine = void 0;
 const cutting1d_1 = require("../../algorithms/1d/cutting1d");
 const cutting2d_1 = require("../../algorithms/2d/cutting2d");
 const workers_1 = require("../../workers");
+const api_1 = require("@opentelemetry/api");
+const semantic_conventions_1 = require("@opentelemetry/semantic-conventions");
 const logger_1 = require("../../core/logger");
 const logger = (0, logger_1.createModuleLogger)('OptimizationEngine');
+const tracer = api_1.trace.getTracer('optimization', '1.0.0');
 // ==================== ENGINE CLASS ====================
 class OptimizationEngine {
     cuttingJobClient;
     stockQueryClient;
     pool = null;
     useWorkerThreads;
+    enableTracing;
     constructor(cuttingJobClient, stockQueryClient, config) {
         this.cuttingJobClient = cuttingJobClient;
         this.stockQueryClient = stockQueryClient;
         this.useWorkerThreads = config?.useWorkerThreads ?? true;
+        this.enableTracing = config?.enableTracing ?? true;
     }
     /**
      * Initialize Piscina pool (call once at startup)
@@ -41,16 +46,71 @@ class OptimizationEngine {
      * Main entry point - runs optimization for a cutting job
      */
     async runOptimization(input) {
+        if (!this.enableTracing) {
+            return this.runOptimizationImpl(input);
+        }
+        const span = tracer.startSpan('optimization.run', {
+            attributes: {
+                'optimization.job_id': input.cuttingJobId,
+                'optimization.scenario_id': input.scenarioId,
+                'optimization.algorithm': input.parameters.algorithm ?? 'auto'
+            }
+        });
+        return api_1.context.with(api_1.trace.setSpan(api_1.context.active(), span), async () => {
+            const startTime = Date.now();
+            try {
+                const result = await this.runOptimizationImpl(input);
+                const duration = Date.now() - startTime;
+                span.setAttribute('optimization.duration_ms', duration);
+                span.setAttribute('optimization.success', result.success);
+                span.setAttribute('optimization.efficiency', result.planData.efficiency);
+                span.setAttribute('optimization.waste_percentage', result.planData.wastePercentage);
+                span.setAttribute('optimization.stock_used', result.planData.stockUsedCount);
+                span.setAttribute('optimization.unplaced_count', result.planData.unplacedCount);
+                if (result.success) {
+                    span.setStatus({ code: api_1.SpanStatusCode.OK });
+                }
+                else {
+                    span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: result.error });
+                }
+                return result;
+            }
+            catch (error) {
+                span.setStatus({
+                    code: api_1.SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                if (error instanceof Error) {
+                    span.setAttribute(semantic_conventions_1.ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+                throw error;
+            }
+            finally {
+                span.end();
+            }
+        });
+    }
+    /**
+     * Internal optimization implementation
+     */
+    async runOptimizationImpl(input) {
         try {
             // 1. Get cutting job with items via service client (MAIN THREAD - async I/O)
+            const loadSpan = this.enableTracing ? tracer.startSpan('optimization.load_data') : null;
             const cuttingJob = await this.getCuttingJobWithItems(input.cuttingJobId);
             if (!cuttingJob) {
+                loadSpan?.end();
                 return { success: false, planData: this.emptyPlanData(), error: 'Cutting job not found' };
             }
             // 2. Determine if 1D or 2D based on geometry
             const is1D = this.is1DJob(cuttingJob);
+            loadSpan?.setAttribute('optimization.is_1d', is1D);
+            loadSpan?.setAttribute('optimization.pieces_count', cuttingJob.items.length);
             // 3. Get available stock via service client (MAIN THREAD - async I/O)
             const stock = await this.getAvailableStock(cuttingJob.materialTypeId, cuttingJob.thickness, is1D, input.parameters);
+            loadSpan?.setAttribute('optimization.stock_count', stock.length);
+            loadSpan?.end();
             if (stock.length === 0) {
                 return { success: false, planData: this.emptyPlanData(), error: 'No available stock found' };
             }
@@ -87,20 +147,32 @@ class OptimizationEngine {
         };
         let result;
         // Try Piscina first, fallback to main thread
+        const algoSpan = this.enableTracing ? tracer.startSpan('optimization.algorithm.1d', {
+            attributes: {
+                'algorithm.type': options.algorithm,
+                'algorithm.pieces_count': pieces.length,
+                'algorithm.stock_count': bars.length
+            }
+        }) : null;
         if (this.pool?.isReady() && this.useWorkerThreads) {
             try {
+                algoSpan?.setAttribute('algorithm.execution_mode', 'worker');
                 const payload = { pieces, stockBars: bars, options };
                 result = await this.pool.run1D(payload);
                 logger.debug('1D optimization completed in Piscina worker');
             }
             catch (error) {
                 logger.warn('Piscina failed, falling back to main thread', { error });
+                algoSpan?.setAttribute('algorithm.execution_mode', 'main_fallback');
                 result = this.run1DSync(pieces, bars, options);
             }
         }
         else {
+            algoSpan?.setAttribute('algorithm.execution_mode', 'main');
             result = this.run1DSync(pieces, bars, options);
         }
+        algoSpan?.setAttribute('algorithm.bars_used', result.bars.length);
+        algoSpan?.end();
         return {
             success: true,
             planData: this.convert1DResult(result, stock)

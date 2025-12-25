@@ -39,7 +39,7 @@ export class UnplacedCollector1D {
      * Get all unplaced pieces with aggregated quantities
      */
     getAll(): I1DPieceInput[] {
-        return Array.from(this.unplaced.values()).map(entry => ({
+        return Array.from(this.unplaced.values()).map((entry) => ({
             ...entry.piece,
             quantity: entry.count
         }));
@@ -49,8 +49,7 @@ export class UnplacedCollector1D {
      * Get count of unplaced pieces
      */
     getCount(): number {
-        return Array.from(this.unplaced.values())
-            .reduce((sum, entry) => sum + entry.count, 0);
+        return Array.from(this.unplaced.values()).reduce((sum, entry) => sum + entry.count, 0);
     }
 
     /**

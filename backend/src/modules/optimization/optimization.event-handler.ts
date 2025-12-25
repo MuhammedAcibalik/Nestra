@@ -13,7 +13,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('OptimizationEventHandler');
 
 export class OptimizationEventHandler {
-    constructor(private readonly repository: IOptimizationRepository) { }
+    constructor(private readonly repository: IOptimizationRepository) {}
 
     /**
      * Register all event handlers
@@ -51,19 +51,20 @@ export class OptimizationEventHandler {
             const oldStatus = plan.status;
             await this.repository.updatePlanStatus(payload.planId, payload.newStatus);
 
-            await adapter.publish(DomainEvents.planStatusUpdated({
-                planId: payload.planId,
-                oldStatus,
-                newStatus: payload.newStatus,
-                correlationId: payload.correlationId
-            }));
+            await adapter.publish(
+                DomainEvents.planStatusUpdated({
+                    planId: payload.planId,
+                    oldStatus,
+                    newStatus: payload.newStatus,
+                    correlationId: payload.correlationId
+                })
+            );
 
             logger.info('Plan status updated', {
                 planId: payload.planId,
                 oldStatus,
                 newStatus: payload.newStatus
             });
-
         } catch (error) {
             logger.error('Plan status update failed', { error });
         }

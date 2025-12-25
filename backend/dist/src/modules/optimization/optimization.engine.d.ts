@@ -48,12 +48,14 @@ export interface LayoutData {
 }
 export interface IOptimizationEngineConfig {
     useWorkerThreads?: boolean;
+    enableTracing?: boolean;
 }
 export declare class OptimizationEngine {
     private readonly cuttingJobClient;
     private readonly stockQueryClient;
     private pool;
     private readonly useWorkerThreads;
+    private readonly enableTracing;
     constructor(cuttingJobClient: ICuttingJobServiceClient, stockQueryClient: IStockQueryClient, config?: IOptimizationEngineConfig);
     /**
      * Initialize Piscina pool (call once at startup)
@@ -63,6 +65,10 @@ export declare class OptimizationEngine {
      * Main entry point - runs optimization for a cutting job
      */
     runOptimization(input: OptimizationInput): Promise<OptimizationOutput>;
+    /**
+     * Internal optimization implementation
+     */
+    private runOptimizationImpl;
     /**
      * Get pool statistics
      */

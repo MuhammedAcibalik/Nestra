@@ -40,4 +40,8 @@ __exportStar(require("./activities"), exports);
 __exportStar(require("./document_locks"), exports);
 // Settings
 __exportStar(require("./settings"), exports);
+// Audit
+__exportStar(require("./audit"), exports);
+// Domain Events
+__exportStar(require("./domain_events"), exports);
 //# sourceMappingURL=index.js.map

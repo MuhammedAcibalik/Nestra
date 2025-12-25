@@ -44,11 +44,12 @@ export interface TenantRepositoryConfig extends RepositoryConfig {
  * ```
  */
 export abstract class TenantAwareRepository<
-    TEntity extends Record<string, unknown> & { tenantId?: string | null } = Record<string, unknown> & { tenantId?: string | null },
+    TEntity extends Record<string, unknown> & { tenantId?: string | null } = Record<string, unknown> & {
+        tenantId?: string | null;
+    },
     TCreate = Partial<TEntity>,
     TUpdate = Partial<TEntity>
 > extends EnhancedBaseRepository<TEntity, TCreate, TUpdate> {
-
     protected readonly tenantConfig: TenantRepositoryConfig;
 
     constructor(db: Database, config: TenantRepositoryConfig = {}) {
@@ -96,9 +97,7 @@ export abstract class TenantAwareRepository<
      * Create tenant filter condition
      */
     protected tenantFilter(): SQL | undefined {
-        const tenantId = this.tenantConfig.allowWithoutTenant
-            ? this.getTenantIdOptional()
-            : this.getTenantId();
+        const tenantId = this.tenantConfig.allowWithoutTenant ? this.getTenantIdOptional() : this.getTenantId();
 
         if (!tenantId) return undefined;
         return eq(this.getTenantIdColumn(), tenantId);
@@ -119,9 +118,7 @@ export abstract class TenantAwareRepository<
     /**
      * Add tenant ID to data object
      */
-    protected withTenantId<D extends Record<string, unknown>>(
-        data: D
-    ): D & { tenantId: string } {
+    protected withTenantId<D extends Record<string, unknown>>(data: D): D & { tenantId: string } {
         return {
             ...data,
             tenantId: this.getTenantId()
@@ -163,9 +160,7 @@ export abstract class TenantAwareRepository<
      */
     override async delete(id: string): Promise<void> {
         const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where(this.withTenantFilter(eq(this.getIdColumn(), id)));
+        await this.db.delete(table).where(this.withTenantFilter(eq(this.getIdColumn(), id)));
     }
 
     // ==================== TENANT-SPECIFIC METHODS ====================
@@ -173,9 +168,7 @@ export abstract class TenantAwareRepository<
     /**
      * Find all entities for current tenant
      */
-    async findAllForTenant(
-        pagination?: PaginationOptions
-    ): Promise<TEntity[]> {
+    async findAllForTenant(pagination?: PaginationOptions): Promise<TEntity[]> {
         return this.findMany(undefined, pagination);
     }
 
@@ -201,11 +194,7 @@ export abstract class TenantAwareRepository<
      */
     async findByIdCrossTenant(id: string): Promise<TEntity | null> {
         const table = this.getTable();
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(eq(this.getIdColumn(), id))
-            .limit(1);
+        const results = await this.db.select().from(table).where(eq(this.getIdColumn(), id)).limit(1);
         return (results[0] as TEntity) ?? null;
     }
 
@@ -213,19 +202,12 @@ export abstract class TenantAwareRepository<
      * Find all entities across all tenants.
      * Use with caution - only for admin/system operations.
      */
-    async findAllCrossTenant(
-        where?: SQL,
-        pagination?: PaginationOptions
-    ): Promise<TEntity[]> {
+    async findAllCrossTenant(where?: SQL, pagination?: PaginationOptions): Promise<TEntity[]> {
         const table = this.getTable();
         const { limit = 100 } = pagination ?? {};
         const finalWhere = where ?? sql`1=1`;
 
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(limit);
+        const results = await this.db.select().from(table).where(finalWhere).limit(limit);
 
         return results as TEntity[];
     }

@@ -93,5 +93,5 @@ export function sort1DByLengthDesc(pieces: IExpanded1DPiece[]): IExpanded1DPiece
  * Used by 2D algorithms
  */
 export function sort2DByAreaDesc(pieces: IExpanded2DPiece[]): IExpanded2DPiece[] {
-    return [...pieces].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    return [...pieces].sort((a, b) => b.width * b.height - a.width * a.height);
 }

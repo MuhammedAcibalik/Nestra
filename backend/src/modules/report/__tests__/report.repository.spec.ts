@@ -13,11 +13,13 @@ describe('ReportRepository', () => {
 
     describe('getWasteData', () => {
         it('should get waste data reports', async () => {
-            const mockResults = [{
-                createdAt: new Date(),
-                totalWaste: 10,
-                wastePercentage: 5
-            }];
+            const mockResults = [
+                {
+                    createdAt: new Date(),
+                    totalWaste: 10,
+                    wastePercentage: 5
+                }
+            ];
 
             (db.select as jest.Mock).mockReturnValue({
                 from: jest.fn().mockReturnValue({
@@ -37,12 +39,14 @@ describe('ReportRepository', () => {
 
     describe('getEfficiencyData', () => {
         it('should calculate efficiency aggregation', async () => {
-            const mockResults = [{
-                planCount: 5,
-                avgWaste: 10,
-                totalWaste: 50,
-                stockUsed: 20
-            }];
+            const mockResults = [
+                {
+                    planCount: 5,
+                    avgWaste: 10,
+                    totalWaste: 50,
+                    stockUsed: 20
+                }
+            ];
 
             (db.select as jest.Mock).mockReturnValue({
                 from: jest.fn().mockReturnValue({
@@ -60,12 +64,14 @@ describe('ReportRepository', () => {
 
     describe('getCustomerData', () => {
         it('should aggregate customer order stats', async () => {
-            const mockResults = [{
-                customerId: 'c1',
-                customerName: 'ACME',
-                customerCode: 'C001',
-                orderCount: 2
-            }];
+            const mockResults = [
+                {
+                    customerId: 'c1',
+                    customerName: 'ACME',
+                    customerCode: 'C001',
+                    orderCount: 2
+                }
+            ];
 
             (db.select as jest.Mock).mockReturnValue({
                 from: jest.fn().mockReturnValue({

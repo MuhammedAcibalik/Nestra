@@ -4,11 +4,7 @@
  * Following ISP - only exposes needed operations
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 
 export class DashboardServiceHandler implements IServiceHandler {
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {

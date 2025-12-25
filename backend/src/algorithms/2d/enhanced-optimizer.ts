@@ -85,11 +85,11 @@ export interface IEnhanced2DOptions {
 }
 
 export type SortStrategy =
-    | 'AREA_DESC'      // Largest area first
-    | 'SHORT_SIDE'     // Shortest side first  
-    | 'LONG_SIDE'      // Longest side first
-    | 'PERIMETER'      // Largest perimeter first
-    | 'DIFFERENCE';    // Largest difference between sides first
+    | 'AREA_DESC' // Largest area first
+    | 'SHORT_SIDE' // Shortest side first
+    | 'LONG_SIDE' // Longest side first
+    | 'PERIMETER' // Largest perimeter first
+    | 'DIFFERENCE'; // Largest difference between sides first
 
 // ==================== SORTING STRATEGIES ====================
 
@@ -97,17 +97,17 @@ function sortPieces(pieces: IMaxRectsPiece[], strategy: SortStrategy): IMaxRects
     return [...pieces].sort((a, b) => {
         switch (strategy) {
             case 'AREA_DESC':
-                return (b.width * b.height) - (a.width * a.height);
+                return b.width * b.height - a.width * a.height;
             case 'SHORT_SIDE':
                 return Math.min(b.width, b.height) - Math.min(a.width, a.height);
             case 'LONG_SIDE':
                 return Math.max(b.width, b.height) - Math.max(a.width, a.height);
             case 'PERIMETER':
-                return (2 * b.width + 2 * b.height) - (2 * a.width + 2 * a.height);
+                return 2 * b.width + 2 * b.height - (2 * a.width + 2 * a.height);
             case 'DIFFERENCE':
                 return Math.abs(b.width - b.height) - Math.abs(a.width - a.height);
             default:
-                return (b.width * b.height) - (a.width * a.height);
+                return b.width * b.height - a.width * a.height;
         }
     });
 }
@@ -138,9 +138,7 @@ class StockManager {
     private stocks: IEnhanced2DStock[];
 
     constructor(stocks: IEnhanced2DStock[]) {
-        this.stocks = [...stocks].sort((a, b) =>
-            (b.width * b.height) - (a.width * a.height)
-        );
+        this.stocks = [...stocks].sort((a, b) => b.width * b.height - a.width * a.height);
         this.usage = new Map();
         for (const stock of stocks) {
             this.usage.set(stock.id, stock.available);
@@ -152,8 +150,10 @@ class StockManager {
             const remaining = this.usage.get(stock.id) ?? 0;
             if (remaining > 0) {
                 // Check both orientations
-                if ((stock.width >= minWidth && stock.height >= minHeight) ||
-                    (stock.height >= minWidth && stock.width >= minHeight)) {
+                if (
+                    (stock.width >= minWidth && stock.height >= minHeight) ||
+                    (stock.height >= minWidth && stock.width >= minHeight)
+                ) {
                     return stock;
                 }
             }
@@ -231,7 +231,9 @@ export function optimizeEnhanced2D(
                 // Try both orientations
                 const orientations = [
                     { w: piece.width, h: piece.height, rotated: false },
-                    ...(options.allowRotation && piece.canRotate ? [{ w: piece.height, h: piece.width, rotated: true }] : [])
+                    ...(options.allowRotation && piece.canRotate
+                        ? [{ w: piece.height, h: piece.width, rotated: true }]
+                        : [])
                 ];
 
                 for (const orient of orientations) {
@@ -256,7 +258,7 @@ export function optimizeEnhanced2D(
         // Track unplaced
         if (!placed) {
             const originalId = piece.id.split('_')[0];
-            const existing = unplacedPieces.find(p => p.id === originalId);
+            const existing = unplacedPieces.find((p) => p.id === originalId);
             if (existing) {
                 existing.quantity++;
             } else {

@@ -97,15 +97,17 @@ describe('ReportService', () => {
 
     describe('getCustomerReport', () => {
         it('should return customer report data', async () => {
-            const mockData: CustomerReportData[] = [{
-                customerId: 'c1',
-                customerCode: 'CUST001',
-                customerName: 'Cust 1',
-                orderCount: 5,
-                totalItems: 20,
-                itemCount: 20,
-                completedPlans: 3
-            }];
+            const mockData: CustomerReportData[] = [
+                {
+                    customerId: 'c1',
+                    customerCode: 'CUST001',
+                    customerName: 'Cust 1',
+                    orderCount: 5,
+                    totalItems: 20,
+                    itemCount: 20,
+                    completedPlans: 3
+                }
+            ];
             repository.getCustomerData.mockResolvedValue(mockData);
 
             const result = await service.getCustomerReport({});

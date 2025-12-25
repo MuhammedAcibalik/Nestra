@@ -284,4 +284,3 @@ export class AuthController {
 export function createAuthController(authService: IAuthService): AuthController {
     return new AuthController(authService);
 }
-

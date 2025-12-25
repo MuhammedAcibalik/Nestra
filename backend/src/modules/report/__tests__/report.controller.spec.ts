@@ -46,10 +46,12 @@ describe('ReportController', () => {
                 data: mockWasteData
             });
             // Verify query parsing and service call
-            expect(service.getWasteReport).toHaveBeenCalledWith(expect.objectContaining({
-                startDate: new Date('2023-01-01'),
-                groupBy: 'month'
-            }));
+            expect(service.getWasteReport).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    startDate: new Date('2023-01-01'),
+                    groupBy: 'month'
+                })
+            );
         });
 
         it('should handle service errors', async () => {
@@ -82,16 +84,18 @@ describe('ReportController', () => {
 
     describe('getCustomerReport', () => {
         it('should return customer report data', async () => {
-            const mockCustomerData = [{
-                customerId: 'c1',
-                customerName: 'C1',
-                customerCode: 'C01',
-                orderCount: 1,
-                itemCount: 10,
-                planCount: 1,
-                totalWaste: 5,
-                avgWaste: 5
-            }];
+            const mockCustomerData = [
+                {
+                    customerId: 'c1',
+                    customerName: 'C1',
+                    customerCode: 'C01',
+                    orderCount: 1,
+                    itemCount: 10,
+                    planCount: 1,
+                    totalWaste: 5,
+                    avgWaste: 5
+                }
+            ];
             service.getCustomerReport.mockResolvedValue(success(mockCustomerData));
 
             await controller.getCustomerReport(req, res, next);
@@ -105,15 +109,17 @@ describe('ReportController', () => {
 
     describe('getMachineReport', () => {
         it('should return machine report data', async () => {
-            const mockMachineData = [{
-                machineId: 'm1',
-                machineName: 'M1',
-                machineCode: 'M01',
-                machineType: 'Type1',
-                planCount: 2,
-                totalProductionTime: 120,
-                avgWastePercentage: 5
-            }];
+            const mockMachineData = [
+                {
+                    machineId: 'm1',
+                    machineName: 'M1',
+                    machineCode: 'M01',
+                    machineType: 'Type1',
+                    planCount: 2,
+                    totalProductionTime: 120,
+                    avgWastePercentage: 5
+                }
+            ];
             service.getMachineReport.mockResolvedValue(success(mockMachineData));
 
             await controller.getMachineReport(req, res, next);

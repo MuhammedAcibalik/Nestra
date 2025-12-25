@@ -44,7 +44,7 @@ export class ServiceRegistry implements IServiceRegistry, IServiceClient {
      * Constructor is public to allow explicit instance creation for testing
      * For production, use getInstance() for singleton behavior
      */
-    constructor() { }
+    constructor() {}
 
     /**
      * Get singleton instance (production use)
@@ -93,10 +93,7 @@ export class ServiceRegistry implements IServiceRegistry, IServiceClient {
     /**
      * IServiceClient implementation - routes requests to registered handlers
      */
-    async request<TReq, TRes>(
-        serviceName: string,
-        request: IServiceRequest<TReq>
-    ): Promise<IServiceResponse<TRes>> {
+    async request<TReq, TRes>(serviceName: string, request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const handler = this.services.get(serviceName);
 
         if (!handler) {

@@ -8,12 +8,7 @@
 import { IResult, success, failure } from '../../core/interfaces';
 import { ICuttingJobRepository, ICreateCuttingJobInput, ICuttingJobFilter } from './cutting-job.repository';
 import { EventBus, DomainEvents } from '../../core/events';
-import {
-    ICuttingJobDto,
-    IAutoGenerateResult,
-    toCuttingJobDto,
-    getErrorMessage
-} from './cutting-job.mapper';
+import { ICuttingJobDto, IAutoGenerateResult, toCuttingJobDto, getErrorMessage } from './cutting-job.mapper';
 import { ICuttingJobGeneratorService, CuttingJobGeneratorService } from './cutting-job-generator.service';
 import { ICuttingJobOperationsService, CuttingJobOperationsService } from './cutting-job-operations.service';
 
@@ -40,11 +35,11 @@ export interface ICuttingJobService {
  * Status transition rules
  */
 const STATUS_TRANSITIONS: Record<string, string[]> = {
-    'PENDING': ['OPTIMIZING'],
-    'OPTIMIZING': ['OPTIMIZED', 'PENDING'],
-    'OPTIMIZED': ['IN_PRODUCTION', 'PENDING'],
-    'IN_PRODUCTION': ['COMPLETED'],
-    'COMPLETED': []
+    PENDING: ['OPTIMIZING'],
+    OPTIMIZING: ['OPTIMIZED', 'PENDING'],
+    OPTIMIZED: ['IN_PRODUCTION', 'PENDING'],
+    IN_PRODUCTION: ['COMPLETED'],
+    COMPLETED: []
 };
 
 /**
@@ -70,7 +65,7 @@ export class CuttingJobService implements ICuttingJobService {
     async getJobs(filter?: ICuttingJobFilter): Promise<IResult<ICuttingJobDto[]>> {
         try {
             const jobs = await this.repository.findAll(filter);
-            const dtos = jobs.map(job => toCuttingJobDto(job));
+            const dtos = jobs.map((job) => toCuttingJobDto(job));
             return success(dtos);
         } catch (error) {
             return failure({
@@ -112,13 +107,15 @@ export class CuttingJobService implements ICuttingJobService {
 
             // Publish cutting job created event
             const eventBus = EventBus.getInstance();
-            await eventBus.publish(DomainEvents.cuttingJobCreated({
-                jobId: job.id,
-                jobNumber: job.jobNumber,
-                materialTypeId: data.materialTypeId,
-                thickness: data.thickness,
-                itemCount: data.orderItemIds?.length ?? 0
-            }));
+            await eventBus.publish(
+                DomainEvents.cuttingJobCreated({
+                    jobId: job.id,
+                    jobNumber: job.jobNumber,
+                    materialTypeId: data.materialTypeId,
+                    thickness: data.thickness,
+                    itemCount: data.orderItemIds?.length ?? 0
+                })
+            );
 
             return success(toCuttingJobDto(fullJob!));
         } catch (error) {
@@ -154,11 +151,13 @@ export class CuttingJobService implements ICuttingJobService {
             // Publish cutting job completed event if status changed to COMPLETED
             if (status === 'COMPLETED') {
                 const eventBus = EventBus.getInstance();
-                await eventBus.publish(DomainEvents.cuttingJobCompleted({
-                    jobId: id,
-                    jobNumber: updatedJob!.jobNumber,
-                    planCount: updatedJob!._count?.scenarios ?? 0
-                }));
+                await eventBus.publish(
+                    DomainEvents.cuttingJobCompleted({
+                        jobId: id,
+                        jobNumber: updatedJob!.jobNumber,
+                        planCount: updatedJob!._count?.scenarios ?? 0
+                    })
+                );
             }
 
             return success(toCuttingJobDto(updatedJob!));

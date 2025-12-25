@@ -30,9 +30,7 @@ export class StatusMachine<T extends string> {
 
     private initializeTransitions(transitions: IStatusTransition<T>[]): void {
         for (const transition of transitions) {
-            const fromStates = Array.isArray(transition.from)
-                ? transition.from
-                : [transition.from];
+            const fromStates = Array.isArray(transition.from) ? transition.from : [transition.from];
 
             for (const from of fromStates) {
                 const existing = this.transitions.get(from) ?? new Set<T>();
@@ -64,11 +62,7 @@ export class StatusMachine<T extends string> {
      */
     transitionTo(status: T): T {
         if (!this.canTransitionTo(status)) {
-            throw new InvalidStatusTransitionError(
-                this.currentStatus,
-                status,
-                this.getValidTransitions()
-            );
+            throw new InvalidStatusTransitionError(this.currentStatus, status, this.getValidTransitions());
         }
         this.currentStatus = status;
         return this.currentStatus;
@@ -108,14 +102,9 @@ export class InvalidStatusTransitionError extends Error {
     readonly validTransitions: string[];
 
     constructor(from: string, to: string, validTransitions: string[]) {
-        const validStr = validTransitions.length > 0
-            ? validTransitions.join(', ')
-            : 'none (terminal state)';
+        const validStr = validTransitions.length > 0 ? validTransitions.join(', ') : 'none (terminal state)';
 
-        super(
-            `Invalid status transition: ${from} -> ${to}. ` +
-            `Valid transitions from ${from}: ${validStr}`
-        );
+        super(`Invalid status transition: ${from} -> ${to}. ` + `Valid transitions from ${from}: ${validStr}`);
 
         this.name = 'InvalidStatusTransitionError';
         this.from = from;
@@ -176,7 +165,7 @@ export function createPlanMachine(initialStatus: PlanStatus = 'DRAFT'): StatusMa
  * Validate a status transition without creating a full machine
  */
 export function isValidScenarioTransition(from: ScenarioStatus, to: ScenarioStatus): boolean {
-    const allowed = SCENARIO_TRANSITIONS.filter(t => {
+    const allowed = SCENARIO_TRANSITIONS.filter((t) => {
         const fromStates = Array.isArray(t.from) ? t.from : [t.from];
         return fromStates.includes(from) && t.to === to;
     });
@@ -184,7 +173,7 @@ export function isValidScenarioTransition(from: ScenarioStatus, to: ScenarioStat
 }
 
 export function isValidPlanTransition(from: PlanStatus, to: PlanStatus): boolean {
-    const allowed = PLAN_TRANSITIONS.filter(t => {
+    const allowed = PLAN_TRANSITIONS.filter((t) => {
         const fromStates = Array.isArray(t.from) ? t.from : [t.from];
         return fromStates.includes(from) && t.to === to;
     });

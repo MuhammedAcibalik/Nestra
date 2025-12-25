@@ -68,14 +68,18 @@ export interface ICuttingJobRepository {
     addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem>;
     removeItem(jobId: string, orderItemId: string): Promise<void>;
     getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]>;
-    findByMaterialAndThickness(materialTypeId: string, thickness: number, status?: string): Promise<CuttingJobWithRelations[]>;
+    findByMaterialAndThickness(
+        materialTypeId: string,
+        thickness: number,
+        status?: string
+    ): Promise<CuttingJobWithRelations[]>;
     getUnassignedOrderItems(confirmedOnly: boolean): Promise<OrderItemForJob[]>;
 }
 
 export class CuttingJobRepository implements ICuttingJobRepository {
     private jobCounter = 1;
 
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT FILTERING ====================
 
@@ -123,7 +127,10 @@ export class CuttingJobRepository implements ICuttingJobRepository {
 
     async findAll(filter?: ICuttingJobFilter): Promise<CuttingJobWithRelations[]> {
         const where = createFilter()
-            .eq(cuttingJobs.status, filter?.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined)
+            .eq(
+                cuttingJobs.status,
+                filter?.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined
+            )
             .eq(cuttingJobs.materialTypeId, filter?.materialTypeId)
             .eq(cuttingJobs.thickness, filter?.thickness)
             .eq(cuttingJobs.tenantId, this.getCurrentTenantId())
@@ -141,7 +148,7 @@ export class CuttingJobRepository implements ICuttingJobRepository {
             orderBy: [desc(cuttingJobs.createdAt)]
         });
 
-        return results.map(job => ({
+        return results.map((job) => ({
             ...job,
             _count: { items: job.items?.length ?? 0, scenarios: 0 }
         }));
@@ -155,7 +162,10 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         const where = createFilter()
             .eq(cuttingJobs.materialTypeId, materialTypeId)
             .eq(cuttingJobs.thickness, thickness)
-            .eq(cuttingJobs.status, status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined)
+            .eq(
+                cuttingJobs.status,
+                status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED' | undefined
+            )
             .eq(cuttingJobs.tenantId, this.getCurrentTenantId())
             .build();
 
@@ -170,7 +180,7 @@ export class CuttingJobRepository implements ICuttingJobRepository {
             }
         });
 
-        return results.map(job => ({
+        return results.map((job) => ({
             ...job,
             _count: { items: job.items?.length ?? 0, scenarios: 0 }
         }));
@@ -181,12 +191,15 @@ export class CuttingJobRepository implements ICuttingJobRepository {
     async create(data: ICreateCuttingJobInput): Promise<CuttingJob> {
         const jobNumber = `JOB-${Date.now()}-${this.jobCounter++}`;
 
-        const [result] = await this.db.insert(cuttingJobs).values({
-            tenantId: this.getCurrentTenantId(),
-            jobNumber: jobNumber as unknown as typeof cuttingJobs.$inferInsert['jobNumber'],
-            materialTypeId: data.materialTypeId,
-            thickness: data.thickness
-        }).returning();
+        const [result] = await this.db
+            .insert(cuttingJobs)
+            .values({
+                tenantId: this.getCurrentTenantId(),
+                jobNumber: jobNumber as unknown as (typeof cuttingJobs.$inferInsert)['jobNumber'],
+                materialTypeId: data.materialTypeId,
+                thickness: data.thickness
+            })
+            .returning();
 
         if (data.orderItemIds && data.orderItemIds.length > 0) {
             const orderItemsData = await this.getOrderItemsByIds(data.orderItemIds);
@@ -206,7 +219,8 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         const conditions = [eq(cuttingJobs.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(cuttingJobs)
+        const [result] = await this.db
+            .update(cuttingJobs)
             .set({
                 status: data.status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
                 updatedAt: new Date()
@@ -220,7 +234,8 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         const conditions = [eq(cuttingJobs.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(cuttingJobs)
+        const [result] = await this.db
+            .update(cuttingJobs)
             .set({
                 status: status as 'PENDING' | 'OPTIMIZING' | 'OPTIMIZED' | 'IN_PRODUCTION' | 'COMPLETED',
                 updatedAt: new Date()
@@ -240,20 +255,21 @@ export class CuttingJobRepository implements ICuttingJobRepository {
     // ==================== JOB ITEMS ====================
 
     async addItem(jobId: string, data: Omit<ICreateCuttingJobItemInput, 'cuttingJobId'>): Promise<CuttingJobItem> {
-        const [result] = await this.db.insert(cuttingJobItems).values({
-            cuttingJobId: jobId,
-            orderItemId: data.orderItemId,
-            quantity: data.quantity
-        }).returning();
+        const [result] = await this.db
+            .insert(cuttingJobItems)
+            .values({
+                cuttingJobId: jobId,
+                orderItemId: data.orderItemId,
+                quantity: data.quantity
+            })
+            .returning();
         return result;
     }
 
     async removeItem(jobId: string, orderItemId: string): Promise<void> {
-        await this.db.delete(cuttingJobItems)
-            .where(and(
-                eq(cuttingJobItems.cuttingJobId, jobId),
-                eq(cuttingJobItems.orderItemId, orderItemId)
-            ));
+        await this.db
+            .delete(cuttingJobItems)
+            .where(and(eq(cuttingJobItems.cuttingJobId, jobId), eq(cuttingJobItems.orderItemId, orderItemId)));
     }
 
     // ==================== ORDER ITEMS ====================
@@ -261,18 +277,19 @@ export class CuttingJobRepository implements ICuttingJobRepository {
     async getOrderItemsByIds(ids: string[]): Promise<OrderItemForJob[]> {
         if (ids.length === 0) return [];
 
-        const results = await this.db.select({
-            id: orderItems.id,
-            itemCode: orderItems.itemCode,
-            itemName: orderItems.itemName,
-            length: orderItems.length,
-            width: orderItems.width,
-            height: orderItems.height,
-            thickness: orderItems.thickness,
-            quantity: orderItems.quantity,
-            geometryType: orderItems.geometryType,
-            materialTypeId: orderItems.materialTypeId
-        })
+        const results = await this.db
+            .select({
+                id: orderItems.id,
+                itemCode: orderItems.itemCode,
+                itemName: orderItems.itemName,
+                length: orderItems.length,
+                width: orderItems.width,
+                height: orderItems.height,
+                thickness: orderItems.thickness,
+                quantity: orderItems.quantity,
+                geometryType: orderItems.geometryType,
+                materialTypeId: orderItems.materialTypeId
+            })
             .from(orderItems)
             .where(inArray(orderItems.id, ids));
 
@@ -284,20 +301,21 @@ export class CuttingJobRepository implements ICuttingJobRepository {
             .select({ orderItemId: cuttingJobItems.orderItemId })
             .from(cuttingJobItems);
 
-        const assignedIds = assignedItemIds.map(a => a.orderItemId);
+        const assignedIds = assignedItemIds.map((a) => a.orderItemId);
 
-        const query = this.db.select({
-            id: orderItems.id,
-            itemCode: orderItems.itemCode,
-            itemName: orderItems.itemName,
-            length: orderItems.length,
-            width: orderItems.width,
-            height: orderItems.height,
-            thickness: orderItems.thickness,
-            quantity: orderItems.quantity,
-            geometryType: orderItems.geometryType,
-            materialTypeId: orderItems.materialTypeId
-        })
+        const query = this.db
+            .select({
+                id: orderItems.id,
+                itemCode: orderItems.itemCode,
+                itemName: orderItems.itemName,
+                length: orderItems.length,
+                width: orderItems.width,
+                height: orderItems.height,
+                thickness: orderItems.thickness,
+                quantity: orderItems.quantity,
+                geometryType: orderItems.geometryType,
+                materialTypeId: orderItems.materialTypeId
+            })
             .from(orderItems)
             .innerJoin(orders, eq(orderItems.orderId, orders.id));
 
@@ -314,7 +332,12 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         }
 
         if (assignedIds.length > 0) {
-            conditions.push(sql`${orderItems.id} NOT IN (${sql.join(assignedIds.map(id => sql`${id}`), sql`, `)})`);
+            conditions.push(
+                sql`${orderItems.id} NOT IN (${sql.join(
+                    assignedIds.map((id) => sql`${id}`),
+                    sql`, `
+                )})`
+            );
         }
 
         if (conditions.length > 0) {
@@ -324,4 +347,3 @@ export class CuttingJobRepository implements ICuttingJobRepository {
         return query;
     }
 }
-

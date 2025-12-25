@@ -108,7 +108,7 @@ function sanitizeBody(body: Record<string, unknown>): Record<string, unknown> {
     const sanitized: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(body)) {
-        if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+        if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
             sanitized[key] = '[REDACTED]';
         } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
             sanitized[key] = sanitizeBody(value as Record<string, unknown>);

@@ -87,7 +87,7 @@ export interface IProductionRepository {
 }
 
 export class ProductionRepository implements IProductionRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT FILTERING ====================
 
@@ -156,12 +156,15 @@ export class ProductionRepository implements IProductionRepository {
     }
 
     async create(planId: string, operatorId: string): Promise<ProductionLog> {
-        const [result] = await this.db.insert(productionLogs).values({
-            tenantId: this.getCurrentTenantId(),
-            cuttingPlanId: planId,
-            operatorId: operatorId,
-            startedAt: new Date()
-        }).returning();
+        const [result] = await this.db
+            .insert(productionLogs)
+            .values({
+                tenantId: this.getCurrentTenantId(),
+                cuttingPlanId: planId,
+                operatorId: operatorId,
+                startedAt: new Date()
+            })
+            .returning();
         return result;
     }
 
@@ -169,7 +172,8 @@ export class ProductionRepository implements IProductionRepository {
         const conditions = [eq(productionLogs.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(productionLogs)
+        const [result] = await this.db
+            .update(productionLogs)
             .set({
                 actualWaste: data.actualWaste,
                 actualTime: data.actualTime,
@@ -188,7 +192,8 @@ export class ProductionRepository implements IProductionRepository {
         const conditions = [eq(productionLogs.id, logId)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(productionLogs)
+        const [result] = await this.db
+            .update(productionLogs)
             .set({
                 actualWaste: data.actualWaste,
                 actualTime: data.actualTime,
@@ -206,18 +211,22 @@ export class ProductionRepository implements IProductionRepository {
     // ==================== DOWNTIME METHODS ====================
 
     async createDowntime(input: ICreateDowntimeInput): Promise<DowntimeLog> {
-        const [result] = await this.db.insert(downtimeLogs).values({
-            productionLogId: input.productionLogId,
-            machineId: input.machineId,
-            reason: input.reason,
-            notes: input.notes,
-            startedAt: new Date()
-        }).returning();
+        const [result] = await this.db
+            .insert(downtimeLogs)
+            .values({
+                productionLogId: input.productionLogId,
+                machineId: input.machineId,
+                reason: input.reason,
+                notes: input.notes,
+                startedAt: new Date()
+            })
+            .returning();
         return result;
     }
 
     async updateDowntime(id: string, endedAt: Date, durationMinutes: number): Promise<DowntimeLog> {
-        const [result] = await this.db.update(downtimeLogs)
+        const [result] = await this.db
+            .update(downtimeLogs)
             .set({
                 endedAt,
                 durationMinutes
@@ -240,16 +249,19 @@ export class ProductionRepository implements IProductionRepository {
     // ==================== QUALITY CHECK METHODS ====================
 
     async createQualityCheck(input: ICreateQualityCheckInput): Promise<QualityCheck> {
-        const [result] = await this.db.insert(qualityChecks).values({
-            productionLogId: input.productionLogId,
-            result: input.result,
-            passedCount: input.passedCount,
-            failedCount: input.failedCount,
-            defectTypes: input.defectTypes,
-            inspectorId: input.inspectorId,
-            notes: input.notes,
-            checkedAt: new Date()
-        }).returning();
+        const [result] = await this.db
+            .insert(qualityChecks)
+            .values({
+                productionLogId: input.productionLogId,
+                result: input.result,
+                passedCount: input.passedCount,
+                failedCount: input.failedCount,
+                defectTypes: input.defectTypes,
+                inspectorId: input.inspectorId,
+                notes: input.notes,
+                checkedAt: new Date()
+            })
+            .returning();
         return result;
     }
 

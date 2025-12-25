@@ -17,7 +17,7 @@ import {
 import { IMaterialRepository, MaterialTypeWithRelations } from './material.repository';
 
 export class MaterialService implements IMaterialService {
-    constructor(private readonly materialRepository: IMaterialRepository) { }
+    constructor(private readonly materialRepository: IMaterialRepository) {}
 
     async getMaterials(): Promise<IResult<IMaterialDto[]>> {
         try {

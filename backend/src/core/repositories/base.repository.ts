@@ -13,12 +13,11 @@ import { PgTableWithColumns } from 'drizzle-orm/pg-core';
  * Abstract base repository for Drizzle ORM
  * Provides common CRUD operations
  */
-export abstract class BaseRepository<
-    T extends IEntity,
+export abstract class BaseRepository<T extends IEntity, CreateInput, UpdateInput> implements IBaseRepository<
+    T,
     CreateInput,
     UpdateInput
-> implements IBaseRepository<T, CreateInput, UpdateInput> {
-
+> {
     protected db: Database;
 
     constructor(db: Database) {
@@ -40,20 +39,13 @@ export abstract class BaseRepository<
 
     async findById(id: string): Promise<T | null> {
         const table = this.getTable();
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(eq(this.getIdColumn(), id))
-            .limit(1);
+        const results = await this.db.select().from(table).where(eq(this.getIdColumn(), id)).limit(1);
         return (results[0] as T) ?? null;
     }
 
     async findOne(filter: Partial<T>): Promise<T | null> {
         const table = this.getTable();
-        const results = await this.db
-            .select()
-            .from(table)
-            .limit(1);
+        const results = await this.db.select().from(table).limit(1);
         // Note: Full filter support requires dynamic where clause building
         return (results[0] as T) ?? null;
     }
@@ -62,25 +54,19 @@ export abstract class BaseRepository<
         const table = this.getTable();
         const { limit = 100 } = pagination ?? {};
 
-        const results = await this.db
-            .select()
-            .from(table)
-            .limit(limit);
+        const results = await this.db.select().from(table).limit(limit);
 
         return results as T[];
     }
 
-    async findManyPaginated(
-        filter?: Partial<T>,
-        pagination?: IPaginationOptions
-    ): Promise<IPaginatedResult<T>> {
+    async findManyPaginated(filter?: Partial<T>, pagination?: IPaginationOptions): Promise<IPaginatedResult<T>> {
         const table = this.getTable();
         const { page = 1, limit = 20 } = pagination ?? {};
         const offset = (page - 1) * limit;
 
         const [data, countResult] = await Promise.all([
             this.db.select().from(table).limit(limit).offset(offset),
-            this.db.select({ count: sql<number>`count(*)` }).from(table),
+            this.db.select({ count: sql<number>`count(*)` }).from(table)
         ]);
 
         const total = Number(countResult[0]?.count ?? 0);
@@ -90,7 +76,7 @@ export abstract class BaseRepository<
             total,
             page,
             limit,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(total / limit)
         };
     }
 
@@ -133,24 +119,18 @@ export abstract class BaseRepository<
 
     async delete(id: string): Promise<void> {
         const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where(eq(this.getIdColumn(), id));
+        await this.db.delete(table).where(eq(this.getIdColumn(), id));
     }
 
     async deleteMany(filter: Partial<T>): Promise<number> {
         const table = this.getTable();
-        const result = await this.db
-            .delete(table)
-            .returning();
+        const result = await this.db.delete(table).returning();
         return result.length;
     }
 
     async count(filter?: Partial<T>): Promise<number> {
         const table = this.getTable();
-        const result = await this.db
-            .select({ count: sql<number>`count(*)` })
-            .from(table);
+        const result = await this.db.select({ count: sql<number>`count(*)` }).from(table);
         return Number(result[0]?.count ?? 0);
     }
 

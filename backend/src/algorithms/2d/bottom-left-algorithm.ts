@@ -15,7 +15,7 @@ import { I2DOptimizationResult, buildResult } from './result-builder';
 
 /**
  * Bottom-Left Fill Algorithm
- * 
+ *
  * Strategy:
  * 1. Sort pieces by area (descending)
  * 2. For each piece, find the bottom-left position that fits
@@ -44,9 +44,7 @@ export function bottomLeftFill(
 
         // Try new sheet
         if (!placed) {
-            const orientations = getOrientations(
-                piece.width, piece.height, piece.canRotate, options.allowRotation
-            );
+            const orientations = getOrientations(piece.width, piece.height, piece.canRotate, options.allowRotation);
 
             for (const orient of orientations) {
                 const availableStock = stockManager.findAvailableStock(orient.width, orient.height);

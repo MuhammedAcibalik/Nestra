@@ -15,7 +15,7 @@ export const customers = pgTable('customers', {
     taxId: text('tax_id'),
     customFields: jsonb('custom_fields'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 export const customersRelations = relations(customers, ({ many }) => ({

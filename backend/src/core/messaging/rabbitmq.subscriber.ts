@@ -88,7 +88,7 @@ export class RabbitMQSubscriber implements IEventSubscriber {
         }
 
         this.initialized = true;
-        logger.info('Initialized with queues', { queues: queues.map(q => q.name) });
+        logger.info('Initialized with queues', { queues: queues.map((q) => q.name) });
     }
 
     /**
@@ -226,7 +226,6 @@ export class RabbitMQSubscriber implements IEventSubscriber {
 
             // Acknowledge successful processing
             channel.ack(msg);
-
         } catch (error) {
             logger.error('Message processing failed', { error });
 

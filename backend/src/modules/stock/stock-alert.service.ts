@@ -20,7 +20,7 @@ export interface IStockAlertService {
  * Stock Alert Service Implementation
  */
 export class StockAlertService implements IStockAlertService {
-    constructor(private readonly stockRepository: IStockRepository) { }
+    constructor(private readonly stockRepository: IStockRepository) {}
 
     /**
      * Check all stock items and generate low stock alerts
@@ -70,8 +70,8 @@ export class StockAlertService implements IStockAlertService {
     async getLowStockItems(threshold = 5): Promise<IResult<IStockItemDto[]>> {
         try {
             const items = await this.stockRepository.findAll({ minQuantity: threshold });
-            const lowItems = items.filter(item => item.quantity <= threshold);
-            return success(lowItems.map(item => toStockItemDto(item)));
+            const lowItems = items.filter((item) => item.quantity <= threshold);
+            return success(lowItems.map((item) => toStockItemDto(item)));
         } catch (error) {
             return failure({
                 code: 'STOCK_FETCH_ERROR',

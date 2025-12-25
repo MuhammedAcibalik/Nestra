@@ -17,12 +17,7 @@ import {
     IReportFilter
 } from '../../core/interfaces';
 import { IReportRepository } from './report.repository';
-import {
-    groupDataByPeriod,
-    calculateTrendDirection,
-    calculateMovingAverage,
-    getErrorMessage
-} from './report.mapper';
+import { groupDataByPeriod, calculateTrendDirection, calculateMovingAverage, getErrorMessage } from './report.mapper';
 
 /**
  * Report Analytics Service Interface
@@ -36,7 +31,7 @@ export interface IReportAnalyticsService {
  * Report Analytics Service Implementation
  */
 export class ReportAnalyticsService implements IReportAnalyticsService {
-    constructor(private readonly repository: IReportRepository) { }
+    constructor(private readonly repository: IReportRepository) {}
 
     async getTrendReport(filter: ITrendFilter): Promise<IResult<ITrendReportDto>> {
         try {
@@ -50,7 +45,7 @@ export class ReportAnalyticsService implements IReportAnalyticsService {
 
             const wasteData = await this.repository.getWasteData(reportFilter);
             const dataByPeriod = groupDataByPeriod(wasteData, filter.groupBy, filter.metric);
-            const values = dataByPeriod.map(d => d.value);
+            const values = dataByPeriod.map((d) => d.value);
             const movingAvg = calculateMovingAverage(values, 3);
             const trend = calculateTrendDirection(dataByPeriod);
 
@@ -89,7 +84,7 @@ export class ReportAnalyticsService implements IReportAnalyticsService {
                     items = data.map((d) => ({
                         id: d.materialTypeId,
                         name: d.materialName,
-                        value: filter.metric === 'EFFICIENCY' ? d.avgEfficiency : (100 - d.avgEfficiency),
+                        value: filter.metric === 'EFFICIENCY' ? d.avgEfficiency : 100 - d.avgEfficiency,
                         count: d.planCount,
                         rank: 0,
                         deviationFromAvg: 0
@@ -122,9 +117,7 @@ export class ReportAnalyticsService implements IReportAnalyticsService {
             }
 
             // Calculate average and deviations
-            const average = items.length > 0
-                ? items.reduce((sum, i) => sum + i.value, 0) / items.length
-                : 0;
+            const average = items.length > 0 ? items.reduce((sum, i) => sum + i.value, 0) / items.length : 0;
 
             // Sort and rank
             items.sort((a, b) => b.value - a.value);
@@ -133,13 +126,19 @@ export class ReportAnalyticsService implements IReportAnalyticsService {
                 item.deviationFromAvg = Math.round((item.value - average) * 100) / 100;
             });
 
-            const best: IComparisonSummary = items.length > 0
-                ? { id: items[0].id, name: items[0].name, value: items[0].value }
-                : { id: '', name: '', value: 0 };
+            const best: IComparisonSummary =
+                items.length > 0
+                    ? { id: items[0].id, name: items[0].name, value: items[0].value }
+                    : { id: '', name: '', value: 0 };
 
-            const worst: IComparisonSummary = items.length > 0
-                ? { id: items[items.length - 1].id, name: items[items.length - 1].name, value: items[items.length - 1].value }
-                : { id: '', name: '', value: 0 };
+            const worst: IComparisonSummary =
+                items.length > 0
+                    ? {
+                          id: items[items.length - 1].id,
+                          name: items[items.length - 1].name,
+                          value: items[items.length - 1].value
+                      }
+                    : { id: '', name: '', value: 0 };
 
             return success({
                 metric: filter.metric,

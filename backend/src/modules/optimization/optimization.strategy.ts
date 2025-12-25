@@ -4,12 +4,7 @@
  * New optimization algorithms can be added without modifying existing code
  */
 
-import {
-    CuttingPiece1D,
-    StockBar1D,
-    Optimization1DResult,
-    Optimization1DOptions
-} from '../../algorithms/1d/cutting1d';
+import { CuttingPiece1D, StockBar1D, Optimization1DResult, Optimization1DOptions } from '../../algorithms/1d/cutting1d';
 import {
     CuttingPiece2D,
     StockSheet2D,

@@ -121,12 +121,14 @@ export class FFDStrategy implements I1DAlgorithm {
                     stockId: s.id,
                     stockLength: s.length,
                     remainingLength: s.length - piece.length - kerf,
-                    cuts: [{
-                        pieceId: piece.id,
-                        orderItemId: piece.orderItemId,
-                        position: 0,
-                        length: piece.length
-                    }],
+                    cuts: [
+                        {
+                            pieceId: piece.id,
+                            orderItemId: piece.orderItemId,
+                            position: 0,
+                            length: piece.length
+                        }
+                    ],
                     currentPosition: piece.length + kerf
                 };
             }
@@ -135,7 +137,7 @@ export class FFDStrategy implements I1DAlgorithm {
     }
 
     private addUnplacedPiece(unplacedPieces: I1DPiece[], piece: ExpandedPiece): void {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         } else {
@@ -159,7 +161,7 @@ export class FFDStrategy implements I1DAlgorithm {
         let totalUsedLength = 0;
         let totalPieces = 0;
 
-        const bars: I1DBarResult[] = activeBars.map(bar => {
+        const bars: I1DBarResult[] = activeBars.map((bar) => {
             const usedLength = bar.cuts.reduce((sum, cut) => sum + cut.length + kerf, 0) - kerf;
             const waste = bar.stockLength - usedLength;
             const wastePercentage = (waste / bar.stockLength) * 100;
@@ -187,9 +189,7 @@ export class FFDStrategy implements I1DAlgorithm {
             return result;
         });
 
-        const totalWastePercentage = totalStockLength > 0
-            ? (totalWaste / totalStockLength) * 100
-            : 0;
+        const totalWastePercentage = totalStockLength > 0 ? (totalWaste / totalStockLength) * 100 : 0;
 
         return {
             success: unplacedPieces.length === 0,

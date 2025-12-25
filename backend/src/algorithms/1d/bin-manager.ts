@@ -11,11 +11,7 @@ import { IActiveBar, ICutPosition, IExpanded1DPiece, I1DAlgorithmOptions } from 
 /**
  * Create a new active bar with initial piece
  */
-export function createActiveBar(
-    stockId: string,
-    stockLength: number,
-    piece: IExpanded1DPiece
-): IActiveBar {
+export function createActiveBar(stockId: string, stockLength: number, piece: IExpanded1DPiece): IActiveBar {
     const cut: ICutPosition = {
         pieceId: piece.id,
         orderItemId: piece.orderItemId,
@@ -53,11 +49,7 @@ export function canFitInBar(bar: IActiveBar, pieceLength: number, kerf: number):
 /**
  * Place a piece in a bar (mutates bar state)
  */
-export function placePieceInBar(
-    bar: IActiveBar,
-    piece: IExpanded1DPiece,
-    kerf: number
-): void {
+export function placePieceInBar(bar: IActiveBar, piece: IExpanded1DPiece, kerf: number): void {
     const kerfNeeded = bar.cuts.length > 0 ? kerf : 0;
     const position = bar.currentPosition + kerfNeeded;
     const requiredLength = calculateRequiredLength(bar, piece.length, kerf);

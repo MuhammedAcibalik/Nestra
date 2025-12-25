@@ -24,14 +24,8 @@ export function rectanglesOverlap(r1: IRectangle, r2: IRectangle): boolean {
 /**
  * Check if rectangle is within bounds
  */
-export function isWithinBounds(
-    rect: IRectangle,
-    bounds: { width: number; height: number }
-): boolean {
-    return rect.x + rect.width <= bounds.width &&
-        rect.y + rect.height <= bounds.height &&
-        rect.x >= 0 &&
-        rect.y >= 0;
+export function isWithinBounds(rect: IRectangle, bounds: { width: number; height: number }): boolean {
+    return rect.x + rect.width <= bounds.width && rect.y + rect.height <= bounds.height && rect.x >= 0 && rect.y >= 0;
 }
 
 /**
@@ -84,9 +78,7 @@ export function getOrientations(
     grainDirection?: 'HORIZONTAL' | 'VERTICAL' | 'NONE',
     respectGrainDirection?: boolean
 ): IOrientation[] {
-    const orientations: IOrientation[] = [
-        { width, height, rotated: false }
-    ];
+    const orientations: IOrientation[] = [{ width, height, rotated: false }];
 
     // Check if rotation is allowed
     if (!allowRotation || !canRotate || width === height) {

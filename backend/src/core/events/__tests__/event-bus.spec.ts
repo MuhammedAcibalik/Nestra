@@ -1,6 +1,5 @@
 import { EventBus, createDomainEvent } from '../event-bus';
 
-
 describe('EventBus', () => {
     let eventBus: EventBus;
 

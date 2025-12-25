@@ -3,11 +3,7 @@
  * Following SOLID principles with proper types
  */
 
-import {
-    IResult,
-    success,
-    failure
-} from '../../core/interfaces';
+import { IResult, success, failure } from '../../core/interfaces';
 import {
     ILocationRepository,
     LocationWithRelations,
@@ -35,7 +31,7 @@ export interface ILocationService {
 }
 
 export class LocationService implements ILocationService {
-    constructor(private readonly repository: ILocationRepository) { }
+    constructor(private readonly repository: ILocationRepository) {}
 
     async getLocations(filter?: ILocationFilter): Promise<IResult<ILocationDto[]>> {
         try {

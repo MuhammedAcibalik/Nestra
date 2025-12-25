@@ -6,13 +6,7 @@
 
 import xlsx from 'xlsx';
 import { parse as csvParse } from 'csv-parse/sync';
-import {
-    IResult,
-    success,
-    failure,
-    ICreateOrderInput,
-    ICreateOrderItemInput
-} from '../../core/interfaces';
+import { IResult, success, failure, ICreateOrderInput, ICreateOrderItemInput } from '../../core/interfaces';
 import { createModuleLogger } from '../../core/logger';
 import { IImportRepository } from './import.repository';
 
@@ -72,13 +66,9 @@ export interface IImportService {
 // ==================== SERVICE ====================
 
 export class ImportService implements IImportService {
-    constructor(private readonly repository: IImportRepository) { }
+    constructor(private readonly repository: IImportRepository) {}
 
-    async importFromExcel(
-        buffer: Buffer,
-        options: IImportOptions,
-        userId: string
-    ): Promise<IResult<IImportResult>> {
+    async importFromExcel(buffer: Buffer, options: IImportOptions, userId: string): Promise<IResult<IImportResult>> {
         try {
             const workbook = xlsx.read(buffer, { type: 'buffer' });
             const sheetName = workbook.SheetNames[0];
@@ -101,11 +91,7 @@ export class ImportService implements IImportService {
         }
     }
 
-    async importFromCSV(
-        buffer: Buffer,
-        options: IImportOptions,
-        userId: string
-    ): Promise<IResult<IImportResult>> {
+    async importFromCSV(buffer: Buffer, options: IImportOptions, userId: string): Promise<IResult<IImportResult>> {
         try {
             const rawData: ParsedRow[] = csvParse(buffer, {
                 columns: true,
@@ -126,10 +112,7 @@ export class ImportService implements IImportService {
         }
     }
 
-    async getFileHeaders(
-        buffer: Buffer,
-        fileType: 'excel' | 'csv'
-    ): Promise<IResult<string[]>> {
+    async getFileHeaders(buffer: Buffer, fileType: 'excel' | 'csv'): Promise<IResult<string[]>> {
         try {
             let headers: string[] = [];
 
@@ -172,7 +155,7 @@ export class ImportService implements IImportService {
 
     suggestMapping(headers: string[]): IColumnMapping {
         const mapping: IColumnMapping = {};
-        const lowerHeaders = headers.map(h => h.toLowerCase());
+        const lowerHeaders = headers.map((h) => h.toLowerCase());
 
         const patterns: Record<keyof IColumnMapping, string[]> = {
             itemCode: ['kod', 'code', 'parça kodu', 'part code', 'item code', 'itemcode'],
@@ -191,7 +174,7 @@ export class ImportService implements IImportService {
 
         for (const [field, keywords] of Object.entries(patterns)) {
             for (let i = 0; i < lowerHeaders.length; i++) {
-                if (keywords.some(k => lowerHeaders[i].includes(k))) {
+                if (keywords.some((k) => lowerHeaders[i].includes(k))) {
                     mapping[field as keyof IColumnMapping] = headers[i];
                     break;
                 }
@@ -287,14 +270,10 @@ export class ImportService implements IImportService {
         const materialTypeId = this.extractMaterialTypeId(row, mapping);
 
         // Get thickness
-        const thickness = mapping.thickness
-            ? this.parseNumber(row[mapping.thickness])
-            : undefined;
+        const thickness = mapping.thickness ? this.parseNumber(row[mapping.thickness]) : undefined;
 
         // Get quantity
-        const quantity = mapping.quantity
-            ? this.parseInt(row[mapping.quantity])
-            : 1;
+        const quantity = mapping.quantity ? this.parseInt(row[mapping.quantity]) : 1;
 
         // Validation
         if (!materialTypeId) {
@@ -323,9 +302,7 @@ export class ImportService implements IImportService {
             materialTypeId,
             thickness,
             quantity,
-            canRotate: mapping.canRotate
-                ? String(row[mapping.canRotate]).toLowerCase() !== 'false'
-                : true
+            canRotate: mapping.canRotate ? String(row[mapping.canRotate]).toLowerCase() !== 'false' : true
         };
 
         return { success: true, item };
@@ -362,9 +339,7 @@ export class ImportService implements IImportService {
     }
 
     private extractMaterialTypeId(row: ParsedRow, mapping: IColumnMapping): string {
-        let materialTypeId = mapping.materialTypeId
-            ? String(row[mapping.materialTypeId] ?? '')
-            : '';
+        let materialTypeId = mapping.materialTypeId ? String(row[mapping.materialTypeId] ?? '') : '';
 
         if (!materialTypeId && mapping.materialCode) {
             // If we have material code, we'd need to look it up

@@ -37,7 +37,7 @@ export interface ICreateMaterialInput {
     defaultDensity?: number;
 }
 
-export interface IUpdateMaterialInput extends Partial<ICreateMaterialInput> { }
+export interface IUpdateMaterialInput extends Partial<ICreateMaterialInput> {}
 
 export interface ICreateThicknessInput {
     name: string;

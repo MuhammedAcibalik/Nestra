@@ -55,11 +55,7 @@ export class StrategyExecutor {
     /**
      * Execute 1D optimization
      */
-    execute1D(
-        pieces: I1DPiece[],
-        stock: I1DStock[],
-        params: IOptimizationParameters
-    ): IExecutionResult {
+    execute1D(pieces: I1DPiece[], stock: I1DStock[], params: IOptimizationParameters): IExecutionResult {
         this.initialize();
 
         const startTime = Date.now();
@@ -103,11 +99,7 @@ export class StrategyExecutor {
     /**
      * Execute 2D optimization
      */
-    execute2D(
-        pieces: I2DPiece[],
-        stock: I2DStock[],
-        params: IOptimizationParameters
-    ): IExecutionResult {
+    execute2D(pieces: I2DPiece[], stock: I2DStock[], params: IOptimizationParameters): IExecutionResult {
         this.initialize();
 
         const startTime = Date.now();
@@ -154,11 +146,11 @@ export class StrategyExecutor {
      */
     getAvailable1DAlgorithms(): string[] {
         this.initialize();
-        return this.registry.getAll1D().map(a => a.name);
+        return this.registry.getAll1D().map((a) => a.name);
     }
 
     getAvailable2DAlgorithms(): string[] {
         this.initialize();
-        return this.registry.getAll2D().map(a => a.name);
+        return this.registry.getAll2D().map((a) => a.name);
     }
 }

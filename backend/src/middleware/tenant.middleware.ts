@@ -154,8 +154,8 @@ function getPlanLimits(plan: TenantPlan): ITenantLimits {
             maxUsers: 1000,
             maxLocations: 100,
             maxMachines: 500,
-            maxOptimizationsPerDay: undefined,  // Unlimited
-            maxStorageMB: undefined  // Unlimited
+            maxOptimizationsPerDay: undefined, // Unlimited
+            maxStorageMB: undefined // Unlimited
         }
     };
 

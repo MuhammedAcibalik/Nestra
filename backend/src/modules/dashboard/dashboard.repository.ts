@@ -81,15 +81,17 @@ export interface IDashboardRepository {
 // ==================== REPOSITORY ====================
 
 export class DashboardRepository implements IDashboardRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async getOrderStats(): Promise<IOrderStats> {
-        const [stats] = await this.db.select({
-            total: sql<number>`count(*)`,
-            pending: sql<number>`sum(case when ${orders.status} in ('DRAFT', 'CONFIRMED') then 1 else 0 end)`,
-            inProgress: sql<number>`sum(case when ${orders.status} in ('IN_PLANNING', 'IN_PRODUCTION') then 1 else 0 end)`,
-            completed: sql<number>`sum(case when ${orders.status} = 'COMPLETED' then 1 else 0 end)`
-        }).from(orders);
+        const [stats] = await this.db
+            .select({
+                total: sql<number>`count(*)`,
+                pending: sql<number>`sum(case when ${orders.status} in ('DRAFT', 'CONFIRMED') then 1 else 0 end)`,
+                inProgress: sql<number>`sum(case when ${orders.status} in ('IN_PLANNING', 'IN_PRODUCTION') then 1 else 0 end)`,
+                completed: sql<number>`sum(case when ${orders.status} = 'COMPLETED' then 1 else 0 end)`
+            })
+            .from(orders);
 
         return {
             total: Number(stats?.total ?? 0),
@@ -100,12 +102,14 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getJobStats(): Promise<IJobStats> {
-        const [stats] = await this.db.select({
-            total: sql<number>`count(*)`,
-            pending: sql<number>`sum(case when ${cuttingJobs.status} = 'PENDING' then 1 else 0 end)`,
-            optimizing: sql<number>`sum(case when ${cuttingJobs.status} = 'OPTIMIZING' then 1 else 0 end)`,
-            completed: sql<number>`sum(case when ${cuttingJobs.status} = 'COMPLETED' then 1 else 0 end)`
-        }).from(cuttingJobs);
+        const [stats] = await this.db
+            .select({
+                total: sql<number>`count(*)`,
+                pending: sql<number>`sum(case when ${cuttingJobs.status} = 'PENDING' then 1 else 0 end)`,
+                optimizing: sql<number>`sum(case when ${cuttingJobs.status} = 'OPTIMIZING' then 1 else 0 end)`,
+                completed: sql<number>`sum(case when ${cuttingJobs.status} = 'COMPLETED' then 1 else 0 end)`
+            })
+            .from(cuttingJobs);
 
         return {
             total: Number(stats?.total ?? 0),
@@ -116,11 +120,13 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getStockStats(): Promise<IStockStats> {
-        const [stats] = await this.db.select({
-            totalItems: sql<number>`count(*)`,
-            lowStockItems: sql<number>`sum(case when ${stockItems.quantity} < 10 then 1 else 0 end)`,
-            totalValue: sql<number>`coalesce(sum(${stockItems.quantity} * ${stockItems.unitPrice}), 0)`
-        }).from(stockItems);
+        const [stats] = await this.db
+            .select({
+                totalItems: sql<number>`count(*)`,
+                lowStockItems: sql<number>`sum(case when ${stockItems.quantity} < 10 then 1 else 0 end)`,
+                totalValue: sql<number>`coalesce(sum(${stockItems.quantity} * ${stockItems.unitPrice}), 0)`
+            })
+            .from(stockItems);
 
         return {
             totalItems: Number(stats?.totalItems ?? 0),
@@ -130,12 +136,14 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getProductionStats(): Promise<IProductionStats> {
-        const [planStats] = await this.db.select({
-            totalPlans: sql<number>`count(*)`,
-            activePlans: sql<number>`sum(case when ${cuttingPlans.status} in ('APPROVED', 'IN_PRODUCTION') then 1 else 0 end)`,
-            completedPlans: sql<number>`sum(case when ${cuttingPlans.status} = 'COMPLETED' then 1 else 0 end)`,
-            avgWastePercentage: sql<number>`coalesce(avg(${cuttingPlans.wastePercentage}), 0)`
-        }).from(cuttingPlans);
+        const [planStats] = await this.db
+            .select({
+                totalPlans: sql<number>`count(*)`,
+                activePlans: sql<number>`sum(case when ${cuttingPlans.status} in ('APPROVED', 'IN_PRODUCTION') then 1 else 0 end)`,
+                completedPlans: sql<number>`sum(case when ${cuttingPlans.status} = 'COMPLETED' then 1 else 0 end)`,
+                avgWastePercentage: sql<number>`coalesce(avg(${cuttingPlans.wastePercentage}), 0)`
+            })
+            .from(cuttingPlans);
 
         return {
             totalPlans: Number(planStats?.totalPlans ?? 0),
@@ -146,17 +154,18 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getRecentOrders(limit = 10): Promise<IRecentOrder[]> {
-        const result = await this.db.select({
-            id: orders.id,
-            orderNumber: orders.orderNumber,
-            status: orders.status,
-            updatedAt: orders.updatedAt
-        })
+        const result = await this.db
+            .select({
+                id: orders.id,
+                orderNumber: orders.orderNumber,
+                status: orders.status,
+                updatedAt: orders.updatedAt
+            })
             .from(orders)
             .orderBy(desc(orders.updatedAt))
             .limit(limit);
 
-        return result.map(r => ({
+        return result.map((r) => ({
             id: r.id,
             orderNumber: r.orderNumber,
             status: r.status,
@@ -165,17 +174,18 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getRecentJobs(limit = 10): Promise<IRecentJob[]> {
-        const result = await this.db.select({
-            id: cuttingJobs.id,
-            jobNumber: cuttingJobs.jobNumber,
-            status: cuttingJobs.status,
-            updatedAt: cuttingJobs.updatedAt
-        })
+        const result = await this.db
+            .select({
+                id: cuttingJobs.id,
+                jobNumber: cuttingJobs.jobNumber,
+                status: cuttingJobs.status,
+                updatedAt: cuttingJobs.updatedAt
+            })
             .from(cuttingJobs)
             .orderBy(desc(cuttingJobs.updatedAt))
             .limit(limit);
 
-        return result.map(r => ({
+        return result.map((r) => ({
             id: r.id,
             jobNumber: String(r.jobNumber),
             status: r.status,
@@ -184,17 +194,15 @@ export class DashboardRepository implements IDashboardRepository {
     }
 
     async getCompletedPlansInPeriod(startDate: Date): Promise<ICompletedPlan[]> {
-        const result = await this.db.select({
-            id: cuttingPlans.id,
-            totalWaste: cuttingPlans.totalWaste,
-            wastePercentage: cuttingPlans.wastePercentage,
-            createdAt: cuttingPlans.createdAt
-        })
+        const result = await this.db
+            .select({
+                id: cuttingPlans.id,
+                totalWaste: cuttingPlans.totalWaste,
+                wastePercentage: cuttingPlans.wastePercentage,
+                createdAt: cuttingPlans.createdAt
+            })
             .from(cuttingPlans)
-            .where(and(
-                eq(cuttingPlans.status, 'COMPLETED'),
-                gte(cuttingPlans.createdAt, startDate)
-            ))
+            .where(and(eq(cuttingPlans.status, 'COMPLETED'), gte(cuttingPlans.createdAt, startDate)))
             .orderBy(desc(cuttingPlans.createdAt));
 
         return result;
@@ -209,16 +217,18 @@ export class DashboardRepository implements IDashboardRepository {
         });
 
         // Scenarios relation not on cuttingJobs - return simplified data
-        return jobs.map(job => ({
+        return jobs.map((job) => ({
             materialTypeId: job.materialTypeId,
             scenarios: []
         }));
     }
 
     async getAllMaterialTypes(): Promise<Array<{ id: string; name: string }>> {
-        return this.db.select({
-            id: materialTypes.id,
-            name: materialTypes.name
-        }).from(materialTypes);
+        return this.db
+            .select({
+                id: materialTypes.id,
+                name: materialTypes.name
+            })
+            .from(materialTypes);
     }
 }

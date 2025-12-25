@@ -64,7 +64,7 @@ export class ProductionService implements IProductionService {
                 });
             }
 
-            const plans: ICuttingPlanDto[] = response.data.map(plan => ({
+            const plans: ICuttingPlanDto[] = response.data.map((plan) => ({
                 id: plan.id,
                 planNumber: plan.planNumber,
                 scenarioId: plan.scenarioId,
@@ -118,12 +118,14 @@ export class ProductionService implements IProductionService {
             const fullLog = await this.repository.findById(log.id);
 
             const eventBus = EventBus.getInstance();
-            await eventBus.publish(DomainEvents.productionStarted({
-                logId: log.id,
-                planId: planId,
-                planNumber: plan.planNumber,
-                operatorId: operatorId
-            }));
+            await eventBus.publish(
+                DomainEvents.productionStarted({
+                    logId: log.id,
+                    planId: planId,
+                    planNumber: plan.planNumber,
+                    operatorId: operatorId
+                })
+            );
 
             return success(toProductionLogDto(fullLog!));
         } catch (error) {
@@ -194,12 +196,14 @@ export class ProductionService implements IProductionService {
             const completedLog = await this.repository.findById(logId);
 
             const eventBus = EventBus.getInstance();
-            await eventBus.publish(DomainEvents.productionCompleted({
-                logId: logId,
-                planId: log.cuttingPlanId,
-                actualWaste: data.actualWaste,
-                actualTime: data.actualTime
-            }));
+            await eventBus.publish(
+                DomainEvents.productionCompleted({
+                    logId: logId,
+                    planId: log.cuttingPlanId,
+                    actualWaste: data.actualWaste,
+                    actualTime: data.actualTime
+                })
+            );
 
             return success(toProductionLogDto(completedLog!));
         } catch (error) {
@@ -229,13 +233,16 @@ export class ProductionService implements IProductionService {
         try {
             const logs = await this.repository.findAll({ status: 'COMPLETED' });
 
-            const machineWorkMap = new Map<string, {
-                machineId: string;
-                machineName: string;
-                machineCode: string;
-                totalMinutes: number;
-                logCount: number;
-            }>();
+            const machineWorkMap = new Map<
+                string,
+                {
+                    machineId: string;
+                    machineName: string;
+                    machineCode: string;
+                    totalMinutes: number;
+                    logCount: number;
+                }
+            >();
 
             for (const log of logs) {
                 if (!log.actualTime) continue;
@@ -260,7 +267,7 @@ export class ProductionService implements IProductionService {
                 }
             }
 
-            const summaries: IMachineWorkSummary[] = Array.from(machineWorkMap.values()).map(entry => ({
+            const summaries: IMachineWorkSummary[] = Array.from(machineWorkMap.values()).map((entry) => ({
                 machineId: entry.machineId,
                 machineName: entry.machineName,
                 machineCode: entry.machineCode,
@@ -323,7 +330,7 @@ export class ProductionService implements IProductionService {
             logger.warn('Stock validation failed', { failedItems: validationErrors });
         }
 
-        return items.filter(i => !validationErrors.includes(i.stockItemId));
+        return items.filter((i) => !validationErrors.includes(i.stockItemId));
     }
 
     private async processStockConsumption(
@@ -368,11 +375,11 @@ export class ProductionService implements IProductionService {
     }
 
     private logConsumptionResults(results: { success: boolean; stockItemId: string }[], totalItems: number): void {
-        const successCount = results.filter(r => r.success).length;
-        const failedItems = results.filter(r => !r.success);
+        const successCount = results.filter((r) => r.success).length;
+        const failedItems = results.filter((r) => !r.success);
 
         if (failedItems.length > 0) {
-            const failedIds = failedItems.map(f => f.stockItemId).join(', ');
+            const failedIds = failedItems.map((f) => f.stockItemId).join(', ');
             logger.warn('Partial stock consumption', { successCount, totalItems, failedIds });
         } else {
             logger.info('Stock consumption completed', { successCount });

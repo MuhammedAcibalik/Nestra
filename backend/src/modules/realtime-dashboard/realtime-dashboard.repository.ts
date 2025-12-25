@@ -6,14 +6,7 @@
 
 import { eq, and, gte, count, sql, desc } from 'drizzle-orm';
 import { Database } from '../../db';
-import {
-    orders,
-    stockItems,
-    productionLogs,
-    optimizationScenarios,
-    cuttingPlans,
-    activities
-} from '../../db/schema';
+import { orders, stockItems, productionLogs, optimizationScenarios, cuttingPlans, activities } from '../../db/schema';
 
 // ==================== INTERFACES ====================
 
@@ -87,7 +80,7 @@ export interface IProductionStats {
 // ==================== REPOSITORY ====================
 
 export class RealtimeDashboardRepository implements IDashboardRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== KPIs ====================
 
@@ -114,10 +107,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
     }
 
     async getPendingOrderCount(tenantId: string): Promise<number> {
-        const result = await this.db
-            .select({ count: count() })
-            .from(orders)
-            .where(eq(orders.status, 'DRAFT'));
+        const result = await this.db.select({ count: count() }).from(orders).where(eq(orders.status, 'DRAFT'));
         return result[0]?.count ?? 0;
     }
 
@@ -139,12 +129,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
                 avgWaste: sql<number>`AVG(${cuttingPlans.wastePercentage})`
             })
             .from(cuttingPlans)
-            .where(
-                and(
-                    eq(cuttingPlans.status, 'COMPLETED'),
-                    gte(cuttingPlans.createdAt, today)
-                )
-            );
+            .where(and(eq(cuttingPlans.status, 'COMPLETED'), gte(cuttingPlans.createdAt, today)));
 
         return result[0]?.avgWaste ?? 0;
     }
@@ -156,12 +141,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
         const result = await this.db
             .select({ count: count() })
             .from(cuttingPlans)
-            .where(
-                and(
-                    eq(cuttingPlans.status, 'COMPLETED'),
-                    gte(cuttingPlans.createdAt, today)
-                )
-            );
+            .where(and(eq(cuttingPlans.status, 'COMPLETED'), gte(cuttingPlans.createdAt, today)));
 
         return result[0]?.count ?? 0;
     }
@@ -178,7 +158,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
             }
         });
 
-        return result.map(p => ({
+        return result.map((p) => ({
             id: p.id,
             planNumber: p.cuttingPlan?.planNumber ?? 'Unknown',
             status: p.status,
@@ -194,7 +174,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
             orderBy: desc(optimizationScenarios.createdAt)
         });
 
-        return result.map(s => ({
+        return result.map((s) => ({
             id: s.id,
             name: s.name,
             status: s.status,
@@ -210,7 +190,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
             .orderBy(stockItems.quantity)
             .limit(limit);
 
-        return result.map(item => ({
+        return result.map((item) => ({
             id: item.id,
             code: item.code,
             name: item.name,
@@ -226,7 +206,7 @@ export class RealtimeDashboardRepository implements IDashboardRepository {
             limit
         });
 
-        return result.map(a => ({
+        return result.map((a) => ({
             id: a.id,
             activityType: a.activityType,
             actorId: a.actorId,

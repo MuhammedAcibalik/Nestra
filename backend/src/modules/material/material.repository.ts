@@ -29,7 +29,7 @@ export interface IMaterialRepository {
 }
 
 export class MaterialRepository implements IMaterialRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async findById(id: string): Promise<MaterialTypeWithRelations | null> {
         const result = await this.db.query.materialTypes.findFirst({
@@ -58,17 +58,21 @@ export class MaterialRepository implements IMaterialRepository {
     }
 
     async create(data: ICreateMaterialInput): Promise<MaterialType> {
-        const [result] = await this.db.insert(materialTypes).values({
-            name: data.name,
-            description: data.description,
-            isRotatable: data.isRotatable ?? true,
-            defaultDensity: data.defaultDensity
-        }).returning();
+        const [result] = await this.db
+            .insert(materialTypes)
+            .values({
+                name: data.name,
+                description: data.description,
+                isRotatable: data.isRotatable ?? true,
+                defaultDensity: data.defaultDensity
+            })
+            .returning();
         return result;
     }
 
     async update(id: string, data: IUpdateMaterialInput): Promise<MaterialType> {
-        const [result] = await this.db.update(materialTypes)
+        const [result] = await this.db
+            .update(materialTypes)
             .set({
                 name: data.name,
                 description: data.description,
@@ -86,12 +90,15 @@ export class MaterialRepository implements IMaterialRepository {
     }
 
     async addThicknessRange(materialId: string, data: ICreateThicknessInput): Promise<ThicknessRange> {
-        const [result] = await this.db.insert(thicknessRanges).values({
-            materialTypeId: materialId,
-            name: data.name,
-            minThickness: data.minThickness,
-            maxThickness: data.maxThickness
-        }).returning();
+        const [result] = await this.db
+            .insert(thicknessRanges)
+            .values({
+                materialTypeId: materialId,
+                name: data.name,
+                minThickness: data.minThickness,
+                maxThickness: data.maxThickness
+            })
+            .returning();
         return result;
     }
 }

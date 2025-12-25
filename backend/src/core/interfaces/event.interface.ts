@@ -28,9 +28,7 @@ export type TypedDomainEvent<T extends Record<string, unknown>> = IDomainEvent<T
 /**
  * Handler for typed events
  */
-export type TypedEventHandler<T extends Record<string, unknown>> = (
-    event: IDomainEvent<T>
-) => Promise<void>;
+export type TypedEventHandler<T extends Record<string, unknown>> = (event: IDomainEvent<T>) => Promise<void>;
 
 // ==================== EVENT PUBLISHER/SUBSCRIBER ====================
 

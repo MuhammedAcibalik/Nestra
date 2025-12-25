@@ -4,7 +4,6 @@ import { mock, MockProxy } from 'jest-mock-extended';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-
 // Mock bcrypt and jwt
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');

@@ -11,20 +11,50 @@ export * from './interfaces';
 export { StrategyExecutor } from './domain';
 
 // ==================== STRATEGIES ====================
-export { AlgorithmRegistry, getAlgorithmRegistry, FFDStrategy, BFDStrategy, BottomLeftStrategy, GuillotineStrategy } from './strategies';
+export {
+    AlgorithmRegistry,
+    getAlgorithmRegistry,
+    FFDStrategy,
+    BFDStrategy,
+    BottomLeftStrategy,
+    GuillotineStrategy
+} from './strategies';
 
 // ==================== APPLICATION ====================
 export { OptimizationFacade, OptimizationValidator } from './application';
 
 // ==================== INFRASTRUCTURE ====================
 export { OptimizationEventEmitter, optimizationEventEmitter } from './infrastructure';
-export { OptimizationRepository, IOptimizationRepository, ScenarioWithRelations, PlanWithRelations } from './optimization.repository';
+export {
+    OptimizationRepository,
+    IOptimizationRepository,
+    ScenarioWithRelations,
+    PlanWithRelations
+} from './optimization.repository';
 
 // ==================== LEGACY (Backward Compatibility) ====================
-export { OptimizationEngine, OptimizationInput, OptimizationOutput, OptimizationParameters, PlanData, LayoutData } from './optimization.engine';
+export {
+    OptimizationEngine,
+    OptimizationInput,
+    OptimizationOutput,
+    OptimizationParameters,
+    PlanData,
+    LayoutData
+} from './optimization.engine';
 export { OptimizationService } from './optimization.service';
-export { OptimizationController, createOptimizationController, ScenarioController, createScenarioController, PlanController, createPlanController } from './optimization.controller';
-export { OptimizationStrategyRegistry, I1DOptimizationStrategy, I2DOptimizationStrategy } from './optimization.strategy';
+export {
+    OptimizationController,
+    createOptimizationController,
+    ScenarioController,
+    createScenarioController,
+    PlanController,
+    createPlanController
+} from './optimization.controller';
+export {
+    OptimizationStrategyRegistry,
+    I1DOptimizationStrategy,
+    I2DOptimizationStrategy
+} from './optimization.strategy';
 
 // ==================== MICROSERVICE ====================
 export { OptimizationServiceHandler } from './optimization.service-handler';

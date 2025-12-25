@@ -55,16 +55,18 @@ describe('CuttingJobController', () => {
 
     describe('getJobs', () => {
         it('should return jobs on success', async () => {
-            const jobs: ICuttingJobDto[] = [{
-                id: 'job-1',
-                jobNumber: 'JOB-001',
-                materialTypeId: 'mat-1',
-                thickness: 18,
-                status: 'PENDING',
-                itemCount: 0,
-                scenarioCount: 0,
-                createdAt: new Date()
-            }];
+            const jobs: ICuttingJobDto[] = [
+                {
+                    id: 'job-1',
+                    jobNumber: 'JOB-001',
+                    materialTypeId: 'mat-1',
+                    thickness: 18,
+                    status: 'PENDING',
+                    itemCount: 0,
+                    scenarioCount: 0,
+                    createdAt: new Date()
+                }
+            ];
             service.getJobs.mockResolvedValue(success(jobs));
 
             req.query = {};
@@ -150,9 +152,11 @@ describe('CuttingJobController', () => {
             await controller.getJobById(req, res);
 
             expect(res.status).toHaveBeenCalledWith(404);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                success: false
-            }));
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    success: false
+                })
+            );
         });
     });
 

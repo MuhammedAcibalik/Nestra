@@ -6,9 +6,12 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RabbitMQPublisher = void 0;
+const api_1 = require("@opentelemetry/api");
+const semantic_conventions_1 = require("@opentelemetry/semantic-conventions");
 const rabbitmq_connection_1 = require("./rabbitmq.connection");
 const logger_1 = require("../logger");
 const logger = (0, logger_1.createModuleLogger)('RabbitMQPublisher');
+const tracer = api_1.trace.getTracer('messaging', '1.0.0');
 // ==================== PUBLISHER CLASS ====================
 class RabbitMQPublisher {
     connection;
@@ -21,21 +24,44 @@ class RabbitMQPublisher {
      * Publish a single event to RabbitMQ
      */
     async publish(event) {
-        const channel = this.connection.getConfirmChannel();
-        if (!channel) {
-            logger.error('No channel available, event dropped', { eventType: event.eventType });
-            throw new Error('RabbitMQ channel not available');
-        }
-        try {
-            const routingKey = event.eventType;
-            const message = Buffer.from(JSON.stringify(event));
-            await this.publishWithConfirm(channel, routingKey, message, event);
-            logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
-        }
-        catch (error) {
-            logger.error('Failed to publish event', { eventType: event.eventType, error });
-            throw error;
-        }
+        const span = tracer.startSpan('messaging.publish', {
+            attributes: {
+                'messaging.system': 'rabbitmq',
+                'messaging.destination.name': event.eventType,
+                'messaging.operation.type': 'publish',
+                'messaging.message.id': event.eventId
+            }
+        });
+        return api_1.context.with(api_1.trace.setSpan(api_1.context.active(), span), async () => {
+            try {
+                const channel = this.connection.getConfirmChannel();
+                if (!channel) {
+                    logger.error('No channel available, event dropped', { eventType: event.eventType });
+                    throw new Error('RabbitMQ channel not available');
+                }
+                const routingKey = event.eventType;
+                const message = Buffer.from(JSON.stringify(event));
+                span.setAttribute('messaging.message.body.size', message.length);
+                await this.publishWithConfirm(channel, routingKey, message, event);
+                span.setStatus({ code: api_1.SpanStatusCode.OK });
+                logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
+            }
+            catch (error) {
+                span.setStatus({
+                    code: api_1.SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                if (error instanceof Error) {
+                    span.setAttribute(semantic_conventions_1.ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+                logger.error('Failed to publish event', { eventType: event.eventType, error });
+                throw error;
+            }
+            finally {
+                span.end();
+            }
+        });
     }
     /**
      * Publish multiple events

@@ -174,7 +174,7 @@ export class RealtimeDashboardService implements IRealtimeDashboardService {
                     paused: production.paused
                 },
                 stock: {
-                    lowStock: 0,  // Would need additional query
+                    lowStock: 0, // Would need additional query
                     criticalStock: 0
                 }
             };
@@ -195,61 +195,70 @@ export class RealtimeDashboardService implements IRealtimeDashboardService {
     }
 
     broadcastProductionUpdate(payload: IProductionUpdatePayload): void {
-        this.eventBus.publish({
-            eventId: `prod_${Date.now()}`,
-            eventType: DashboardEvents.PRODUCTION_PROGRESS,
-            timestamp: new Date(),
-            aggregateType: 'ProductionLog',
-            aggregateId: payload.productionLogId,
-            payload: payload as unknown as Record<string, unknown>
-        }).catch(error => {
-            logger.error('Failed to broadcast production update', { error });
-        });
+        this.eventBus
+            .publish({
+                eventId: `prod_${Date.now()}`,
+                eventType: DashboardEvents.PRODUCTION_PROGRESS,
+                timestamp: new Date(),
+                aggregateType: 'ProductionLog',
+                aggregateId: payload.productionLogId,
+                payload: payload as unknown as Record<string, unknown>
+            })
+            .catch((error) => {
+                logger.error('Failed to broadcast production update', { error });
+            });
     }
 
     broadcastOptimizationUpdate(payload: IOptimizationUpdatePayload): void {
-        const eventType = payload.status === 'COMPLETED'
-            ? DashboardEvents.OPTIMIZATION_COMPLETED
-            : payload.status === 'FAILED'
-                ? DashboardEvents.OPTIMIZATION_FAILED
-                : DashboardEvents.OPTIMIZATION_RUNNING;
+        const eventType =
+            payload.status === 'COMPLETED'
+                ? DashboardEvents.OPTIMIZATION_COMPLETED
+                : payload.status === 'FAILED'
+                  ? DashboardEvents.OPTIMIZATION_FAILED
+                  : DashboardEvents.OPTIMIZATION_RUNNING;
 
-        this.eventBus.publish({
-            eventId: `opt_${Date.now()}`,
-            eventType,
-            timestamp: new Date(),
-            aggregateType: 'OptimizationScenario',
-            aggregateId: payload.scenarioId,
-            payload: payload as unknown as Record<string, unknown>
-        }).catch(error => {
-            logger.error('Failed to broadcast optimization update', { error });
-        });
+        this.eventBus
+            .publish({
+                eventId: `opt_${Date.now()}`,
+                eventType,
+                timestamp: new Date(),
+                aggregateType: 'OptimizationScenario',
+                aggregateId: payload.scenarioId,
+                payload: payload as unknown as Record<string, unknown>
+            })
+            .catch((error) => {
+                logger.error('Failed to broadcast optimization update', { error });
+            });
     }
 
     broadcastStockAlert(payload: IStockAlertPayload): void {
-        this.eventBus.publish({
-            eventId: `stock_${Date.now()}`,
-            eventType: DashboardEvents.STOCK_ALERT,
-            timestamp: new Date(),
-            aggregateType: 'StockItem',
-            aggregateId: payload.stockItemId,
-            payload: payload as unknown as Record<string, unknown>
-        }).catch(error => {
-            logger.error('Failed to broadcast stock alert', { error });
-        });
+        this.eventBus
+            .publish({
+                eventId: `stock_${Date.now()}`,
+                eventType: DashboardEvents.STOCK_ALERT,
+                timestamp: new Date(),
+                aggregateType: 'StockItem',
+                aggregateId: payload.stockItemId,
+                payload: payload as unknown as Record<string, unknown>
+            })
+            .catch((error) => {
+                logger.error('Failed to broadcast stock alert', { error });
+            });
     }
 
     broadcastActivity(payload: IActivityPayload): void {
-        this.eventBus.publish({
-            eventId: `activity_${Date.now()}`,
-            eventType: DashboardEvents.ACTIVITY_NEW,
-            timestamp: new Date(),
-            aggregateType: 'Activity',
-            aggregateId: payload.activityId,
-            payload: payload as unknown as Record<string, unknown>
-        }).catch(error => {
-            logger.error('Failed to broadcast activity', { error });
-        });
+        this.eventBus
+            .publish({
+                eventId: `activity_${Date.now()}`,
+                eventType: DashboardEvents.ACTIVITY_NEW,
+                timestamp: new Date(),
+                aggregateType: 'Activity',
+                aggregateId: payload.activityId,
+                payload: payload as unknown as Record<string, unknown>
+            })
+            .catch((error) => {
+                logger.error('Failed to broadcast activity', { error });
+            });
     }
 
     // ==================== POLLING ====================
@@ -260,7 +269,7 @@ export class RealtimeDashboardService implements IRealtimeDashboardService {
 
         // Start new polling interval
         const interval = setInterval(() => {
-            this.broadcastKPIUpdate(tenantId).catch(error => {
+            this.broadcastKPIUpdate(tenantId).catch((error) => {
                 logger.error('KPI polling failed', { error, tenantId });
             });
         }, intervalMs);

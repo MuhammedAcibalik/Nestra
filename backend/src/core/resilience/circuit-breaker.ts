@@ -5,10 +5,13 @@
  */
 
 import CircuitBreaker from 'opossum';
+import { trace, SpanStatusCode, context } from '@opentelemetry/api';
+import { ATTR_ERROR_TYPE } from '@opentelemetry/semantic-conventions';
 import { circuitBreakerStateGauge } from '../monitoring/metrics';
 import { createModuleLogger } from '../logger';
 
 const logger = createModuleLogger('CircuitBreaker');
+const tracer = trace.getTracer('circuit-breaker', '1.0.0');
 
 // ==================== INTERFACES ====================
 
@@ -18,6 +21,7 @@ export interface ICircuitBreakerConfig {
     resetTimeout?: number;
     volumeThreshold?: number;
     name: string;
+    enableTracing?: boolean;
 }
 
 export interface ICircuitBreakerStats {
@@ -33,10 +37,11 @@ export interface ICircuitBreakerStats {
 // ==================== DEFAULT CONFIG ====================
 
 export const defaultCircuitBreakerConfig: Omit<Required<ICircuitBreakerConfig>, 'name'> = {
-    timeout: 30000,              // 30s timeout
+    timeout: 30000, // 30s timeout
     errorThresholdPercentage: 50, // Open after 50% failures
-    resetTimeout: 10000,         // 10s before half-open
-    volumeThreshold: 5           // Min 5 requests before evaluation
+    resetTimeout: 10000, // 10s before half-open
+    volumeThreshold: 5, // Min 5 requests before evaluation
+    enableTracing: true // Enable distributed tracing
 };
 
 // ==================== CIRCUIT BREAKER MANAGER ====================
@@ -57,7 +62,10 @@ export class CircuitBreakerManager {
             ...config
         };
 
-        const breaker = new CircuitBreaker(action, {
+        // Wrap action with tracing if enabled
+        const tracedAction = fullConfig.enableTracing ? this.wrapWithTracing(action, config.name) : action;
+
+        const breaker = new CircuitBreaker(tracedAction, {
             timeout: fullConfig.timeout,
             errorThresholdPercentage: fullConfig.errorThresholdPercentage,
             resetTimeout: fullConfig.resetTimeout,
@@ -75,8 +83,46 @@ export class CircuitBreakerManager {
         // Store for later access
         this.breakers.set(config.name, breaker);
 
-        logger.info('Created', { name: config.name });
+        logger.info('Created', { name: config.name, tracing: fullConfig.enableTracing });
         return breaker;
+    }
+
+    /**
+     * Wrap function with OpenTelemetry tracing
+     */
+    private static wrapWithTracing<TArgs extends unknown[], TResult>(
+        fn: (...args: TArgs) => Promise<TResult>,
+        serviceName: string
+    ): (...args: TArgs) => Promise<TResult> {
+        return async function (...args: TArgs): Promise<TResult> {
+            const span = tracer.startSpan('circuit_breaker.execute', {
+                attributes: {
+                    'service.name': serviceName,
+                    'circuit_breaker.operation': fn.name || 'anonymous'
+                }
+            });
+
+            return context.with(trace.setSpan(context.active(), span), async () => {
+                try {
+                    const result = await fn(...args);
+                    span.setStatus({ code: SpanStatusCode.OK });
+                    span.setAttribute('circuit_breaker.result', 'success');
+                    return result;
+                } catch (error) {
+                    span.setStatus({
+                        code: SpanStatusCode.ERROR,
+                        message: error instanceof Error ? error.message : String(error)
+                    });
+                    if (error instanceof Error) {
+                        span.setAttribute(ATTR_ERROR_TYPE, error.name);
+                        span.recordException(error);
+                    }
+                    throw error;
+                } finally {
+                    span.end();
+                }
+            });
+        };
     }
 
     /**
@@ -126,28 +172,34 @@ export class CircuitBreakerManager {
         breaker.on('open', () => {
             logger.warn('Circuit opened', { name });
             circuitBreakerStateGauge.labels(name).set(1);
+            trace.getActiveSpan()?.addEvent('circuit_breaker.opened', { 'circuit_breaker.name': name });
         });
 
         breaker.on('halfOpen', () => {
             logger.info('Circuit half-open', { name });
             circuitBreakerStateGauge.labels(name).set(2);
+            trace.getActiveSpan()?.addEvent('circuit_breaker.half_opened', { 'circuit_breaker.name': name });
         });
 
         breaker.on('close', () => {
             logger.info('Circuit closed', { name });
             circuitBreakerStateGauge.labels(name).set(0);
+            trace.getActiveSpan()?.addEvent('circuit_breaker.closed', { 'circuit_breaker.name': name });
         });
 
         breaker.on('fallback', () => {
             logger.debug('Fallback executed', { name });
+            trace.getActiveSpan()?.addEvent('circuit_breaker.fallback', { 'circuit_breaker.name': name });
         });
 
         breaker.on('timeout', () => {
             logger.warn('Timeout', { name });
+            trace.getActiveSpan()?.addEvent('circuit_breaker.timeout', { 'circuit_breaker.name': name });
         });
 
         breaker.on('reject', () => {
             logger.warn('Request rejected (circuit open)', { name });
+            trace.getActiveSpan()?.addEvent('circuit_breaker.rejected', { 'circuit_breaker.name': name });
         });
     }
 

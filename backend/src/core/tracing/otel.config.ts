@@ -113,7 +113,6 @@ export function initializeTracing(config?: ITracingConfig): void {
             serviceName: finalConfig.serviceName,
             otlpEndpoint: finalConfig.otlpEndpoint
         });
-
     } catch (error) {
         logger.error('Failed to initialize tracing', { error });
     }

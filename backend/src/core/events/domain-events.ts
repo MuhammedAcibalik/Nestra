@@ -2,7 +2,7 @@
  * Domain Events
  * All domain events for the Nestra system
  * Events enable loose coupling between modules
- * 
+ *
  * PATTERN:
  * - State Change Events: MODULE.action (e.g., order.created)
  * - Command Events: MODULE.command-requested (e.g., stock.consume-requested)
@@ -71,7 +71,7 @@ export const EventTypes = {
     CUSTOMER_UPDATED: 'customer.updated'
 } as const;
 
-export type EventType = typeof EventTypes[keyof typeof EventTypes];
+export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
 
 // ==================== EVENT INTERFACES ====================
 

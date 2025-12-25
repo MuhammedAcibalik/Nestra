@@ -46,10 +46,11 @@ export class Stock1DManager {
 
     constructor(stock: readonly I1DStockInput[], sortStrategy: 'DESC' | 'ASC' = 'DESC') {
         // Filter available stock and sort
-        const filtered = stock.filter(s => s.available > 0);
-        this.sortedStock = sortStrategy === 'DESC'
-            ? [...filtered].sort((a, b) => b.length - a.length)
-            : [...filtered].sort((a, b) => a.length - b.length);
+        const filtered = stock.filter((s) => s.available > 0);
+        this.sortedStock =
+            sortStrategy === 'DESC'
+                ? [...filtered].sort((a, b) => b.length - a.length)
+                : [...filtered].sort((a, b) => a.length - b.length);
 
         // Initialize usage tracking
         this.usage = new Map();
@@ -102,8 +103,8 @@ export class Stock2DManager {
     constructor(stock: readonly I2DStockInput[]) {
         // Filter and sort by area (descending)
         this.sortedStock = [...stock]
-            .filter(s => s.available > 0)
-            .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+            .filter((s) => s.available > 0)
+            .sort((a, b) => b.width * b.height - a.width * a.height);
 
         // Initialize usage tracking
         this.usage = new Map();
@@ -120,8 +121,10 @@ export class Stock2DManager {
             const entry = this.usage.get(stock.id);
             if (entry && entry.remaining > 0) {
                 // Check both orientations
-                if ((stock.width >= width && stock.height >= height) ||
-                    (stock.width >= height && stock.height >= width)) {
+                if (
+                    (stock.width >= width && stock.height >= height) ||
+                    (stock.width >= height && stock.height >= width)
+                ) {
                     return stock;
                 }
             }
@@ -143,7 +146,7 @@ export class Stock2DManager {
      * Get all available stock
      */
     getAvailableStock(): readonly I2DStockInput[] {
-        return this.sortedStock.filter(s => {
+        return this.sortedStock.filter((s) => {
             const entry = this.usage.get(s.id);
             return entry && entry.remaining > 0;
         });

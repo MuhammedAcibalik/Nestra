@@ -20,7 +20,7 @@ export interface ICuttingJobGeneratorService {
  * CuttingJob Generator Service Implementation
  */
 export class CuttingJobGeneratorService implements ICuttingJobGeneratorService {
-    constructor(private readonly repository: ICuttingJobRepository) { }
+    constructor(private readonly repository: ICuttingJobRepository) {}
 
     /**
      * Auto-generate cutting jobs from unassigned order items
@@ -72,7 +72,7 @@ export class CuttingJobGeneratorService implements ICuttingJobGeneratorService {
                     const job = await this.repository.create({
                         materialTypeId,
                         thickness,
-                        orderItemIds: items.map(i => i.id)
+                        orderItemIds: items.map((i) => i.id)
                     });
                     const fullJob = await this.repository.findById(job.id);
                     createdJobs.push(toCuttingJobDto(fullJob!));

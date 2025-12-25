@@ -77,7 +77,7 @@ export interface ILimitCheckResult {
 // ==================== SERVICE ====================
 
 export class TenantService implements ITenantService {
-    constructor(private readonly repository: ITenantRepository) { }
+    constructor(private readonly repository: ITenantRepository) {}
 
     // ==================== TENANT MANAGEMENT ====================
 
@@ -191,7 +191,7 @@ export class TenantService implements ITenantService {
     async listTenants(options?: ITenantQueryOptions): Promise<IResult<ITenantInfo[]>> {
         try {
             const tenants = await this.repository.findAll(options);
-            return success(tenants.map(t => this.toTenantInfo(t)));
+            return success(tenants.map((t) => this.toTenantInfo(t)));
         } catch (error) {
             logger.error('Failed to list tenants', { error });
             return failure({

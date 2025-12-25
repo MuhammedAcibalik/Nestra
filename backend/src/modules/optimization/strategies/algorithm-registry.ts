@@ -4,11 +4,7 @@
  * Following OCP - New algorithms can be added without modifying existing code
  */
 
-import {
-    I1DAlgorithm,
-    I2DAlgorithm,
-    IAlgorithmRegistry
-} from '../interfaces';
+import { I1DAlgorithm, I2DAlgorithm, IAlgorithmRegistry } from '../interfaces';
 
 export class AlgorithmRegistry implements IAlgorithmRegistry {
     private readonly algorithms1D: Map<string, I1DAlgorithm> = new Map();

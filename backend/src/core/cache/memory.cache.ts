@@ -106,9 +106,7 @@ export class MemoryCache implements ICacheClient {
 
     async delPattern(pattern: string): Promise<number> {
         // Convert glob pattern to regex
-        const regex = new RegExp(
-            '^' + pattern.replaceAll('*', '.*').replaceAll('?', '.') + '$'
-        );
+        const regex = new RegExp('^' + pattern.replaceAll('*', '.*').replaceAll('?', '.') + '$');
 
         let deleted = 0;
         for (const key of this.cache.keys()) {
@@ -142,14 +140,12 @@ export class MemoryCache implements ICacheClient {
     }
 
     async incr(key: string): Promise<number> {
-        const current = await this.get<number>(key) ?? 0;
+        const current = (await this.get<number>(key)) ?? 0;
         const newValue = current + 1;
 
         // Preserve TTL
         const entry = this.cache.get(key);
-        const ttl = entry?.expiresAt
-            ? Math.ceil((entry.expiresAt - Date.now()) / 1000)
-            : undefined;
+        const ttl = entry?.expiresAt ? Math.ceil((entry.expiresAt - Date.now()) / 1000) : undefined;
 
         await this.set(key, newValue, ttl);
         return newValue;

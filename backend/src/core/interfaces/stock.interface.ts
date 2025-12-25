@@ -65,7 +65,7 @@ export interface ICreateStockInput {
     isFromWaste?: boolean;
 }
 
-export interface IUpdateStockInput extends Partial<ICreateStockInput> { }
+export interface IUpdateStockInput extends Partial<ICreateStockInput> {}
 
 export interface IStockMovementDto {
     id: string;

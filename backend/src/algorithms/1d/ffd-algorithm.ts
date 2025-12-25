@@ -7,11 +7,7 @@
 import { I1DAlgorithmOptions, IActiveBar } from '../core/types';
 import { I1DPieceInput, expand1DPieces, sort1DByLengthDesc } from '../core/piece-expander';
 import { Stock1DManager, I1DStockInput } from '../core/stock-manager';
-import {
-    createActiveBar,
-    placePieceInBar,
-    findFirstFitBar
-} from './bin-manager';
+import { createActiveBar, placePieceInBar, findFirstFitBar } from './bin-manager';
 import { UnplacedCollector1D } from './unplaced-collector';
 import { I1DOptimizationResult, buildResult } from './result-builder';
 
@@ -19,12 +15,12 @@ import { I1DOptimizationResult, buildResult } from './result-builder';
 
 /**
  * First Fit Decreasing Algorithm
- * 
+ *
  * Strategy:
  * 1. Sort pieces by length (descending)
  * 2. For each piece, find the first bar that can fit it
  * 3. If no bar fits, create a new bar
- * 
+ *
  * Complexity: O(n * m) where n = pieces, m = bars
  */
 export function firstFitDecreasing(

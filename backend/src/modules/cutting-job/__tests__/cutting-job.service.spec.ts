@@ -3,18 +3,19 @@ import { ICuttingJobRepository, CuttingJobWithRelations, CuttingJob } from '../c
 import { EventBus } from '../../../core/events';
 import { mock, MockProxy } from 'jest-mock-extended';
 
-const createMockJob = (overrides: Partial<CuttingJobWithRelations> = {}): CuttingJobWithRelations => ({
-    id: 'job-1',
-    jobNumber: 'JOB-001',
-    materialTypeId: 'mat-1',
-    thickness: 10,
-    status: 'PENDING',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    items: [],
-    _count: { items: 0, scenarios: 0 },
-    ...overrides
-} as CuttingJobWithRelations);
+const createMockJob = (overrides: Partial<CuttingJobWithRelations> = {}): CuttingJobWithRelations =>
+    ({
+        id: 'job-1',
+        jobNumber: 'JOB-001',
+        materialTypeId: 'mat-1',
+        thickness: 10,
+        status: 'PENDING',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        items: [],
+        _count: { items: 0, scenarios: 0 },
+        ...overrides
+    }) as CuttingJobWithRelations;
 
 describe('CuttingJobService', () => {
     let service: CuttingJobService;
@@ -212,7 +213,10 @@ describe('CuttingJobService', () => {
             const result = await service.autoGenerateFromOrders(true);
 
             expect(result.success).toBe(true);
-            expect(repository.addItem).toHaveBeenCalledWith('job-EXISTING', expect.objectContaining({ orderItemId: 'item-1' }));
+            expect(repository.addItem).toHaveBeenCalledWith(
+                'job-EXISTING',
+                expect.objectContaining({ orderItemId: 'item-1' })
+            );
             expect(repository.create).not.toHaveBeenCalled();
         });
     });
@@ -221,7 +225,14 @@ describe('CuttingJobService', () => {
         it('should add item successfully if job is PENDING', async () => {
             const mockJob = createMockJob({ status: 'PENDING' });
             repository.findById.mockResolvedValueOnce(mockJob).mockResolvedValueOnce(mockJob);
-            repository.addItem.mockResolvedValue({ id: 'item-1', cuttingJobId: 'job-1', orderItemId: 'order-item-1', quantity: 5, createdAt: new Date(), updatedAt: new Date() });
+            repository.addItem.mockResolvedValue({
+                id: 'item-1',
+                cuttingJobId: 'job-1',
+                orderItemId: 'order-item-1',
+                quantity: 5,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
 
             const result = await service.addItemToJob('job-1', 'order-item-1', 5);
 

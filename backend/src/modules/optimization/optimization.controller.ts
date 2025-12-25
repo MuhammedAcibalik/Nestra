@@ -1,7 +1,7 @@
 /**
  * Optimization Controller
  * Following SRP - Composes scenario and plan sub-controllers
- * 
+ *
  * @openapi
  * components:
  *   schemas:
@@ -89,9 +89,7 @@ export class OptimizationController {
     }
 }
 
-export function createOptimizationController(
-    optimizationService: IOptimizationService
-): OptimizationController {
+export function createOptimizationController(optimizationService: IOptimizationService): OptimizationController {
     return new OptimizationController(optimizationService);
 }
 

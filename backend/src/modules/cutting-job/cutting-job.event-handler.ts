@@ -12,7 +12,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('CuttingJobEventHandler');
 
 export class CuttingJobEventHandler {
-    constructor(private readonly cuttingJobRepository: ICuttingJobRepository) { }
+    constructor(private readonly cuttingJobRepository: ICuttingJobRepository) {}
 
     /**
      * Register all event handlers
@@ -57,14 +57,15 @@ export class CuttingJobEventHandler {
             logger.debug('Optimization completed', { planId: payload.planId });
 
             // Publish cutting job created event
-            await adapter.publish(DomainEvents.cuttingJobCreated({
-                jobId: `job_${Date.now()}`,
-                jobNumber: `CJ-${Date.now()}`,
-                materialTypeId: 'unknown',
-                thickness: 0,
-                itemCount: 0
-            }));
-
+            await adapter.publish(
+                DomainEvents.cuttingJobCreated({
+                    jobId: `job_${Date.now()}`,
+                    jobNumber: `CJ-${Date.now()}`,
+                    materialTypeId: 'unknown',
+                    thickness: 0,
+                    itemCount: 0
+                })
+            );
         } catch (error) {
             logger.error('Error handling optimization completion', { error });
         }
@@ -80,12 +81,13 @@ export class CuttingJobEventHandler {
         try {
             logger.debug('Production completed', { logId: payload.logId });
 
-            await adapter.publish(DomainEvents.cuttingJobCompleted({
-                jobId: `job_${Date.now()}`,
-                jobNumber: `CJ-${Date.now()}`,
-                planCount: 1
-            }));
-
+            await adapter.publish(
+                DomainEvents.cuttingJobCompleted({
+                    jobId: `job_${Date.now()}`,
+                    jobNumber: `CJ-${Date.now()}`,
+                    planCount: 1
+                })
+            );
         } catch (error) {
             logger.error('Error handling production completion', { error });
         }

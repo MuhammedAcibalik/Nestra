@@ -10,7 +10,7 @@ export class OptimizationModuleAdapter implements IOptimizationContract {
     readonly moduleName = 'optimization';
     readonly version = '1.0.0';
 
-    constructor(private readonly repository: IOptimizationRepository) { }
+    constructor(private readonly repository: IOptimizationRepository) {}
 
     async getPlanById(id: string): Promise<IPlanContract | null> {
         const plan = await this.repository.findPlanById(id);
@@ -25,7 +25,7 @@ export class OptimizationModuleAdapter implements IOptimizationContract {
 
     async getApprovedPlans(): Promise<IPlanContract[]> {
         const plans = await this.repository.findAllPlans({ status: 'APPROVED' });
-        return plans.map(plan => this.toContract(plan));
+        return plans.map((plan) => this.toContract(plan));
     }
 
     /**
@@ -49,7 +49,15 @@ export class OptimizationModuleAdapter implements IOptimizationContract {
         }
     }
 
-    private toContract(plan: { id: string; planNumber: string; scenarioId: string; status: string; totalWaste: number; wastePercentage: number; stockUsedCount: number }): IPlanContract {
+    private toContract(plan: {
+        id: string;
+        planNumber: string;
+        scenarioId: string;
+        status: string;
+        totalWaste: number;
+        wastePercentage: number;
+        stockUsedCount: number;
+    }): IPlanContract {
         return {
             id: plan.id,
             planNumber: plan.planNumber,

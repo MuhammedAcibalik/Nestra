@@ -44,7 +44,7 @@ export interface ITenantQueryOptions {
 // ==================== REPOSITORY ====================
 
 export class TenantRepository implements ITenantRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT CRUD ====================
 
@@ -91,10 +91,7 @@ export class TenantRepository implements ITenantRepository {
     }
 
     async create(data: NewTenant): Promise<Tenant> {
-        const [result] = await this.db
-            .insert(tenants)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(tenants).values(data).returning();
 
         logger.info('Tenant created', { id: result.id, slug: result.slug });
         return result;
@@ -114,10 +111,7 @@ export class TenantRepository implements ITenantRepository {
     }
 
     async delete(id: string): Promise<boolean> {
-        const result = await this.db
-            .delete(tenants)
-            .where(eq(tenants.id, id))
-            .returning({ id: tenants.id });
+        const result = await this.db.delete(tenants).where(eq(tenants.id, id)).returning({ id: tenants.id });
 
         if (result.length > 0) {
             logger.info('Tenant deleted', { id });
@@ -129,10 +123,7 @@ export class TenantRepository implements ITenantRepository {
     // ==================== TENANT USERS ====================
 
     async addUserToTenant(data: NewTenantUser): Promise<TenantUser> {
-        const [result] = await this.db
-            .insert(tenantUsers)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(tenantUsers).values(data).returning();
 
         logger.info('User added to tenant', {
             userId: result.userId,
@@ -144,12 +135,7 @@ export class TenantRepository implements ITenantRepository {
     async removeUserFromTenant(tenantId: string, userId: string): Promise<boolean> {
         const result = await this.db
             .delete(tenantUsers)
-            .where(
-                and(
-                    eq(tenantUsers.tenantId, tenantId),
-                    eq(tenantUsers.userId, userId)
-                )
-            )
+            .where(and(eq(tenantUsers.tenantId, tenantId), eq(tenantUsers.userId, userId)))
             .returning({ id: tenantUsers.id });
 
         if (result.length > 0) {
@@ -189,10 +175,7 @@ export class TenantRepository implements ITenantRepository {
 
     async getUserCount(tenantId: string): Promise<number> {
         const users = await this.db.query.tenantUsers.findMany({
-            where: and(
-                eq(tenantUsers.tenantId, tenantId),
-                eq(tenantUsers.isActive, true)
-            )
+            where: and(eq(tenantUsers.tenantId, tenantId), eq(tenantUsers.isActive, true))
         });
         return users.length;
     }

@@ -30,7 +30,7 @@ function shouldCompress(req: Request, res: Response): boolean {
 }
 
 const compressionConfig: ICompressionConfig = {
-    level: 6,        // Compression level (1-9)
+    level: 6, // Compression level (1-9)
     threshold: 1024, // Only compress if response > 1KB
     filter: shouldCompress
 };

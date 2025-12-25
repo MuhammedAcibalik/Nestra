@@ -19,6 +19,8 @@ import { LocationService } from '../modules/location';
 import { TenantService } from '../modules/tenant';
 import { RealtimeDashboardService } from '../modules/realtime-dashboard';
 import { PresenceService, DocumentLockService, ActivityFeedService } from '../modules/collaboration';
+import { AuditService } from '../modules/audit';
+import { NotificationService } from '../modules/notification';
 /**
  * Application Services Container
  */
@@ -40,6 +42,8 @@ export interface IAppServices {
     presenceService: PresenceService;
     documentLockService: DocumentLockService;
     activityFeedService: ActivityFeedService;
+    auditService: AuditService;
+    notificationService: NotificationService;
 }
 /**
  * Initialize all dependencies - Composition Root

@@ -14,10 +14,12 @@ import { tenants } from './tenant';
 
 export const stockItems = pgTable('stock_items', {
     id: uuid('id').primaryKey().defaultRandom(),
-    tenantId: uuid('tenant_id').references(() => tenants.id),  // Nullable for backward compatibility
+    tenantId: uuid('tenant_id').references(() => tenants.id), // Nullable for backward compatibility
     code: text('code').unique().notNull(),
     name: text('name').notNull(),
-    materialTypeId: uuid('material_type_id').notNull().references(() => materialTypes.id),
+    materialTypeId: uuid('material_type_id')
+        .notNull()
+        .references(() => materialTypes.id),
     thicknessRangeId: uuid('thickness_range_id').references(() => thicknessRanges.id),
     thickness: real('thickness').notNull(),
     stockType: stockTypeEnum('stock_type').notNull(),
@@ -44,40 +46,42 @@ export const stockItems = pgTable('stock_items', {
 
     customFields: jsonb('custom_fields'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 export const stockItemsRelations = relations(stockItems, ({ one, many }) => ({
     materialType: one(materialTypes, {
         fields: [stockItems.materialTypeId],
-        references: [materialTypes.id],
+        references: [materialTypes.id]
     }),
     thicknessRange: one(thicknessRanges, {
         fields: [stockItems.thicknessRangeId],
-        references: [thicknessRanges.id],
+        references: [thicknessRanges.id]
     }),
     location: one(locations, {
         fields: [stockItems.locationId],
-        references: [locations.id],
+        references: [locations.id]
     }),
-    stockMovements: many(stockMovements),
+    stockMovements: many(stockMovements)
 }));
 
 // ==================== STOCK MOVEMENT ====================
 
 export const stockMovements = pgTable('stock_movements', {
     id: uuid('id').primaryKey().defaultRandom(),
-    stockItemId: uuid('stock_item_id').notNull().references(() => stockItems.id),
+    stockItemId: uuid('stock_item_id')
+        .notNull()
+        .references(() => stockItems.id),
     movementType: movementTypeEnum('movement_type').notNull(),
     quantity: integer('quantity').notNull(),
     productionLogId: uuid('production_log_id'),
     notes: text('notes'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
 export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
     stockItem: one(stockItems, {
         fields: [stockMovements.stockItemId],
-        references: [stockItems.id],
-    }),
+        references: [stockItems.id]
+    })
 }));

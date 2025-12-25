@@ -106,7 +106,7 @@ function getEnvBoolean(key: string, defaultValue: boolean): boolean {
 function getEnvArray(key: string, defaultValue: readonly string[]): readonly string[] {
     const value = process.env[key];
     if (value === undefined) return defaultValue;
-    return value.split(',').map(s => s.trim());
+    return value.split(',').map((s) => s.trim());
 }
 
 function getNodeEnv(): NodeEnv {

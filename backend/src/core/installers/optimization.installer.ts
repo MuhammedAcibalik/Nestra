@@ -3,11 +3,7 @@
  */
 
 import { IModuleInstaller, IInstallContext, IModuleResult } from './installer.interface';
-import {
-    OptimizationRepository,
-    OptimizationService,
-    OptimizationController
-} from '../../modules/optimization';
+import { OptimizationRepository, OptimizationService, OptimizationController } from '../../modules/optimization';
 import { OptimizationConsumer } from '../../modules/optimization/optimization.consumer';
 import { OptimizationServiceHandler } from '../../modules/optimization/optimization.service-handler';
 import { OptimizationEventHandler } from '../../modules/optimization/optimization.event-handler';

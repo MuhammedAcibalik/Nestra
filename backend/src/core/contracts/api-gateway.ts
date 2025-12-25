@@ -2,7 +2,7 @@
  * API Gateway
  * Central routing point for all module APIs
  * Provides unified interface, rate limiting, and cross-cutting concerns
- * 
+ *
  * Following Gateway Pattern for microservice architecture
  */
 
@@ -66,9 +66,9 @@ export class ApiGateway {
             const health = await this.aggregateHealth();
 
             let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-            if (health.some(h => h.status === 'unhealthy')) {
+            if (health.some((h) => h.status === 'unhealthy')) {
                 overallStatus = 'unhealthy';
-            } else if (health.some(h => h.status === 'degraded')) {
+            } else if (health.some((h) => h.status === 'degraded')) {
                 overallStatus = 'degraded';
             }
 
@@ -81,7 +81,7 @@ export class ApiGateway {
 
         // Module info endpoint
         this.router.get('/modules', (_req: Request, res: Response) => {
-            const modules: IModuleInfo[] = Array.from(this.modules.values()).map(m => ({
+            const modules: IModuleInfo[] = Array.from(this.modules.values()).map((m) => ({
                 name: m.name,
                 version: m.version,
                 dependencies: []
@@ -138,7 +138,10 @@ export class ApiGateway {
     /**
      * Middleware for rate limiting (simple in-memory implementation)
      */
-    static rateLimiter(maxRequests: number, windowMs: number): (req: Request, res: Response, next: NextFunction) => void {
+    static rateLimiter(
+        maxRequests: number,
+        windowMs: number
+    ): (req: Request, res: Response, next: NextFunction) => void {
         const requests = new Map<string, { count: number; resetTime: number }>();
 
         return (req: Request, res: Response, next: NextFunction) => {

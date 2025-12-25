@@ -65,10 +65,10 @@ export interface HasAudit {
 
 // ==================== COMMON ENTITY ====================
 
-export interface BaseEntity extends HasId, HasTimestamps { }
+export interface BaseEntity extends HasId, HasTimestamps {}
 
-export interface TenantEntity extends BaseEntity, HasTenant { }
+export interface TenantEntity extends BaseEntity, HasTenant {}
 
-export interface AuditableEntity extends BaseEntity, HasAudit { }
+export interface AuditableEntity extends BaseEntity, HasAudit {}
 
-export interface FullEntity extends BaseEntity, HasTenant, HasSoftDelete, HasAudit { }
+export interface FullEntity extends BaseEntity, HasTenant, HasSoftDelete, HasAudit {}

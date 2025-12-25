@@ -4,11 +4,7 @@
  * Following ISP - only exposes operations needed by other modules
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { IOrderRepository } from './order.repository';
 
 // ==================== INTERFACES ====================
@@ -34,7 +30,7 @@ export interface IOrderItemSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class OrderServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: IOrderRepository) { }
+    constructor(private readonly repository: IOrderRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path } = request;
@@ -110,7 +106,7 @@ export class OrderServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: order.items.map(item => ({
+                data: order.items.map((item) => ({
                     id: item.id,
                     itemCode: item.itemCode,
                     itemName: item.itemName,
@@ -137,7 +133,7 @@ export class OrderServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: orders.map(order => ({
+                data: orders.map((order) => ({
                     id: order.id,
                     orderNumber: order.orderNumber,
                     status: order.status,

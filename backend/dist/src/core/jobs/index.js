@@ -4,7 +4,7 @@
  * Factory functions for job queue management
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createOptimizationJobProcessor = exports.OptimizationJobProcessor = exports.BullMQQueue = exports.BullMQManager = exports.JobType = void 0;
+exports.createOptimizationJobProcessor = exports.OptimizationJobProcessor = exports.BullMQQueue = exports.BullMQManager = exports.shutdownInMemoryQueues = exports.getInMemoryQueue = exports.createInMemoryQueue = exports.InMemoryJobQueue = exports.JobType = void 0;
 exports.initializeJobQueue = initializeJobQueue;
 exports.getJobQueueManager = getJobQueueManager;
 exports.getQueue = getQueue;
@@ -21,6 +21,12 @@ const logger = (0, logger_1.createModuleLogger)('JobsFactory');
 // Re-exports
 var job_queue_interface_2 = require("./job-queue.interface");
 Object.defineProperty(exports, "JobType", { enumerable: true, get: function () { return job_queue_interface_2.JobType; } });
+// In-memory queue (for development/testing)
+var memory_queue_1 = require("./memory-queue");
+Object.defineProperty(exports, "InMemoryJobQueue", { enumerable: true, get: function () { return memory_queue_1.InMemoryJobQueue; } });
+Object.defineProperty(exports, "createInMemoryQueue", { enumerable: true, get: function () { return memory_queue_1.createQueue; } });
+Object.defineProperty(exports, "getInMemoryQueue", { enumerable: true, get: function () { return memory_queue_1.getQueue; } });
+Object.defineProperty(exports, "shutdownInMemoryQueues", { enumerable: true, get: function () { return memory_queue_1.shutdownAllQueues; } });
 var bullmq_queue_2 = require("./bullmq.queue");
 Object.defineProperty(exports, "BullMQManager", { enumerable: true, get: function () { return bullmq_queue_2.BullMQManager; } });
 Object.defineProperty(exports, "BullMQQueue", { enumerable: true, get: function () { return bullmq_queue_2.BullMQQueue; } });

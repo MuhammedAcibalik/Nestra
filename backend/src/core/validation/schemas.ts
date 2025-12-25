@@ -8,39 +8,33 @@ import { z } from 'zod';
 
 // ==================== COMMON SCHEMAS ====================
 
-export const uuidSchema = z.string().regex(
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    { message: 'Geçersiz UUID formatı' }
-);
+export const uuidSchema = z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: 'Geçersiz UUID formatı' });
 
 export const paginationSchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20)
 });
 
-export const dateRangeSchema = z.object({
-    startDate: z.coerce.date().optional(),
-    endDate: z.coerce.date().optional()
-}).refine(
-    (data) => !data.startDate || !data.endDate || data.startDate <= data.endDate,
-    { message: 'Başlangıç tarihi bitiş tarihinden önce olmalıdır' }
-);
+export const dateRangeSchema = z
+    .object({
+        startDate: z.coerce.date().optional(),
+        endDate: z.coerce.date().optional()
+    })
+    .refine((data) => !data.startDate || !data.endDate || data.startDate <= data.endDate, {
+        message: 'Başlangıç tarihi bitiş tarihinden önce olmalıdır'
+    });
 
 // ==================== AUTH SCHEMAS ====================
 
 export const loginSchema = z.object({
-    email: z.string().regex(
-        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        { message: 'Geçersiz email formatı' }
-    ),
+    email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: 'Geçersiz email formatı' }),
     password: z.string().min(6, { message: 'Şifre en az 6 karakter olmalıdır' })
 });
 
 export const registerSchema = z.object({
-    email: z.string().regex(
-        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        { message: 'Geçersiz email formatı' }
-    ),
+    email: z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: 'Geçersiz email formatı' }),
     password: z.string().min(6, { message: 'Şifre en az 6 karakter olmalıdır' }),
     firstName: z.string().min(2, { message: 'Ad en az 2 karakter olmalıdır' }),
     lastName: z.string().min(2, { message: 'Soyad en az 2 karakter olmalıdır' }),
@@ -49,40 +43,40 @@ export const registerSchema = z.object({
 
 // ==================== ORDER SCHEMAS ====================
 
-export const geometryTypeSchema = z.enum([
-    'BAR_1D', 'RECTANGLE', 'CIRCLE', 'SQUARE', 'POLYGON', 'FREEFORM'
-]);
+export const geometryTypeSchema = z.enum(['BAR_1D', 'RECTANGLE', 'CIRCLE', 'SQUARE', 'POLYGON', 'FREEFORM']);
 
-export const orderItemSchema = z.object({
-    itemCode: z.string().optional(),
-    itemName: z.string().optional(),
-    geometryType: geometryTypeSchema,
-    length: z.number().positive().optional(),
-    width: z.number().positive().optional(),
-    height: z.number().positive().optional(),
-    diameter: z.number().positive().optional(),
-    materialTypeId: uuidSchema,
-    thickness: z.number().positive({ message: 'Kalınlık pozitif olmalıdır' }),
-    quantity: z.number().int().positive({ message: 'Miktar pozitif tam sayı olmalıdır' }),
-    canRotate: z.boolean().default(true)
-}).refine(
-    (data) => {
-        // 1D items require length
-        if (data.geometryType === 'BAR_1D' && !data.length) {
-            return false;
-        }
-        // 2D rectangular items require width and height
-        if (['RECTANGLE', 'SQUARE'].includes(data.geometryType) && (!data.width || !data.height)) {
-            return false;
-        }
-        // Circle requires diameter
-        if (data.geometryType === 'CIRCLE' && !data.diameter) {
-            return false;
-        }
-        return true;
-    },
-    { message: 'Geometri tipine uygun boyutlar belirtilmelidir' }
-);
+export const orderItemSchema = z
+    .object({
+        itemCode: z.string().optional(),
+        itemName: z.string().optional(),
+        geometryType: geometryTypeSchema,
+        length: z.number().positive().optional(),
+        width: z.number().positive().optional(),
+        height: z.number().positive().optional(),
+        diameter: z.number().positive().optional(),
+        materialTypeId: uuidSchema,
+        thickness: z.number().positive({ message: 'Kalınlık pozitif olmalıdır' }),
+        quantity: z.number().int().positive({ message: 'Miktar pozitif tam sayı olmalıdır' }),
+        canRotate: z.boolean().default(true)
+    })
+    .refine(
+        (data) => {
+            // 1D items require length
+            if (data.geometryType === 'BAR_1D' && !data.length) {
+                return false;
+            }
+            // 2D rectangular items require width and height
+            if (['RECTANGLE', 'SQUARE'].includes(data.geometryType) && (!data.width || !data.height)) {
+                return false;
+            }
+            // Circle requires diameter
+            if (data.geometryType === 'CIRCLE' && !data.diameter) {
+                return false;
+            }
+            return true;
+        },
+        { message: 'Geometri tipine uygun boyutlar belirtilmelidir' }
+    );
 
 export const createOrderSchema = z.object({
     customerId: uuidSchema.optional(),
@@ -104,37 +98,37 @@ export const updateOrderSchema = z.object({
 
 export const stockTypeSchema = z.enum(['BAR_1D', 'SHEET_2D']);
 
-export const createStockSchema = z.object({
-    code: z.string().min(1, { message: 'Stok kodu gereklidir' }),
-    name: z.string().min(1, { message: 'Stok adı gereklidir' }),
-    materialTypeId: uuidSchema,
-    thicknessRangeId: uuidSchema.optional(),
-    thickness: z.number().positive({ message: 'Kalınlık pozitif olmalıdır' }),
-    stockType: stockTypeSchema,
-    length: z.number().positive().optional(),
-    width: z.number().positive().optional(),
-    height: z.number().positive().optional(),
-    quantity: z.number().int().nonnegative({ message: 'Miktar negatif olamaz' }).default(0),
-    unitPrice: z.number().nonnegative().optional(),
-    locationId: uuidSchema.optional()
-}).refine(
-    (data) => {
-        if (data.stockType === 'BAR_1D' && !data.length) {
-            return false;
-        }
-        if (data.stockType === 'SHEET_2D' && (!data.width || !data.height)) {
-            return false;
-        }
-        return true;
-    },
-    { message: 'Stok tipine uygun boyutlar belirtilmelidir' }
-);
+export const createStockSchema = z
+    .object({
+        code: z.string().min(1, { message: 'Stok kodu gereklidir' }),
+        name: z.string().min(1, { message: 'Stok adı gereklidir' }),
+        materialTypeId: uuidSchema,
+        thicknessRangeId: uuidSchema.optional(),
+        thickness: z.number().positive({ message: 'Kalınlık pozitif olmalıdır' }),
+        stockType: stockTypeSchema,
+        length: z.number().positive().optional(),
+        width: z.number().positive().optional(),
+        height: z.number().positive().optional(),
+        quantity: z.number().int().nonnegative({ message: 'Miktar negatif olamaz' }).default(0),
+        unitPrice: z.number().nonnegative().optional(),
+        locationId: uuidSchema.optional()
+    })
+    .refine(
+        (data) => {
+            if (data.stockType === 'BAR_1D' && !data.length) {
+                return false;
+            }
+            if (data.stockType === 'SHEET_2D' && (!data.width || !data.height)) {
+                return false;
+            }
+            return true;
+        },
+        { message: 'Stok tipine uygun boyutlar belirtilmelidir' }
+    );
 
 export const updateStockSchema = createStockSchema.partial();
 
-export const movementTypeSchema = z.enum([
-    'PURCHASE', 'CONSUMPTION', 'WASTE_REUSE', 'SCRAP', 'ADJUSTMENT', 'TRANSFER'
-]);
+export const movementTypeSchema = z.enum(['PURCHASE', 'CONSUMPTION', 'WASTE_REUSE', 'SCRAP', 'ADJUSTMENT', 'TRANSFER']);
 
 export const createMovementSchema = z.object({
     stockItemId: uuidSchema,
@@ -182,10 +176,12 @@ export const optimizationConstraintsSchema = z.object({
 export const createScenarioSchema = z.object({
     name: z.string().min(1, { message: 'Senaryo adı gereklidir' }),
     cuttingJobId: uuidSchema,
-    parameters: z.object({
-        objectives: optimizationObjectivesSchema.optional(),
-        constraints: optimizationConstraintsSchema.optional()
-    }).optional(),
+    parameters: z
+        .object({
+            objectives: optimizationObjectivesSchema.optional(),
+            constraints: optimizationConstraintsSchema.optional()
+        })
+        .optional(),
     useWarehouseStock: z.boolean().default(true),
     useStandardSizes: z.boolean().default(false),
     selectedStockIds: z.array(uuidSchema).optional()
@@ -203,10 +199,14 @@ export const startProductionSchema = z.object({
 
 export const updateProductionSchema = z.object({
     notes: z.string().optional(),
-    issues: z.array(z.object({
-        description: z.string(),
-        severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
-    })).optional()
+    issues: z
+        .array(
+            z.object({
+                description: z.string(),
+                severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+            })
+        )
+        .optional()
 });
 
 export const completeProductionSchema = z.object({

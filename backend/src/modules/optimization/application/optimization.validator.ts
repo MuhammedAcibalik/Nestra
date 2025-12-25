@@ -17,7 +17,6 @@ const VALID_1D_ALGORITHMS: OptimizationAlgorithmType[] = ['1D_FFD', '1D_BFD'];
 const VALID_2D_ALGORITHMS: OptimizationAlgorithmType[] = ['2D_BOTTOM_LEFT', '2D_GUILLOTINE'];
 
 export class OptimizationValidator implements IOptimizationValidator {
-
     validateInput(input: IOptimizationInput): IValidationResult {
         const errors: IValidationError[] = [];
 

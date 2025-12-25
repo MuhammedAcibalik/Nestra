@@ -88,7 +88,7 @@ export interface IOptimizationRepository {
 export class OptimizationRepository implements IOptimizationRepository {
     private planCounter = 1;
 
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT FILTERING ====================
 
@@ -145,16 +145,19 @@ export class OptimizationRepository implements IOptimizationRepository {
     }
 
     async createScenario(data: ICreateScenarioInput, userId: string): Promise<OptimizationScenario> {
-        const [result] = await this.db.insert(optimizationScenarios).values({
-            tenantId: this.getCurrentTenantId(),
-            name: data.name,
-            cuttingJobId: data.cuttingJobId,
-            createdById: userId,
-            parameters: data.parameters,
-            useWarehouseStock: data.useWarehouseStock ?? true,
-            useStandardSizes: data.useStandardSizes ?? true,
-            selectedStockIds: data.selectedStockIds
-        }).returning();
+        const [result] = await this.db
+            .insert(optimizationScenarios)
+            .values({
+                tenantId: this.getCurrentTenantId(),
+                name: data.name,
+                cuttingJobId: data.cuttingJobId,
+                createdById: userId,
+                parameters: data.parameters,
+                useWarehouseStock: data.useWarehouseStock ?? true,
+                useStandardSizes: data.useStandardSizes ?? true,
+                selectedStockIds: data.selectedStockIds
+            })
+            .returning();
         return result;
     }
 
@@ -162,7 +165,8 @@ export class OptimizationRepository implements IOptimizationRepository {
         const conditions = [eq(optimizationScenarios.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(optimizationScenarios)
+        const [result] = await this.db
+            .update(optimizationScenarios)
             .set({
                 status: status as ScenarioStatus,
                 updatedAt: new Date()
@@ -203,25 +207,28 @@ export class OptimizationRepository implements IOptimizationRepository {
             orderBy: [desc(cuttingPlans.createdAt)]
         });
 
-        return plans.map(p => ({ ...p, stockUsed: p.stockItems }));
+        return plans.map((p) => ({ ...p, stockUsed: p.stockItems }));
     }
 
     async createPlan(scenarioId: string, data: ICreatePlanData): Promise<CuttingPlan> {
         const planNumber = `PLN-${Date.now()}-${this.planCounter++}`;
 
-        const [plan] = await this.db.insert(cuttingPlans).values({
-            planNumber,
-            scenarioId,
-            totalWaste: data.totalWaste,
-            wastePercentage: data.wastePercentage,
-            stockUsedCount: data.stockUsedCount,
-            estimatedTime: data.estimatedTime,
-            estimatedCost: data.estimatedCost
-        }).returning();
+        const [plan] = await this.db
+            .insert(cuttingPlans)
+            .values({
+                planNumber,
+                scenarioId,
+                totalWaste: data.totalWaste,
+                wastePercentage: data.wastePercentage,
+                stockUsedCount: data.stockUsedCount,
+                estimatedTime: data.estimatedTime,
+                estimatedCost: data.estimatedCost
+            })
+            .returning();
 
         if (data.layoutData && data.layoutData.length > 0) {
             await this.db.insert(cuttingPlanStocks).values(
-                data.layoutData.map(layout => ({
+                data.layoutData.map((layout) => ({
                     cuttingPlanId: plan.id,
                     stockItemId: layout.stockItemId,
                     sequence: layout.sequence,
@@ -235,8 +242,14 @@ export class OptimizationRepository implements IOptimizationRepository {
         return plan;
     }
 
-    async updatePlanStatus(id: string, status: string, approvedById?: string, machineId?: string): Promise<CuttingPlan> {
-        const [result] = await this.db.update(cuttingPlans)
+    async updatePlanStatus(
+        id: string,
+        status: string,
+        approvedById?: string,
+        machineId?: string
+    ): Promise<CuttingPlan> {
+        const [result] = await this.db
+            .update(cuttingPlans)
             .set({
                 status: status as PlanStatus,
                 approvedById,
@@ -250,8 +263,6 @@ export class OptimizationRepository implements IOptimizationRepository {
     }
 
     async getPlanStockItems(planId: string): Promise<CuttingPlanStock[]> {
-        return this.db.select().from(cuttingPlanStocks)
-            .where(eq(cuttingPlanStocks.cuttingPlanId, planId));
+        return this.db.select().from(cuttingPlanStocks).where(eq(cuttingPlanStocks.cuttingPlanId, planId));
     }
 }
-

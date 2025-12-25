@@ -5,6 +5,8 @@
 import { IJobData } from './job-queue.interface';
 import { BullMQManager, BullMQQueue, IBullMQConfig } from './bullmq.queue';
 export { IJobQueue, IJobData, IJobOptions, IJobProcessor, IQueueManager, JobType, IOptimizationJobData, IReportJobData, IExportJobData, IImportJobData } from './job-queue.interface';
+export { IJobResult, IJobProgress, IJobInfo, IQueueStats, IEmailJobData, ICleanupJobData, JobStatus } from './interfaces';
+export { InMemoryJobQueue, createQueue as createInMemoryQueue, getQueue as getInMemoryQueue, shutdownAllQueues as shutdownInMemoryQueues } from './memory-queue';
 export { BullMQManager, BullMQQueue, IBullMQConfig } from './bullmq.queue';
 export { OptimizationJobProcessor, IOptimizationJobResult, createOptimizationJobProcessor } from './optimization.job';
 /**

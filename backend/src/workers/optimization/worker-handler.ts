@@ -13,21 +13,15 @@ import {
     is2DPayload,
     createResult
 } from '../pool/worker-task';
-import {
-    firstFitDecreasing,
-    bestFitDecreasing,
-    Optimization1DResult
-} from '../../algorithms/1d/cutting1d';
-import {
-    bottomLeftFill,
-    guillotineCutting,
-    Optimization2DResult
-} from '../../algorithms/2d/cutting2d';
+import { firstFitDecreasing, bestFitDecreasing, Optimization1DResult } from '../../algorithms/1d/cutting1d';
+import { bottomLeftFill, guillotineCutting, Optimization2DResult } from '../../algorithms/2d/cutting2d';
 
 // ==================== HANDLER CLASS ====================
 
 export class OptimizationWorkerHandler {
-    handleTask(task: IWorkerTask<IOptimization1DPayload | IOptimization2DPayload>): IWorkerResult<Optimization1DResult | Optimization2DResult | null> {
+    handleTask(
+        task: IWorkerTask<IOptimization1DPayload | IOptimization2DPayload>
+    ): IWorkerResult<Optimization1DResult | Optimization2DResult | null> {
         const startTime = Date.now();
 
         try {

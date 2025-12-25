@@ -8,7 +8,9 @@ import { IEntity, IPaginatedResult, IPaginationOptions } from './index';
 
 // Prisma-compatible query type
 type PrismaQueryValue = string | number | boolean | null | undefined | Date | PrismaQueryObject | PrismaQueryValue[];
-interface PrismaQueryObject { [key: string]: PrismaQueryValue }
+interface PrismaQueryObject {
+    [key: string]: PrismaQueryValue;
+}
 type PrismaQuery = Record<string, PrismaQueryValue>;
 
 export interface IBaseRepository<T extends IEntity, CreateInput, UpdateInput> {
@@ -67,7 +69,10 @@ export abstract class CompositeSpecification<T> implements ISpecification<T> {
 }
 
 class AndSpecification<T> extends CompositeSpecification<T> {
-    constructor(private readonly left: ISpecification<T>, private readonly right: ISpecification<T>) {
+    constructor(
+        private readonly left: ISpecification<T>,
+        private readonly right: ISpecification<T>
+    ) {
         super();
     }
 
@@ -81,7 +86,10 @@ class AndSpecification<T> extends CompositeSpecification<T> {
 }
 
 class OrSpecification<T> extends CompositeSpecification<T> {
-    constructor(private readonly left: ISpecification<T>, private readonly right: ISpecification<T>) {
+    constructor(
+        private readonly left: ISpecification<T>,
+        private readonly right: ISpecification<T>
+    ) {
         super();
     }
 
@@ -107,4 +115,3 @@ class NotSpecification<T> extends CompositeSpecification<T> {
         return { NOT: this.spec.toQuery() };
     }
 }
-

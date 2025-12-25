@@ -12,6 +12,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnhancedBaseRepository = void 0;
 const drizzle_orm_1 = require("drizzle-orm");
+const api_1 = require("@opentelemetry/api");
+const semantic_conventions_1 = require("@opentelemetry/semantic-conventions");
+const logger_1 = require("../logger");
+const logger = (0, logger_1.createModuleLogger)('BaseRepository');
+const tracer = api_1.trace.getTracer('database', '1.0.0');
+// Slow query threshold (1 second)
+const SLOW_QUERY_THRESHOLD_MS = 1000;
 // ==================== BASE REPOSITORY ====================
 /**
  * Abstract base repository providing common CRUD operations.
@@ -48,41 +55,47 @@ class EnhancedBaseRepository {
      * Find entity by ID
      */
     async findById(id) {
-        const table = this.getTable();
-        const where = this.buildWhereWithId(id);
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(where)
-            .limit(1);
-        return results[0] ?? null;
+        return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
+            const table = this.getTable();
+            const where = this.buildWhereWithId(id);
+            const results = await this.db
+                .select()
+                .from(table)
+                .where(where)
+                .limit(1);
+            return results[0] ?? null;
+        });
     }
     /**
      * Find single entity matching conditions
      */
     async findOne(where) {
-        const table = this.getTable();
-        const finalWhere = this.applyDefaultFilters(where);
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(1);
-        return results[0] ?? null;
+        return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
+            const table = this.getTable();
+            const finalWhere = this.applyDefaultFilters(where);
+            const results = await this.db
+                .select()
+                .from(table)
+                .where(finalWhere)
+                .limit(1);
+            return results[0] ?? null;
+        });
     }
     /**
      * Find multiple entities
      */
     async findMany(where, pagination) {
-        const table = this.getTable();
-        const { limit = 100 } = pagination ?? {};
-        const finalWhere = this.applyDefaultFilters(where);
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(limit);
-        return results;
+        return this.withTracing('db.query', { operation: 'SELECT', limit: pagination?.limit }, async () => {
+            const table = this.getTable();
+            const { limit = 100 } = pagination ?? {};
+            const finalWhere = this.applyDefaultFilters(where);
+            const results = await this.db
+                .select()
+                .from(table)
+                .where(finalWhere)
+                .limit(limit);
+            return results;
+        });
     }
     /**
      * Find entities with pagination metadata
@@ -146,13 +159,15 @@ class EnhancedBaseRepository {
      * Create a new entity
      */
     async create(data) {
-        const table = this.getTable();
-        const preparedData = this.prepareCreateData(data);
-        const [result] = await this.db
-            .insert(table)
-            .values(preparedData)
-            .returning();
-        return result;
+        return this.withTracing('db.insert', { operation: 'INSERT' }, async () => {
+            const table = this.getTable();
+            const preparedData = this.prepareCreateData(data);
+            const [result] = await this.db
+                .insert(table)
+                .values(preparedData)
+                .returning();
+            return result;
+        });
     }
     /**
      * Create multiple entities
@@ -172,14 +187,16 @@ class EnhancedBaseRepository {
      * Update entity by ID
      */
     async update(id, data) {
-        const table = this.getTable();
-        const preparedData = this.prepareUpdateData(data);
-        const [result] = await this.db
-            .update(table)
-            .set(preparedData)
-            .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id))
-            .returning();
-        return result;
+        return this.withTracing('db.update', { operation: 'UPDATE' }, async () => {
+            const table = this.getTable();
+            const preparedData = this.prepareUpdateData(data);
+            const [result] = await this.db
+                .update(table)
+                .set(preparedData)
+                .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id))
+                .returning();
+            return result;
+        });
     }
     /**
      * Update multiple entities matching conditions
@@ -198,10 +215,12 @@ class EnhancedBaseRepository {
      * Delete entity by ID (hard delete)
      */
     async delete(id) {
-        const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
+        return this.withTracing('db.delete', { operation: 'DELETE' }, async () => {
+            const table = this.getTable();
+            await this.db
+                .delete(table)
+                .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
+        });
     }
     /**
      * Delete multiple entities (hard delete)
@@ -287,6 +306,72 @@ class EnhancedBaseRepository {
             ...data,
             updatedAt: new Date()
         };
+    }
+    // ==================== TRACING HELPERS ====================
+    /**
+     * Wrap database operation with OpenTelemetry tracing
+     */
+    async withTracing(spanName, attributes, fn) {
+        if (!this.config.enableTracing) {
+            return fn();
+        }
+        const span = tracer.startSpan(spanName, {
+            attributes: {
+                'db.system': 'postgresql',
+                'db.operation.name': attributes.operation,
+                ...(this.config.tableName && { 'db.collection.name': this.config.tableName }),
+                ...(attributes.limit && { 'db.operation.limit': attributes.limit })
+            }
+        });
+        return api_1.context.with(api_1.trace.setSpan(api_1.context.active(), span), async () => {
+            const startTime = Date.now();
+            try {
+                const result = await fn();
+                const duration = Date.now() - startTime;
+                // Record result metrics
+                if (Array.isArray(result)) {
+                    span.setAttribute('db.operation.rows_returned', result.length);
+                }
+                else if (attributes.singleResult) {
+                    span.setAttribute('db.operation.rows_returned', result ? 1 : 0);
+                }
+                span.setAttribute('db.operation.duration_ms', duration);
+                span.setStatus({ code: api_1.SpanStatusCode.OK });
+                // Detect slow queries
+                if (duration > SLOW_QUERY_THRESHOLD_MS) {
+                    logger.warn('Slow database query detected', {
+                        table: this.config.tableName,
+                        operation: attributes.operation,
+                        duration,
+                        threshold: SLOW_QUERY_THRESHOLD_MS
+                    });
+                    span.addEvent('slow_query', {
+                        'db.slow_query.threshold_ms': SLOW_QUERY_THRESHOLD_MS,
+                        'db.slow_query.actual_ms': duration
+                    });
+                }
+                return result;
+            }
+            catch (error) {
+                span.setStatus({
+                    code: api_1.SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                if (error instanceof Error) {
+                    span.setAttribute(semantic_conventions_1.ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+                logger.error('Database operation failed', {
+                    error,
+                    table: this.config.tableName,
+                    operation: attributes.operation
+                });
+                throw error;
+            }
+            finally {
+                span.end();
+            }
+        });
     }
 }
 exports.EnhancedBaseRepository = EnhancedBaseRepository;

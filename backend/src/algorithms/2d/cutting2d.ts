@@ -121,10 +121,12 @@ function expandPieces(pieces: CuttingPiece2D[]): ExpandedPiece[] {
  * Check if two rectangles overlap
  */
 function rectanglesOverlap(r1: Rectangle, r2: Rectangle): boolean {
-    return !(r1.x + r1.width <= r2.x ||
+    return !(
+        r1.x + r1.width <= r2.x ||
         r2.x + r2.width <= r1.x ||
         r1.y + r1.height <= r2.y ||
-        r2.y + r2.height <= r1.y);
+        r2.y + r2.height <= r1.y
+    );
 }
 
 /**
@@ -132,7 +134,7 @@ function rectanglesOverlap(r1: Rectangle, r2: Rectangle): boolean {
  */
 function canPlace(
     rect: Rectangle,
-    sheetDims: { width: number, height: number },
+    sheetDims: { width: number; height: number },
     placements: PlacedPiece2D[],
     kerf: number
 ): boolean {
@@ -168,7 +170,7 @@ function getOrientations(
     piece: ExpandedPiece,
     allowRotation: boolean,
     respectGrainDirection?: boolean
-): Array<{ w: number, h: number, rotated: boolean }> {
+): Array<{ w: number; h: number; rotated: boolean }> {
     const orientations = [{ w: piece.width, h: piece.height, rotated: false }];
 
     // Basic checks for rotation
@@ -190,8 +192,8 @@ function getOrientations(
  * Find the bottom-left position for a piece
  */
 function findBottomLeftPosition(
-    sheet: { width: number, height: number, placements: PlacedPiece2D[] },
-    dims: { w: number, h: number },
+    sheet: { width: number; height: number; placements: PlacedPiece2D[] },
+    dims: { w: number; h: number },
     kerf: number
 ): { x: number; y: number } | null {
     // Generate candidate positions (corners of existing placements + origin)
@@ -228,7 +230,7 @@ function findBottomLeftPosition(
 function tryPlaceInActiveSheetsBL(
     activeSheets: ActiveSheet[],
     piece: ExpandedPiece,
-    options: { kerf: number, allowRotation: boolean }
+    options: { kerf: number; allowRotation: boolean }
 ): boolean {
     for (const sheet of activeSheets) {
         const orientations = getOrientations(piece, options.allowRotation);
@@ -264,7 +266,7 @@ function tryCreateNewSheetBL(
     stockUsage: Map<string, number>,
     activeSheets: ActiveSheet[],
     piece: ExpandedPiece,
-    options: { kerf: number, allowRotation: boolean }
+    options: { kerf: number; allowRotation: boolean }
 ): boolean {
     for (const stock of sortedStock) {
         const remaining = stockUsage.get(stock.id)!;
@@ -277,15 +279,17 @@ function tryCreateNewSheetBL(
                         stockId: stock.id,
                         width: stock.width,
                         height: stock.height,
-                        placements: [{
-                            pieceId: piece.id,
-                            orderItemId: piece.orderItemId,
-                            x: 0,
-                            y: 0,
-                            width: orient.w,
-                            height: orient.h,
-                            rotated: orient.rotated
-                        }]
+                        placements: [
+                            {
+                                pieceId: piece.id,
+                                orderItemId: piece.orderItemId,
+                                x: 0,
+                                y: 0,
+                                width: orient.w,
+                                height: orient.h,
+                                rotated: orient.rotated
+                            }
+                        ]
                     };
                     activeSheets.push(newSheet);
                     stockUsage.set(stock.id, remaining - 1);
@@ -307,13 +311,11 @@ export function bottomLeftFill(
 ): Optimization2DResult {
     const { kerf, allowRotation } = options;
 
-    const expandedPieces = expandPieces(pieces).sort((a, b) =>
-        (b.width * b.height) - (a.width * a.height)
-    );
+    const expandedPieces = expandPieces(pieces).sort((a, b) => b.width * b.height - a.width * a.height);
 
     const sortedStock = [...stockSheets]
-        .filter(s => s.available > 0)
-        .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        .filter((s) => s.available > 0)
+        .sort((a, b) => b.width * b.height - a.width * a.height);
 
     const activeSheets: ActiveSheet[] = [];
     const unplacedPieces: CuttingPiece2D[] = [];
@@ -331,7 +333,7 @@ export function bottomLeftFill(
         }
 
         if (!placed) {
-            const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+            const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
             if (existingUnplaced) {
                 existingUnplaced.quantity++;
             } else {
@@ -434,22 +436,24 @@ function tryPlaceGuillotineInSheet(
 function initializeGuillotineSheet(
     stock: StockSheet2D,
     piece: ExpandedPiece,
-    orient: { w: number, h: number, rotated: boolean },
+    orient: { w: number; h: number; rotated: boolean },
     kerf: number
 ): ActiveSheet {
     const newSheet: ActiveSheet = {
         stockId: stock.id,
         width: stock.width,
         height: stock.height,
-        placements: [{
-            pieceId: piece.id,
-            orderItemId: piece.orderItemId,
-            x: 0,
-            y: 0,
-            width: orient.w,
-            height: orient.h,
-            rotated: orient.rotated
-        }],
+        placements: [
+            {
+                pieceId: piece.id,
+                orderItemId: piece.orderItemId,
+                x: 0,
+                y: 0,
+                width: orient.w,
+                height: orient.h,
+                rotated: orient.rotated
+            }
+        ],
         freeRects: []
     };
 
@@ -482,7 +486,7 @@ function tryCreateNewSheetGuillotine(
     stockUsage: Map<string, number>,
     activeSheets: ActiveSheet[],
     piece: ExpandedPiece,
-    options: { kerf: number, allowRotation: boolean }
+    options: { kerf: number; allowRotation: boolean }
 ): boolean {
     for (const stock of sortedStock) {
         const remaining = stockUsage.get(stock.id)!;
@@ -512,13 +516,11 @@ export function guillotineCutting(
 ): Optimization2DResult {
     const { kerf, allowRotation } = options;
 
-    const expandedPieces = expandPieces(pieces).sort((a, b) =>
-        (b.width * b.height) - (a.width * a.height)
-    );
+    const expandedPieces = expandPieces(pieces).sort((a, b) => b.width * b.height - a.width * a.height);
 
     const sortedStock = [...stockSheets]
-        .filter(s => s.available > 0)
-        .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        .filter((s) => s.available > 0)
+        .sort((a, b) => b.width * b.height - a.width * a.height);
 
     const activeSheets: ActiveSheet[] = [];
     const unplacedPieces: CuttingPiece2D[] = [];
@@ -545,7 +547,7 @@ export function guillotineCutting(
         }
 
         if (!placed) {
-            const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+            const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
             if (existingUnplaced) {
                 existingUnplaced.quantity++;
             } else {
@@ -579,7 +581,7 @@ function buildResults(
 
     for (const sheet of activeSheets) {
         const stockArea = sheet.width * sheet.height;
-        const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+        const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
         const wasteArea = stockArea - usedArea;
 
         results.push({

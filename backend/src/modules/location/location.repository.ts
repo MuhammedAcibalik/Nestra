@@ -39,7 +39,7 @@ export interface ILocationRepository {
 }
 
 export class LocationRepository implements ILocationRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async findById(id: string): Promise<LocationWithRelations | null> {
         const result = await this.db.query.locations.findFirst({
@@ -57,12 +57,16 @@ export class LocationRepository implements ILocationRepository {
 
     async findAll(filter?: ILocationFilter): Promise<LocationWithRelations[]> {
         if (filter?.search) {
-            return this.db.select().from(locations)
-                .where(or(
-                    ilike(locations.name, `%${filter.search}%`),
-                    ilike(locations.description, `%${filter.search}%`),
-                    ilike(locations.address, `%${filter.search}%`)
-                ))
+            return this.db
+                .select()
+                .from(locations)
+                .where(
+                    or(
+                        ilike(locations.name, `%${filter.search}%`),
+                        ilike(locations.description, `%${filter.search}%`),
+                        ilike(locations.address, `%${filter.search}%`)
+                    )
+                )
                 .orderBy(asc(locations.name));
         }
 
@@ -72,16 +76,20 @@ export class LocationRepository implements ILocationRepository {
     }
 
     async create(data: ICreateLocationInput): Promise<Location> {
-        const [result] = await this.db.insert(locations).values({
-            name: data.name,
-            description: data.description,
-            address: data.address
-        }).returning();
+        const [result] = await this.db
+            .insert(locations)
+            .values({
+                name: data.name,
+                description: data.description,
+                address: data.address
+            })
+            .returning();
         return result;
     }
 
     async update(id: string, data: IUpdateLocationInput): Promise<Location> {
-        const [result] = await this.db.update(locations)
+        const [result] = await this.db
+            .update(locations)
             .set({
                 name: data.name,
                 description: data.description,

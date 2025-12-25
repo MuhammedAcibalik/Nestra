@@ -4,11 +4,7 @@
  * Following ISP - only exposes needed operations for cross-module access
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { ILocationRepository, LocationWithRelations } from './location.repository';
 
 // ==================== INTERFACES ====================
@@ -25,7 +21,7 @@ export interface ILocationSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class LocationServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: ILocationRepository) { }
+    constructor(private readonly repository: ILocationRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path, data } = request;
@@ -123,7 +119,7 @@ export class LocationServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: locations.map(l => this.toSummary(l))
+                data: locations.map((l) => this.toSummary(l))
             };
         } catch (error) {
             return {
@@ -142,7 +138,7 @@ export class LocationServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: locations.map(l => this.toSummary(l))
+                data: locations.map((l) => this.toSummary(l))
             };
         } catch (error) {
             return {

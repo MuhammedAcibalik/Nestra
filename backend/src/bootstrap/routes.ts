@@ -22,6 +22,7 @@ import { CustomerController } from '../modules/customer';
 import { LocationController } from '../modules/location';
 import { ExportRepository, ExportController } from '../modules/export';
 import { DashboardRepository, DashboardService, DashboardController } from '../modules/dashboard';
+import { createAuditRouter } from '../modules/audit';
 import { getHealthController } from '../controllers/health.controller';
 
 // Middleware
@@ -77,7 +78,13 @@ export function initializeRoutes(app: Express, services: IAppServices, db: Datab
     app.use('/api/materials', authMiddleware, materialController.router);
     app.use('/api/stock', authMiddleware, stockController.router);
     app.use('/api/orders', authMiddleware, orderController.router);
-    app.use('/api/optimization', authMiddleware, optimizationRateLimiter, optimizationTimeout, optimizationController.router);
+    app.use(
+        '/api/optimization',
+        authMiddleware,
+        optimizationRateLimiter,
+        optimizationTimeout,
+        optimizationController.router
+    );
     app.use('/api/production', authMiddleware, productionController.router);
     app.use('/api/reports', authMiddleware, reportController.router);
     app.use('/api/cutting-jobs', authMiddleware, cuttingJobController.router);
@@ -87,6 +94,10 @@ export function initializeRoutes(app: Express, services: IAppServices, db: Datab
     app.use('/api/locations', authMiddleware, locationController.router);
     app.use('/api/export', authMiddleware, exportController.router);
     app.use('/api/dashboard', authMiddleware, dashboardController.router);
+
+    // Advanced Features
+    const auditRouter = createAuditRouter(services.auditService, authMiddleware);
+    app.use('/api/audit', auditRouter);
 }
 
 /**

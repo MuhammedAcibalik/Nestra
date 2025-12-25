@@ -131,7 +131,7 @@ export const TOKENS = {
 
     // Database
     PrismaClient: Symbol('PrismaClient'),
-    UnitOfWork: Symbol('UnitOfWork'),
+    UnitOfWork: Symbol('UnitOfWork')
 } as const;
 
 export { Container };

@@ -126,11 +126,7 @@ export class PlanController {
     public async approvePlan(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
         try {
             const { machineId } = req.body;
-            const result = await this.optimizationService.approvePlan(
-                req.params.id,
-                req.user!.userId,
-                machineId
-            );
+            const result = await this.optimizationService.approvePlan(req.params.id, req.user!.userId, machineId);
 
             if (result.success) {
                 res.json({ success: true, data: result.data });
@@ -187,8 +183,6 @@ export class PlanController {
     }
 }
 
-export function createPlanController(
-    optimizationService: IOptimizationService
-): PlanController {
+export function createPlanController(optimizationService: IOptimizationService): PlanController {
     return new PlanController(optimizationService);
 }

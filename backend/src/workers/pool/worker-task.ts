@@ -4,12 +4,7 @@
  * Following ISP - Separate interfaces for different task types
  */
 
-import {
-    CuttingPiece1D,
-    StockBar1D,
-    Optimization1DOptions,
-    Optimization1DResult
-} from '../../algorithms/1d/cutting1d';
+import { CuttingPiece1D, StockBar1D, Optimization1DOptions, Optimization1DResult } from '../../algorithms/1d/cutting1d';
 import {
     CuttingPiece2D,
     StockSheet2D,
@@ -34,9 +29,7 @@ export interface IWorkerResult<TResult = unknown> {
     executionTime: number;
 }
 
-export type WorkerTaskType =
-    | 'OPTIMIZATION_1D'
-    | 'OPTIMIZATION_2D';
+export type WorkerTaskType = 'OPTIMIZATION_1D' | 'OPTIMIZATION_2D';
 
 // ==================== OPTIMIZATION TASK PAYLOADS ====================
 
@@ -80,7 +73,13 @@ export function createTask<T>(type: WorkerTaskType, payload: T): IWorkerTask<T> 
     };
 }
 
-export function createResult<T>(taskId: string, success: boolean, result?: T, error?: string, startTime?: number): IWorkerResult<T> {
+export function createResult<T>(
+    taskId: string,
+    success: boolean,
+    result?: T,
+    error?: string,
+    startTime?: number
+): IWorkerResult<T> {
     return {
         id: taskId,
         success,

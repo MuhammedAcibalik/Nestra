@@ -12,7 +12,7 @@ export class StockModuleAdapter implements IStockContract {
     readonly moduleName = 'stock';
     readonly version = '1.0.0';
 
-    constructor(private readonly repository: IStockRepository) { }
+    constructor(private readonly repository: IStockRepository) {}
 
     async getStockById(id: string): Promise<IStockItemContract | null> {
         const stock = await this.repository.findById(id);
@@ -28,7 +28,7 @@ export class StockModuleAdapter implements IStockContract {
             minQuantity: 1
         });
 
-        return items.map(item => this.toContract(item));
+        return items.map((item) => this.toContract(item));
     }
 
     async consumeStock(stockId: string, quantity: number, reason: string): Promise<void> {
@@ -36,12 +36,14 @@ export class StockModuleAdapter implements IStockContract {
         const correlationId = generateCorrelationId();
 
         // Publish consume request event
-        await eventBus.publish(DomainEvents.stockConsumeRequested({
-            stockItemId: stockId,
-            quantity,
-            reason,
-            correlationId
-        }));
+        await eventBus.publish(
+            DomainEvents.stockConsumeRequested({
+                stockItemId: stockId,
+                quantity,
+                reason,
+                correlationId
+            })
+        );
     }
 
     async reserveStock(stockId: string, quantity: number, planId: string): Promise<void> {
@@ -49,12 +51,14 @@ export class StockModuleAdapter implements IStockContract {
         const correlationId = generateCorrelationId();
 
         // Publish reserve request event
-        await eventBus.publish(DomainEvents.stockReserveRequested({
-            stockItemId: stockId,
-            quantity,
-            planId,
-            correlationId
-        }));
+        await eventBus.publish(
+            DomainEvents.stockReserveRequested({
+                stockItemId: stockId,
+                quantity,
+                planId,
+                correlationId
+            })
+        );
     }
 
     /**
@@ -79,7 +83,19 @@ export class StockModuleAdapter implements IStockContract {
         }
     }
 
-    private toContract(stock: { id: string; code: string; name: string; materialTypeId: string; stockType: string; thickness: number; quantity: number; reservedQty: number; length?: number | null; width?: number | null; height?: number | null }): IStockItemContract {
+    private toContract(stock: {
+        id: string;
+        code: string;
+        name: string;
+        materialTypeId: string;
+        stockType: string;
+        thickness: number;
+        quantity: number;
+        reservedQty: number;
+        length?: number | null;
+        width?: number | null;
+        height?: number | null;
+    }): IStockItemContract {
         return {
             id: stock.id,
             code: stock.code,

@@ -4,11 +4,7 @@
  * Following ISP - only exposes needed operations for cross-module access
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { IUserRepository, UserWithRole } from './user.repository';
 
 // ==================== INTERFACES ====================
@@ -26,7 +22,7 @@ export interface IUserSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class AuthServiceHandler implements IServiceHandler {
-    constructor(private readonly userRepository: IUserRepository) { }
+    constructor(private readonly userRepository: IUserRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path } = request;

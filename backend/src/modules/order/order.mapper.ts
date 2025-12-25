@@ -14,10 +14,10 @@ export function toOrderDto(order: OrderWithRelations): IOrderDto {
     // Map customer if exists - only include properties that exist in customer type
     const customer: ICustomerDto | undefined = order.customer
         ? {
-            id: order.customer.id,
-            name: order.customer.name,
-            code: order.customer.code ?? undefined
-        }
+              id: order.customer.id,
+              name: order.customer.name,
+              code: order.customer.code ?? undefined
+          }
         : undefined;
 
     return {

@@ -77,7 +77,7 @@ export interface IMachineRepository {
 }
 
 export class MachineRepository implements IMachineRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async findById(id: string): Promise<MachineWithRelations | null> {
         const result = await this.db.query.machines.findFirst({
@@ -115,24 +115,28 @@ export class MachineRepository implements IMachineRepository {
     }
 
     async create(data: ICreateMachineInput): Promise<Machine> {
-        const [result] = await this.db.insert(machines).values({
-            code: data.code,
-            name: data.name,
-            description: data.description,
-            machineType: data.machineType,
-            maxLength: data.maxLength,
-            maxWidth: data.maxWidth,
-            maxHeight: data.maxHeight,
-            minCutLength: data.minCutLength,
-            kerf: data.kerf,
-            onlyGuillotine: data.onlyGuillotine ?? false,
-            locationId: data.locationId
-        }).returning();
+        const [result] = await this.db
+            .insert(machines)
+            .values({
+                code: data.code,
+                name: data.name,
+                description: data.description,
+                machineType: data.machineType,
+                maxLength: data.maxLength,
+                maxWidth: data.maxWidth,
+                maxHeight: data.maxHeight,
+                minCutLength: data.minCutLength,
+                kerf: data.kerf,
+                onlyGuillotine: data.onlyGuillotine ?? false,
+                locationId: data.locationId
+            })
+            .returning();
         return result;
     }
 
     async update(id: string, data: IUpdateMachineInput): Promise<Machine> {
-        const [result] = await this.db.update(machines)
+        const [result] = await this.db
+            .update(machines)
             .set({
                 name: data.name,
                 description: data.description,
@@ -153,13 +157,16 @@ export class MachineRepository implements IMachineRepository {
     }
 
     async addCompatibility(machineId: string, data: IAddCompatibilityInput): Promise<MachineCompatibility> {
-        const [result] = await this.db.insert(machineCompatibilities).values({
-            machineId,
-            materialTypeId: data.materialTypeId,
-            thicknessRangeId: data.thicknessRangeId,
-            cuttingSpeed: data.cuttingSpeed,
-            costPerUnit: data.costPerUnit
-        }).returning();
+        const [result] = await this.db
+            .insert(machineCompatibilities)
+            .values({
+                machineId,
+                materialTypeId: data.materialTypeId,
+                thicknessRangeId: data.thicknessRangeId,
+                cuttingSpeed: data.cuttingSpeed,
+                costPerUnit: data.costPerUnit
+            })
+            .returning();
         return result;
     }
 
@@ -179,19 +186,17 @@ export class MachineRepository implements IMachineRepository {
 
     async findCompatibleMachines(materialTypeId: string, thickness: number): Promise<MachineWithRelations[]> {
         // Find machines that have compatible material types
-        const compatibleMachineIds = await this.db.select({ machineId: machineCompatibilities.machineId })
+        const compatibleMachineIds = await this.db
+            .select({ machineId: machineCompatibilities.machineId })
             .from(machineCompatibilities)
             .where(eq(machineCompatibilities.materialTypeId, materialTypeId));
 
         if (compatibleMachineIds.length === 0) return [];
 
-        const ids = compatibleMachineIds.map(c => c.machineId);
+        const ids = compatibleMachineIds.map((c) => c.machineId);
 
         return this.db.query.machines.findMany({
-            where: and(
-                eq(machines.isActive, true),
-                or(...ids.map(id => eq(machines.id, id)))
-            ),
+            where: and(eq(machines.isActive, true), or(...ids.map((id) => eq(machines.id, id)))),
             with: {
                 compatibilities: true,
                 location: true

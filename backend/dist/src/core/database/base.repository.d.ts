@@ -15,6 +15,10 @@ import { PaginationOptions, PaginatedResult } from './types';
 export interface RepositoryConfig {
     /** Enable soft delete (requires deletedAt column) */
     softDelete?: boolean;
+    /** Enable OpenTelemetry tracing */
+    enableTracing?: boolean;
+    /** Table name for tracing attributes */
+    tableName?: string;
 }
 /**
  * Abstract base repository providing common CRUD operations.
@@ -123,5 +127,9 @@ export declare abstract class EnhancedBaseRepository<TEntity extends Record<stri
      * Override to add automatic fields
      */
     protected prepareUpdateData(data: TUpdate): TUpdate;
+    /**
+     * Wrap database operation with OpenTelemetry tracing
+     */
+    private withTracing;
 }
 //# sourceMappingURL=base.repository.d.ts.map

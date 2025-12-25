@@ -5,11 +5,14 @@
  */
 
 import * as amqp from 'amqplib';
+import { trace, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
+import { ATTR_ERROR_TYPE } from '@opentelemetry/semantic-conventions';
 import { IEventPublisher, IDomainEvent } from '../interfaces/event.interface';
 import { RabbitMQConnection } from './rabbitmq.connection';
 import { createModuleLogger } from '../logger';
 
 const logger = createModuleLogger('RabbitMQPublisher');
+const tracer = trace.getTracer('messaging', '1.0.0');
 
 // ==================== PUBLISHER CLASS ====================
 
@@ -26,25 +29,47 @@ export class RabbitMQPublisher implements IEventPublisher {
      * Publish a single event to RabbitMQ
      */
     async publish(event: IDomainEvent): Promise<void> {
-        const channel = this.connection.getConfirmChannel();
+        const span = tracer.startSpan('messaging.publish', {
+            attributes: {
+                'messaging.system': 'rabbitmq',
+                'messaging.destination.name': event.eventType,
+                'messaging.operation.type': 'publish',
+                'messaging.message.id': event.eventId
+            }
+        });
 
-        if (!channel) {
-            logger.error('No channel available, event dropped', { eventType: event.eventType });
-            throw new Error('RabbitMQ channel not available');
-        }
+        return otelContext.with(trace.setSpan(otelContext.active(), span), async () => {
+            try {
+                const channel = this.connection.getConfirmChannel();
 
-        try {
-            const routingKey = event.eventType;
-            const message = Buffer.from(JSON.stringify(event));
+                if (!channel) {
+                    logger.error('No channel available, event dropped', { eventType: event.eventType });
+                    throw new Error('RabbitMQ channel not available');
+                }
 
-            await this.publishWithConfirm(channel, routingKey, message, event);
+                const routingKey = event.eventType;
+                const message = Buffer.from(JSON.stringify(event));
+                span.setAttribute('messaging.message.body.size', message.length);
 
-            logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
+                await this.publishWithConfirm(channel, routingKey, message, event);
 
-        } catch (error) {
-            logger.error('Failed to publish event', { eventType: event.eventType, error });
-            throw error;
-        }
+                span.setStatus({ code: SpanStatusCode.OK });
+                logger.debug('Event published', { eventType: event.eventType, exchange: this.exchange });
+            } catch (error) {
+                span.setStatus({
+                    code: SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                if (error instanceof Error) {
+                    span.setAttribute(ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+                logger.error('Failed to publish event', { eventType: event.eventType, error });
+                throw error;
+            } finally {
+                span.end();
+            }
+        });
     }
 
     /**

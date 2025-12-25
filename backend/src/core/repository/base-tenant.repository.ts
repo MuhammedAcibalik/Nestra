@@ -26,14 +26,14 @@ export interface ITenantRepositoryOptions {
 /**
  * Base class for repositories that require tenant isolation.
  * Provides automatic tenant filtering for all queries.
- * 
+ *
  * @example
  * ```typescript
  * class OrderRepository extends BaseTenantRepository {
  *     constructor(db: Database) {
  *         super(db, 'OrderRepository');
  *     }
- * 
+ *
  *     async findAll() {
  *         return this.db
  *             .select()

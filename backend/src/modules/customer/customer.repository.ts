@@ -45,7 +45,7 @@ export interface ICustomerRepository {
 }
 
 export class CustomerRepository implements ICustomerRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async findById(id: string): Promise<Customer | null> {
         const result = await this.db.query.customers.findFirst({
@@ -63,12 +63,16 @@ export class CustomerRepository implements ICustomerRepository {
 
     async findAll(filter?: ICustomerFilter): Promise<Customer[]> {
         if (filter?.search) {
-            return this.db.select().from(customers)
-                .where(or(
-                    ilike(customers.name, `%${filter.search}%`),
-                    ilike(customers.code, `%${filter.search}%`),
-                    ilike(customers.email, `%${filter.search}%`)
-                ))
+            return this.db
+                .select()
+                .from(customers)
+                .where(
+                    or(
+                        ilike(customers.name, `%${filter.search}%`),
+                        ilike(customers.code, `%${filter.search}%`),
+                        ilike(customers.email, `%${filter.search}%`)
+                    )
+                )
                 .orderBy(asc(customers.name));
         }
 
@@ -78,19 +82,23 @@ export class CustomerRepository implements ICustomerRepository {
     }
 
     async create(data: ICreateCustomerInput): Promise<Customer> {
-        const [result] = await this.db.insert(customers).values({
-            code: data.code,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            taxId: data.taxId
-        }).returning();
+        const [result] = await this.db
+            .insert(customers)
+            .values({
+                code: data.code,
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                address: data.address,
+                taxId: data.taxId
+            })
+            .returning();
         return result;
     }
 
     async update(id: string, data: IUpdateCustomerInput): Promise<Customer> {
-        const [result] = await this.db.update(customers)
+        const [result] = await this.db
+            .update(customers)
             .set({
                 name: data.name,
                 email: data.email,

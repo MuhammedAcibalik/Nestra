@@ -40,7 +40,11 @@ export class EventBus implements ITypedEventPublisher, IEventSubscriber {
     async publish(event: IDomainEvent): Promise<void> {
         // Log event
         this.logEvent(event);
-        logger.debug('Event published', { eventType: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId });
+        logger.debug('Event published', {
+            eventType: event.eventType,
+            aggregateType: event.aggregateType,
+            aggregateId: event.aggregateId
+        });
 
         // Get handlers for this event type
         const handlers = this.handlers.get(event.eventType);
@@ -172,7 +176,6 @@ export class EventBus implements ITypedEventPublisher, IEventSubscriber {
         EventBus.instance = undefined as unknown as EventBus;
     }
 }
-
 
 /**
  * Helper function to create domain events

@@ -68,7 +68,7 @@ export class InstallerRegistry {
     }
 
     installAll(context: IInstallContext): IModuleResult[] {
-        return this.installers.map(installer => {
+        return this.installers.map((installer) => {
             console.log(`[INSTALLER] Installing module: ${installer.name}`);
             return installer.install(context);
         });

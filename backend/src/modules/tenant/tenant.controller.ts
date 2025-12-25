@@ -33,7 +33,11 @@ export class TenantController {
 
         // User management (tenant owner or admin)
         this.router.post('/:id/users', requireRole('ADMIN', 'OWNER'), asyncHandler(this.addUser.bind(this)));
-        this.router.delete('/:id/users/:userId', requireRole('ADMIN', 'OWNER'), asyncHandler(this.removeUser.bind(this)));
+        this.router.delete(
+            '/:id/users/:userId',
+            requireRole('ADMIN', 'OWNER'),
+            asyncHandler(this.removeUser.bind(this))
+        );
         this.router.get('/:id/users', asyncHandler(this.getTenantUsers.bind(this)));
 
         // Current user's tenants

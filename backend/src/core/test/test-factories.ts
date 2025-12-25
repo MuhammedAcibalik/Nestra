@@ -4,7 +4,14 @@
  * Eliminates need for `as any` casts in test files
  */
 
-import { GeometryType, OrderStatus, CuttingJobStatus, StockType, MovementType, PlanStatus } from '../../db/schema/enums';
+import {
+    GeometryType,
+    OrderStatus,
+    CuttingJobStatus,
+    StockType,
+    MovementType,
+    PlanStatus
+} from '../../db/schema/enums';
 
 // ==================== ORDER FACTORIES ====================
 
@@ -29,7 +36,7 @@ export function createMockOrder(input: OrderFactoryInput = {}) {
         orderNumber: input.orderNumber ?? `ORD-${Date.now()}`,
         customerId: input.customerId ?? null,
         createdById: input.createdById ?? 'user-1',
-        status: input.status ?? 'DRAFT' as OrderStatus,
+        status: input.status ?? ('DRAFT' as OrderStatus),
         priority: input.priority ?? 5,
         dueDate: input.dueDate ?? null,
         notes: input.notes ?? null,
@@ -64,7 +71,7 @@ export function createMockOrderItem(input: OrderItemFactoryInput = {}) {
         orderId: input.orderId ?? 'order-1',
         itemCode: input.itemCode ?? 'ITEM-001',
         itemName: input.itemName ?? 'Test Item',
-        geometryType: input.geometryType ?? 'RECTANGLE' as GeometryType,
+        geometryType: input.geometryType ?? ('RECTANGLE' as GeometryType),
         length: input.length ?? 100,
         width: input.width ?? 50,
         height: input.height ?? null,
@@ -102,7 +109,7 @@ export function createMockCuttingJob(input: CuttingJobFactoryInput = {}) {
         jobNumber: input.jobNumber ?? `JOB-${Date.now()}`,
         materialTypeId: input.materialTypeId ?? 'material-1',
         thickness: input.thickness ?? 18,
-        status: input.status ?? 'PENDING' as CuttingJobStatus,
+        status: input.status ?? ('PENDING' as CuttingJobStatus),
         createdAt: input.createdAt ?? new Date(),
         updatedAt: input.updatedAt ?? new Date()
     };
@@ -136,7 +143,7 @@ export function createMockStockItem(input: StockItemFactoryInput = {}) {
         materialTypeId: input.materialTypeId ?? 'material-1',
         thicknessRangeId: null,
         thickness: input.thickness ?? 18,
-        stockType: input.stockType ?? 'SHEET' as StockType,
+        stockType: input.stockType ?? ('SHEET' as StockType),
         length: input.length ?? 2440,
         width: input.width ?? 1220,
         height: input.height ?? null,
@@ -166,7 +173,7 @@ export function createMockStockMovement(input: StockMovementFactoryInput = {}) {
     return {
         id: input.id ?? `movement-${Date.now()}`,
         stockItemId: input.stockItemId ?? 'stock-1',
-        movementType: input.movementType ?? 'PURCHASE' as MovementType,
+        movementType: input.movementType ?? ('PURCHASE' as MovementType),
         quantity: input.quantity ?? 1,
         productionLogId: input.productionLogId ?? null,
         notes: input.notes ?? null,
@@ -248,7 +255,7 @@ export function createMockCuttingPlan(input: CuttingPlanFactoryInput = {}) {
         stockUsedCount: input.stockUsedCount ?? 3,
         estimatedTime: null,
         estimatedCost: null,
-        status: input.status ?? 'DRAFT' as PlanStatus,
+        status: input.status ?? ('DRAFT' as PlanStatus),
         approvedById: input.approvedById ?? null,
         approvedAt: null,
         machineId: input.machineId ?? null,

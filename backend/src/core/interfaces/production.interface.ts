@@ -90,13 +90,13 @@ export interface ICompleteProductionInput {
 
 /** Downtime reason codes */
 export type DowntimeReason =
-    | 'BREAKDOWN'       // Arıza
-    | 'MAINTENANCE'     // Bakım
-    | 'MATERIAL_WAIT'   // Malzeme bekleme
-    | 'TOOL_CHANGE'     // Takım değişimi
-    | 'OPERATOR_BREAK'  // Operatör molası
-    | 'SETUP'           // Kurulum
-    | 'OTHER';          // Diğer
+    | 'BREAKDOWN' // Arıza
+    | 'MAINTENANCE' // Bakım
+    | 'MATERIAL_WAIT' // Malzeme bekleme
+    | 'TOOL_CHANGE' // Takım değişimi
+    | 'OPERATOR_BREAK' // Operatör molası
+    | 'SETUP' // Kurulum
+    | 'OTHER'; // Diğer
 
 /** Input for creating a downtime record */
 export interface ICreateDowntimeInput {
@@ -148,5 +148,3 @@ export interface IQualityCheckDto {
     checkedAt: Date;
     notes?: string;
 }
-
-

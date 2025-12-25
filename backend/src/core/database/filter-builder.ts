@@ -27,11 +27,18 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 // ==================== TYPES ====================
 
 export type FilterOperator =
-    | 'eq' | 'ne'
-    | 'gt' | 'gte' | 'lt' | 'lte'
-    | 'like' | 'ilike'
-    | 'in' | 'notIn'
-    | 'isNull' | 'isNotNull'
+    | 'eq'
+    | 'ne'
+    | 'gt'
+    | 'gte'
+    | 'lt'
+    | 'lte'
+    | 'like'
+    | 'ilike'
+    | 'in'
+    | 'notIn'
+    | 'isNull'
+    | 'isNotNull'
     | 'between';
 
 export interface FilterCondition<T = unknown> {
@@ -215,11 +222,7 @@ export class FilterBuilder {
     /**
      * Date range filter (start and/or end date)
      */
-    dateRange(
-        column: PgColumn,
-        startDate?: Date | string | null,
-        endDate?: Date | string | null
-    ): this {
+    dateRange(column: PgColumn, startDate?: Date | string | null, endDate?: Date | string | null): this {
         if (startDate) {
             const start = startDate instanceof Date ? startDate : new Date(startDate);
             this.conditions.push(gte(column, start));
@@ -302,10 +305,6 @@ export function filterEq<T>(column: PgColumn, value: T | undefined): SQL | undef
 /**
  * Quick filter for date range
  */
-export function filterDateRange(
-    column: PgColumn,
-    startDate?: Date | null,
-    endDate?: Date | null
-): SQL | undefined {
+export function filterDateRange(column: PgColumn, startDate?: Date | null, endDate?: Date | null): SQL | undefined {
     return createFilter().dateRange(column, startDate, endDate).build();
 }

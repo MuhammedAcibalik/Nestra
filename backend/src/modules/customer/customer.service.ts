@@ -3,11 +3,7 @@
  * Following SOLID principles with proper types
  */
 
-import {
-    IResult,
-    success,
-    failure
-} from '../../core/interfaces';
+import { IResult, success, failure } from '../../core/interfaces';
 import {
     ICustomerRepository,
     CustomerWithRelations,
@@ -37,7 +33,7 @@ export interface ICustomerService {
 }
 
 export class CustomerService implements ICustomerService {
-    constructor(private readonly repository: ICustomerRepository) { }
+    constructor(private readonly repository: ICustomerRepository) {}
 
     async getCustomers(filter?: ICustomerFilter): Promise<IResult<ICustomerDto[]>> {
         try {

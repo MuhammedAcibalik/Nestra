@@ -11,14 +11,27 @@
 
 import { SQL, eq, sql, and, isNull } from 'drizzle-orm';
 import { PgTableWithColumns, PgColumn } from 'drizzle-orm/pg-core';
+import { trace, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
+import { ATTR_ERROR_TYPE } from '@opentelemetry/semantic-conventions';
 import { Database } from '../../db';
 import { PaginationOptions, PaginatedResult } from './types';
+import { createModuleLogger } from '../logger';
+
+const logger = createModuleLogger('BaseRepository');
+const tracer = trace.getTracer('database', '1.0.0');
+
+// Slow query threshold (1 second)
+const SLOW_QUERY_THRESHOLD_MS = 1000;
 
 // ==================== TYPES ====================
 
 export interface RepositoryConfig {
     /** Enable soft delete (requires deletedAt column) */
     softDelete?: boolean;
+    /** Enable OpenTelemetry tracing */
+    enableTracing?: boolean;
+    /** Table name for tracing attributes */
+    tableName?: string;
 }
 
 // ==================== BASE REPOSITORY ====================
@@ -31,11 +44,11 @@ export interface RepositoryConfig {
  * ```typescript
  * class ProductRepository extends EnhancedBaseRepository {
  *     protected readonly tableName = 'products';
- *     
+ *
  *     protected getTable() {
  *         return products;
  *     }
- *     
+ *
  *     protected getIdColumn() {
  *         return products.id;
  *     }
@@ -72,69 +85,52 @@ export abstract class EnhancedBaseRepository<
      * Find entity by ID
      */
     async findById(id: string): Promise<TEntity | null> {
-        const table = this.getTable();
-        const where = this.buildWhereWithId(id);
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(where)
-            .limit(1);
-        return (results[0] as TEntity) ?? null;
+        return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
+            const table = this.getTable();
+            const where = this.buildWhereWithId(id);
+            const results = await this.db.select().from(table).where(where).limit(1);
+            return (results[0] as TEntity) ?? null;
+        });
     }
 
     /**
      * Find single entity matching conditions
      */
     async findOne(where: SQL): Promise<TEntity | null> {
-        const table = this.getTable();
-        const finalWhere = this.applyDefaultFilters(where);
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(1);
-        return (results[0] as TEntity) ?? null;
+        return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
+            const table = this.getTable();
+            const finalWhere = this.applyDefaultFilters(where);
+            const results = await this.db.select().from(table).where(finalWhere).limit(1);
+            return (results[0] as TEntity) ?? null;
+        });
     }
 
     /**
      * Find multiple entities
      */
-    async findMany(
-        where?: SQL,
-        pagination?: PaginationOptions
-    ): Promise<TEntity[]> {
-        const table = this.getTable();
-        const { limit = 100 } = pagination ?? {};
-        const finalWhere = this.applyDefaultFilters(where);
+    async findMany(where?: SQL, pagination?: PaginationOptions): Promise<TEntity[]> {
+        return this.withTracing('db.query', { operation: 'SELECT', limit: pagination?.limit }, async () => {
+            const table = this.getTable();
+            const { limit = 100 } = pagination ?? {};
+            const finalWhere = this.applyDefaultFilters(where);
 
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(limit);
+            const results = await this.db.select().from(table).where(finalWhere).limit(limit);
 
-        return results as TEntity[];
+            return results as TEntity[];
+        });
     }
 
     /**
      * Find entities with pagination metadata
      */
-    async findManyPaginated(
-        where?: SQL,
-        pagination?: PaginationOptions
-    ): Promise<PaginatedResult<TEntity>> {
+    async findManyPaginated(where?: SQL, pagination?: PaginationOptions): Promise<PaginatedResult<TEntity>> {
         const table = this.getTable();
         const { page = 1, limit = 20 } = pagination ?? {};
         const offset = (page - 1) * limit;
         const finalWhere = this.applyDefaultFilters(where);
 
         const [data, countResult] = await Promise.all([
-            this.db
-                .select()
-                .from(table)
-                .where(finalWhere)
-                .limit(limit)
-                .offset(offset),
+            this.db.select().from(table).where(finalWhere).limit(limit).offset(offset),
             this.db
                 .select({ count: sql<number>`count(*)::int` })
                 .from(table)
@@ -188,13 +184,15 @@ export abstract class EnhancedBaseRepository<
      * Create a new entity
      */
     async create(data: TCreate): Promise<TEntity> {
-        const table = this.getTable();
-        const preparedData = this.prepareCreateData(data);
-        const [result] = await this.db
-            .insert(table)
-            .values(preparedData as Record<string, unknown>)
-            .returning();
-        return result as TEntity;
+        return this.withTracing('db.insert', { operation: 'INSERT' }, async () => {
+            const table = this.getTable();
+            const preparedData = this.prepareCreateData(data);
+            const [result] = await this.db
+                .insert(table)
+                .values(preparedData as Record<string, unknown>)
+                .returning();
+            return result as TEntity;
+        });
     }
 
     /**
@@ -204,7 +202,7 @@ export abstract class EnhancedBaseRepository<
         if (data.length === 0) return [];
 
         const table = this.getTable();
-        const preparedData = data.map(d => this.prepareCreateData(d));
+        const preparedData = data.map((d) => this.prepareCreateData(d));
         const results = await this.db
             .insert(table)
             .values(preparedData as Record<string, unknown>[])
@@ -216,14 +214,16 @@ export abstract class EnhancedBaseRepository<
      * Update entity by ID
      */
     async update(id: string, data: TUpdate): Promise<TEntity> {
-        const table = this.getTable();
-        const preparedData = this.prepareUpdateData(data);
-        const [result] = await this.db
-            .update(table)
-            .set(preparedData as Record<string, unknown>)
-            .where(eq(this.getIdColumn(), id))
-            .returning();
-        return result as TEntity;
+        return this.withTracing('db.update', { operation: 'UPDATE' }, async () => {
+            const table = this.getTable();
+            const preparedData = this.prepareUpdateData(data);
+            const [result] = await this.db
+                .update(table)
+                .set(preparedData as Record<string, unknown>)
+                .where(eq(this.getIdColumn(), id))
+                .returning();
+            return result as TEntity;
+        });
     }
 
     /**
@@ -244,10 +244,10 @@ export abstract class EnhancedBaseRepository<
      * Delete entity by ID (hard delete)
      */
     async delete(id: string): Promise<void> {
-        const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where(eq(this.getIdColumn(), id));
+        return this.withTracing('db.delete', { operation: 'DELETE' }, async () => {
+            const table = this.getTable();
+            await this.db.delete(table).where(eq(this.getIdColumn(), id));
+        });
     }
 
     /**
@@ -255,10 +255,7 @@ export abstract class EnhancedBaseRepository<
      */
     async deleteMany(where: SQL): Promise<number> {
         const table = this.getTable();
-        const results = await this.db
-            .delete(table)
-            .where(where)
-            .returning();
+        const results = await this.db.delete(table).where(where).returning();
         return results.length;
     }
 
@@ -330,7 +327,7 @@ export abstract class EnhancedBaseRepository<
      */
     protected prepareCreateData(data: TCreate): TCreate {
         return {
-            ...data as Record<string, unknown>,
+            ...(data as Record<string, unknown>),
             createdAt: new Date(),
             updatedAt: new Date()
         } as TCreate;
@@ -342,8 +339,86 @@ export abstract class EnhancedBaseRepository<
      */
     protected prepareUpdateData(data: TUpdate): TUpdate {
         return {
-            ...data as Record<string, unknown>,
+            ...(data as Record<string, unknown>),
             updatedAt: new Date()
         } as TUpdate;
+    }
+
+    // ==================== TRACING HELPERS ====================
+
+    /**
+     * Wrap database operation with OpenTelemetry tracing
+     */
+    private async withTracing<T>(
+        spanName: string,
+        attributes: { operation: string; limit?: number; singleResult?: boolean },
+        fn: () => Promise<T>
+    ): Promise<T> {
+        if (!this.config.enableTracing) {
+            return fn();
+        }
+
+        const span = tracer.startSpan(spanName, {
+            attributes: {
+                'db.system': 'postgresql',
+                'db.operation.name': attributes.operation,
+                ...(this.config.tableName && { 'db.collection.name': this.config.tableName }),
+                ...(attributes.limit && { 'db.operation.limit': attributes.limit })
+            }
+        });
+
+        return otelContext.with(trace.setSpan(otelContext.active(), span), async () => {
+            const startTime = Date.now();
+            try {
+                const result = await fn();
+                const duration = Date.now() - startTime;
+
+                // Record result metrics
+                if (Array.isArray(result)) {
+                    span.setAttribute('db.operation.rows_returned', result.length);
+                } else if (attributes.singleResult) {
+                    span.setAttribute('db.operation.rows_returned', result ? 1 : 0);
+                }
+
+                span.setAttribute('db.operation.duration_ms', duration);
+                span.setStatus({ code: SpanStatusCode.OK });
+
+                // Detect slow queries
+                if (duration > SLOW_QUERY_THRESHOLD_MS) {
+                    logger.warn('Slow database query detected', {
+                        table: this.config.tableName,
+                        operation: attributes.operation,
+                        duration,
+                        threshold: SLOW_QUERY_THRESHOLD_MS
+                    });
+                    span.addEvent('slow_query', {
+                        'db.slow_query.threshold_ms': SLOW_QUERY_THRESHOLD_MS,
+                        'db.slow_query.actual_ms': duration
+                    });
+                }
+
+                return result;
+            } catch (error) {
+                span.setStatus({
+                    code: SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+
+                if (error instanceof Error) {
+                    span.setAttribute(ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+
+                logger.error('Database operation failed', {
+                    error,
+                    table: this.config.tableName,
+                    operation: attributes.operation
+                });
+
+                throw error;
+            } finally {
+                span.end();
+            }
+        });
     }
 }

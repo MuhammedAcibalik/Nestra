@@ -1,6 +1,12 @@
 import { ProductionService } from '../production.service';
 import { IProductionRepository, ProductionLogWithRelations } from '../production.repository';
-import { IOptimizationServiceClient, IStockServiceClient, IServiceResponse, IPlanSummary, IPlanStockItem } from '../../../core/services';
+import {
+    IOptimizationServiceClient,
+    IStockServiceClient,
+    IServiceResponse,
+    IPlanSummary,
+    IPlanStockItem
+} from '../../../core/services';
 import { EventBus } from '../../../core/events';
 import { mock, MockProxy } from 'jest-mock-extended';
 
@@ -96,7 +102,10 @@ describe('ProductionService', () => {
         });
 
         it('should fail if plan not found', async () => {
-            optimizationClient.getPlanById.mockResolvedValue({ success: false, error: { code: 'NOT_FOUND', message: 'Not found' } });
+            optimizationClient.getPlanById.mockResolvedValue({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Not found' }
+            });
 
             const result = await service.startProduction('plan-1', 'op-1');
 
@@ -114,7 +123,10 @@ describe('ProductionService', () => {
             repository.findById.mockResolvedValue(log);
             optimizationClient.getPlanStockItems.mockResolvedValue({ success: true, data: stockItems });
             optimizationClient.updatePlanStatus.mockResolvedValue({ success: true });
-            stockClient.getStockById.mockResolvedValue({ success: true, data: { id: 'stock-1', code: 'STK-1', name: 'Stock', quantity: 10, reservedQty: 0 } });
+            stockClient.getStockById.mockResolvedValue({
+                success: true,
+                data: { id: 'stock-1', code: 'STK-1', name: 'Stock', quantity: 10, reservedQty: 0 }
+            });
             stockClient.createMovement.mockResolvedValue({ success: true, data: { id: 'mov-1' } });
             stockClient.updateQuantity.mockResolvedValue({ success: true });
 
@@ -140,7 +152,9 @@ describe('ProductionService', () => {
             expect(stockClient.updateQuantity).toHaveBeenCalledWith('stock-1', -1);
 
             // Event check
-            const completedEvent = eventBusPublishSpy.mock.calls.find(call => call[0].eventType === 'production.completed');
+            const completedEvent = eventBusPublishSpy.mock.calls.find(
+                (call) => call[0].eventType === 'production.completed'
+            );
             expect(completedEvent).toBeDefined();
         });
 
@@ -164,17 +178,18 @@ describe('ProductionService', () => {
                 issues: [{ description: 'Motor failure', severity: 'HIGH' }]
             };
 
-            repository.findById
-                .mockResolvedValueOnce(log)
-                .mockResolvedValueOnce(updatedLog);
+            repository.findById.mockResolvedValueOnce(log).mockResolvedValueOnce(updatedLog);
             (repository.update as jest.Mock).mockResolvedValue(undefined);
 
             const result = await service.updateProductionLog('log-1', input);
 
             expect(result.success).toBe(true);
-            expect(repository.update).toHaveBeenCalledWith('log-1', expect.objectContaining({
-                notes: input.notes
-            }));
+            expect(repository.update).toHaveBeenCalledWith(
+                'log-1',
+                expect.objectContaining({
+                    notes: input.notes
+                })
+            );
         });
     });
 });

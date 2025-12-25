@@ -12,7 +12,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('MaterialEventHandler');
 
 export class MaterialEventHandler {
-    constructor(private readonly materialRepository: IMaterialRepository) { }
+    constructor(private readonly materialRepository: IMaterialRepository) {}
 
     /**
      * Register all event handlers
@@ -52,7 +52,10 @@ export class MaterialEventHandler {
         const payload = event.payload as { stockItemId: string; currentQuantity: number };
 
         try {
-            logger.info('Low stock alert', { stockItemId: payload.stockItemId, currentQuantity: payload.currentQuantity });
+            logger.info('Low stock alert', {
+                stockItemId: payload.stockItemId,
+                currentQuantity: payload.currentQuantity
+            });
             // Could trigger reorder workflow or notifications
         } catch (error) {
             logger.error('Error handling low stock alert', { error });

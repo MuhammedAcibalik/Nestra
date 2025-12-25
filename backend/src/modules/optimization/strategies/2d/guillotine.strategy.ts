@@ -49,9 +49,9 @@ export class GuillotineStrategy implements I2DAlgorithm {
         }
 
         const expandedPieces = this.expandPieces(pieces);
-        expandedPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        expandedPieces.sort((a, b) => b.width * b.height - a.width * a.height);
 
-        const sortedStock = [...stock].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        const sortedStock = [...stock].sort((a, b) => b.width * b.height - a.width * a.height);
         const activeSheets: ActiveSheet[] = [];
         const unplacedPieces: I2DPiece[] = [];
         const stockUsage = new Map<string, number>();
@@ -126,7 +126,10 @@ export class GuillotineStrategy implements I2DAlgorithm {
         return false;
     }
 
-    private getOrientations(piece: ExpandedPiece, allowRotation: boolean): Array<{ width: number; height: number; rotated: boolean }> {
+    private getOrientations(
+        piece: ExpandedPiece,
+        allowRotation: boolean
+    ): Array<{ width: number; height: number; rotated: boolean }> {
         const orientations = [{ width: piece.width, height: piece.height, rotated: false }];
         if (allowRotation && piece.canRotate && piece.width !== piece.height) {
             orientations.push({ width: piece.height, height: piece.width, rotated: true });
@@ -145,10 +148,7 @@ export class GuillotineStrategy implements I2DAlgorithm {
         for (let i = 0; i < freeRects.length; i++) {
             const rect = freeRects[i];
             if (rect.width >= dims.width + kerf && rect.height >= dims.height + kerf) {
-                const shortSide = Math.min(
-                    rect.width - dims.width - kerf,
-                    rect.height - dims.height - kerf
-                );
+                const shortSide = Math.min(rect.width - dims.width - kerf, rect.height - dims.height - kerf);
                 if (shortSide < bestShortSide) {
                     bestShortSide = shortSide;
                     bestIndex = i;
@@ -233,15 +233,17 @@ export class GuillotineStrategy implements I2DAlgorithm {
             stockId: stock.id,
             width: stock.width,
             height: stock.height,
-            placements: [{
-                pieceId: piece.id,
-                orderItemId: piece.orderItemId,
-                x: 0,
-                y: 0,
-                width: orient.width,
-                height: orient.height,
-                rotated: orient.rotated
-            }],
+            placements: [
+                {
+                    pieceId: piece.id,
+                    orderItemId: piece.orderItemId,
+                    x: 0,
+                    y: 0,
+                    width: orient.width,
+                    height: orient.height,
+                    rotated: orient.rotated
+                }
+            ],
             freeRects: []
         };
 
@@ -268,7 +270,7 @@ export class GuillotineStrategy implements I2DAlgorithm {
     }
 
     private addUnplacedPiece(unplacedPieces: I2DPiece[], piece: ExpandedPiece): void {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         } else {
@@ -283,18 +285,14 @@ export class GuillotineStrategy implements I2DAlgorithm {
         }
     }
 
-    private buildResult(
-        sheets: ActiveSheet[],
-        expandedPieces: ExpandedPiece[],
-        unplacedPieces: I2DPiece[]
-    ): I2DResult {
+    private buildResult(sheets: ActiveSheet[], expandedPieces: ExpandedPiece[], unplacedPieces: I2DPiece[]): I2DResult {
         let totalWasteArea = 0;
         let totalStockArea = 0;
         let totalUsedArea = 0;
 
-        const sheetResults: I2DSheetResult[] = sheets.map(sheet => {
+        const sheetResults: I2DSheetResult[] = sheets.map((sheet) => {
             const stockArea = sheet.width * sheet.height;
-            const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+            const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
             const wasteArea = stockArea - usedArea;
             const wastePercentage = (wasteArea / stockArea) * 100;
 
@@ -313,9 +311,7 @@ export class GuillotineStrategy implements I2DAlgorithm {
             };
         });
 
-        const totalWastePercentage = totalStockArea > 0
-            ? (totalWasteArea / totalStockArea) * 100
-            : 0;
+        const totalWastePercentage = totalStockArea > 0 ? (totalWasteArea / totalStockArea) * 100 : 0;
 
         return {
             success: unplacedPieces.length === 0,

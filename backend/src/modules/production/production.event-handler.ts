@@ -12,7 +12,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('ProductionEventHandler');
 
 export class ProductionEventHandler {
-    constructor(private readonly productionRepository: IProductionRepository) { }
+    constructor(private readonly productionRepository: IProductionRepository) {}
 
     /**
      * Register all event handlers
@@ -40,13 +40,14 @@ export class ProductionEventHandler {
             logger.info('Plan approved', { planId: payload.planId });
 
             // Publish production started event with correct payload
-            await adapter.publish(DomainEvents.productionStarted({
-                logId: `log_${Date.now()}`,
-                planId: payload.planId,
-                planNumber: payload.planNumber ?? 'unknown',
-                operatorId: payload.approvedById ?? 'system'
-            }));
-
+            await adapter.publish(
+                DomainEvents.productionStarted({
+                    logId: `log_${Date.now()}`,
+                    planId: payload.planId,
+                    planNumber: payload.planNumber ?? 'unknown',
+                    operatorId: payload.approvedById ?? 'system'
+                })
+            );
         } catch (error) {
             logger.error('Error handling plan approval', { error, planId: payload.planId });
         }

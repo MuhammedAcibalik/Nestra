@@ -4,12 +4,7 @@
  * Following Single Responsibility Principle (SRP)
  */
 
-import {
-    IJobProcessor,
-    IJob,
-    IJobResult,
-    IOptimizationJobData
-} from './job-queue.interface';
+import { IJobProcessor, IJob, IJobResult, IOptimizationJobData } from './job-queue.interface';
 import { BullMQQueue } from './bullmq.queue';
 import { createModuleLogger } from '../logger';
 
@@ -47,8 +42,14 @@ export class OptimizationJobProcessor implements IJobProcessor<IOptimizationJobD
             efficiency?: number;
             error?: string;
         }>,
-        private readonly onProgressCallback?: (userId: string, scenarioId: string, status: string, progress: number, data?: object) => void
-    ) { }
+        private readonly onProgressCallback?: (
+            userId: string,
+            scenarioId: string,
+            status: string,
+            progress: number,
+            data?: object
+        ) => void
+    ) {}
 
     /**
      * Set queue reference for progress updates
@@ -132,7 +133,6 @@ export class OptimizationJobProcessor implements IJobProcessor<IOptimizationJobD
                 success: true,
                 data: jobResult
             };
-
         } catch (error) {
             const duration = Date.now() - startTime;
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -196,13 +196,7 @@ export class OptimizationJobProcessor implements IJobProcessor<IOptimizationJobD
     /**
      * Notify progress via callback
      */
-    private notifyProgress(
-        userId: string,
-        scenarioId: string,
-        status: string,
-        progress: number,
-        data?: object
-    ): void {
+    private notifyProgress(userId: string, scenarioId: string, status: string, progress: number, data?: object): void {
         if (this.onProgressCallback) {
             this.onProgressCallback(userId, scenarioId, status, progress, data);
         }

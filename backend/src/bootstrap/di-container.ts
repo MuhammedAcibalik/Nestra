@@ -21,36 +21,16 @@ import {
 } from '../core/services';
 
 // Material Module
-import {
-    MaterialRepository,
-    MaterialService,
-    MaterialServiceHandler,
-    MaterialEventHandler
-} from '../modules/material';
+import { MaterialRepository, MaterialService, MaterialServiceHandler, MaterialEventHandler } from '../modules/material';
 
 // Stock Module
-import {
-    StockRepository,
-    StockService,
-    StockServiceHandler,
-    StockEventHandler
-} from '../modules/stock';
+import { StockRepository, StockService, StockServiceHandler, StockEventHandler } from '../modules/stock';
 
 // Auth Module
-import {
-    UserRepository,
-    AuthService,
-    AuthServiceHandler,
-    IAuthConfig
-} from '../modules/auth';
+import { UserRepository, AuthService, AuthServiceHandler, IAuthConfig } from '../modules/auth';
 
 // Order Module
-import {
-    OrderRepository,
-    OrderService,
-    OrderServiceHandler,
-    OrderEventHandler
-} from '../modules/order';
+import { OrderRepository, OrderService, OrderServiceHandler, OrderEventHandler } from '../modules/order';
 
 // Optimization Module
 import {
@@ -62,11 +42,7 @@ import {
 import { OptimizationConsumer } from '../modules/optimization/optimization.consumer';
 
 // Production Module
-import {
-    ProductionRepository,
-    ProductionService,
-    ProductionEventHandler
-} from '../modules/production';
+import { ProductionRepository, ProductionService, ProductionEventHandler } from '../modules/production';
 
 // Report Module
 import { ReportRepository, ReportService } from '../modules/report';
@@ -80,41 +56,22 @@ import {
 } from '../modules/cutting-job';
 
 // Machine Module
-import {
-    MachineRepository,
-    MachineService,
-    MachineServiceHandler,
-    MachineEventHandler
-} from '../modules/machine';
+import { MachineRepository, MachineService, MachineServiceHandler, MachineEventHandler } from '../modules/machine';
 
 // Customer Module
-import {
-    CustomerRepository,
-    CustomerService,
-    CustomerServiceHandler
-} from '../modules/customer';
+import { CustomerRepository, CustomerService, CustomerServiceHandler } from '../modules/customer';
 
 // Import Module
 import { ImportRepository, ImportService } from '../modules/import';
 
 // Location Module
-import {
-    LocationRepository,
-    LocationService,
-    LocationServiceHandler
-} from '../modules/location';
+import { LocationRepository, LocationService, LocationServiceHandler } from '../modules/location';
 
 // Tenant Module
-import {
-    TenantRepository,
-    TenantService
-} from '../modules/tenant';
+import { TenantRepository, TenantService } from '../modules/tenant';
 
 // Realtime Dashboard Module
-import {
-    RealtimeDashboardRepository,
-    RealtimeDashboardService
-} from '../modules/realtime-dashboard';
+import { RealtimeDashboardRepository, RealtimeDashboardService } from '../modules/realtime-dashboard';
 
 // Collaboration Module
 import {
@@ -124,6 +81,11 @@ import {
     ActivityFeedService
 } from '../modules/collaboration';
 
+// Audit Module
+import { AuditRepository, AuditService, initializeAuditService } from '../modules/audit';
+
+// Notification Module
+import { NotificationService } from '../modules/notification';
 
 /**
  * Application Services Container
@@ -147,6 +109,9 @@ export interface IAppServices {
     presenceService: PresenceService;
     documentLockService: DocumentLockService;
     activityFeedService: ActivityFeedService;
+    // Advanced Features
+    auditService: AuditService;
+    notificationService: NotificationService;
 }
 
 /**
@@ -177,6 +142,7 @@ export function initializeDependencies(db: Database): IAppServices {
     const tenantRepository = new TenantRepository(db);
     const dashboardRepository = new RealtimeDashboardRepository(db);
     const collaborationRepository = new CollaborationRepository(db);
+    const auditRepository = new AuditRepository(db);
 
     // ==================== MICROSERVICE INFRASTRUCTURE ====================
     const serviceRegistry = ServiceRegistry.getInstance();
@@ -217,8 +183,14 @@ export function initializeDependencies(db: Database): IAppServices {
         dashboardService: new RealtimeDashboardService(dashboardRepository),
         presenceService: new PresenceService(),
         documentLockService: new DocumentLockService(collaborationRepository),
-        activityFeedService: new ActivityFeedService(collaborationRepository)
+        activityFeedService: new ActivityFeedService(collaborationRepository),
+        // Advanced Features
+        auditService: new AuditService(auditRepository),
+        notificationService: new NotificationService()
     };
+
+    // Initialize global audit service accessor
+    initializeAuditService(services.auditService);
 
     // ==================== EVENT HANDLERS ====================
     // Store references for lifecycle management
@@ -231,7 +203,7 @@ export function initializeDependencies(db: Database): IAppServices {
         new MachineEventHandler(machineRepository),
         new CuttingJobEventHandler(cuttingJobRepository)
     ];
-    eventHandlers.forEach(handler => handler.register());
+    eventHandlers.forEach((handler) => handler.register());
     logger.info('Event handlers registered', { count: eventHandlers.length });
 
     // ==================== RABBITMQ CONSUMERS ====================

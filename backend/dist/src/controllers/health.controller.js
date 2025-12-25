@@ -134,6 +134,59 @@ function checkMemory() {
         message: `${heapUsedMB}MB / ${heapTotalMB}MB (${percentage}%)`
     };
 }
+async function checkRedis() {
+    const start = Date.now();
+    try {
+        const { getCacheClient } = await Promise.resolve().then(() => __importStar(require('../core/cache')));
+        const cache = await getCacheClient();
+        // Test set/get operation
+        const testKey = '__health_check__';
+        await cache.set(testKey, 'ok', 5);
+        const value = await cache.get(testKey);
+        await cache.del(testKey);
+        if (value === 'ok') {
+            return {
+                name: 'redis',
+                status: 'pass',
+                latency: Date.now() - start,
+                message: 'Redis connected'
+            };
+        }
+        return {
+            name: 'redis',
+            status: 'warn',
+            latency: Date.now() - start,
+            message: 'Using in-memory cache'
+        };
+    }
+    catch {
+        return {
+            name: 'redis',
+            status: 'warn',
+            latency: Date.now() - start,
+            message: 'Redis not available (using in-memory fallback)'
+        };
+    }
+}
+async function checkWorkerPool() {
+    try {
+        const { getOptimizationPool } = await Promise.resolve().then(() => __importStar(require('../workers')));
+        const pool = getOptimizationPool();
+        const isReady = pool.isReady();
+        return {
+            name: 'worker_pool',
+            status: isReady ? 'pass' : 'warn',
+            message: isReady ? 'Worker pool ready' : 'Worker pool not initialized'
+        };
+    }
+    catch {
+        return {
+            name: 'worker_pool',
+            status: 'warn',
+            message: 'Worker pool not available'
+        };
+    }
+}
 // ==================== CONTROLLER ====================
 class HealthController {
     router;
@@ -249,6 +302,8 @@ class HealthController {
             const checks = await Promise.all([
                 checkDatabase(),
                 checkRabbitMQ(),
+                checkRedis(),
+                checkWorkerPool(),
                 Promise.resolve(checkMemory())
             ]);
             const hasFailure = checks.some(c => c.status === 'fail');

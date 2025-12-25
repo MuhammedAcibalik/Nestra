@@ -23,7 +23,12 @@ export interface IActivityFeedService {
     getActivityById(activityId: string): Promise<IActivityDto | null>;
 
     // Document activities
-    getDocumentActivities(tenantId: string, documentType: string, documentId: string, limit?: number): Promise<IActivityDto[]>;
+    getDocumentActivities(
+        tenantId: string,
+        documentType: string,
+        documentId: string,
+        limit?: number
+    ): Promise<IActivityDto[]>;
 
     // Unread management
     getUnreadCount(tenantId: string, userId: string): Promise<number>;
@@ -123,7 +128,7 @@ export class ActivityFeedService implements IActivityFeedService {
 
     async getActivities(tenantId: string, options?: IActivityQueryOptions): Promise<IActivityDto[]> {
         const activities = await this.repository.getActivities(tenantId, options ?? {});
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
 
     async getActivityById(activityId: string): Promise<IActivityDto | null> {
@@ -142,7 +147,7 @@ export class ActivityFeedService implements IActivityFeedService {
             targetId: documentId,
             limit
         });
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
 
     // ==================== UNREAD MANAGEMENT ====================
@@ -171,7 +176,7 @@ export class ActivityFeedService implements IActivityFeedService {
         });
 
         // Filter to only those with mentions (would need schema support)
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
 
     // ==================== HELPERS ====================
@@ -208,13 +213,14 @@ export class ActivityFeedService implements IActivityFeedService {
                 userId: activity.actorId,
                 name: activity.actorName ?? 'Unknown'
             },
-            target: activity.targetType && activity.targetId
-                ? {
-                    type: activity.targetType,
-                    id: activity.targetId,
-                    name: activity.targetName
-                }
-                : undefined,
+            target:
+                activity.targetType && activity.targetId
+                    ? {
+                          type: activity.targetType,
+                          id: activity.targetId,
+                          name: activity.targetName
+                      }
+                    : undefined,
             message: activity.description ?? this.getActivityMessage(activity),
             metadata: activity.metadata,
             timestamp: activity.createdAt.toISOString()
@@ -244,7 +250,7 @@ export class ActivityFeedService implements IActivityFeedService {
                 mentionedUserId,
                 mentionedBy: {
                     userId: actorId,
-                    name: 'User'  // Would need to fetch actor name
+                    name: 'User' // Would need to fetch actor name
                 },
                 context: {
                     type: 'activity',

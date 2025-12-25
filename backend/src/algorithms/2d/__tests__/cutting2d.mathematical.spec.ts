@@ -29,9 +29,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 300, height: 200, quantity: 2, orderItemId: 'o1', canRotate: true },
                 { id: 'p2', width: 250, height: 150, quantity: 3, orderItemId: 'o2', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 2 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 2 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -54,9 +52,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 200, height: 200, quantity: 4, orderItemId: 'o1', canRotate: false },
                 { id: 'p2', width: 150, height: 150, quantity: 3, orderItemId: 'o2', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, { ...defaultOptions, kerf: 0 });
 
@@ -86,9 +82,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 300, height: 400, quantity: 3, orderItemId: 'o1', canRotate: true },
                 { id: 'p2', width: 200, height: 300, quantity: 2, orderItemId: 'o2', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 800, available: 2 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 800, available: 2 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -106,9 +100,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 400, height: 400, quantity: 2, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const kerf = 10;
             const result = bottomLeftFill(pieces, stock, { ...defaultOptions, kerf });
@@ -142,9 +134,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 200, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 100, height: 200, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 100, height: 200, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -160,9 +150,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 200, height: 100, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 100, height: 200, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 100, height: 200, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -174,9 +162,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 100, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 200, height: 200, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 200, height: 200, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -189,9 +175,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 200, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 500, height: 500, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 500, height: 500, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -214,9 +198,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 300, height: 300, quantity: 4, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -230,9 +212,11 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 const next = placements[i + 1];
 
                 // Next piece should have equal or greater Y, or if same Y, greater or equal X
-                const validOrder = next.y > curr.y || (next.y === curr.y && next.x >= curr.x) ||
+                const validOrder =
+                    next.y > curr.y ||
+                    (next.y === curr.y && next.x >= curr.x) ||
                     // Or pieces are in different rows
-                    (curr.y + curr.height <= next.y);
+                    curr.y + curr.height <= next.y;
                 expect(validOrder).toBe(true);
             }
         });
@@ -243,22 +227,18 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 400, height: 400, quantity: 1, orderItemId: 'o1', canRotate: false },
                 { id: 'p2', width: 200, height: 200, quantity: 1, orderItemId: 'o2', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
             // Second piece should be at a corner of first piece
             const p2 = result.sheets[0].placements[1];
             const validCornerPositions = [
-                { x: 400, y: 0 },   // Right of first piece
-                { x: 0, y: 400 }    // Above first piece
+                { x: 400, y: 0 }, // Right of first piece
+                { x: 0, y: 400 } // Above first piece
             ];
 
-            const isAtCorner = validCornerPositions.some(
-                pos => p2.x === pos.x && p2.y === pos.y
-            );
+            const isAtCorner = validCornerPositions.some((pos) => p2.x === pos.x && p2.y === pos.y);
             expect(isAtCorner).toBe(true);
         });
 
@@ -266,9 +246,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 200, height: 200, quantity: 16, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 800, height: 800, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 800, height: 800, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -294,9 +272,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 300, height: 200, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = guillotineCutting(pieces, stock, guillotineOptions);
 
@@ -318,9 +294,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 400, height: 300, quantity: 1, orderItemId: 'o1', canRotate: false },
                 { id: 'p2', width: 300, height: 300, quantity: 1, orderItemId: 'o2', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = guillotineCutting(pieces, stock, guillotineOptions);
 
@@ -332,9 +306,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 495, height: 495, quantity: 2, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const kerf = 10;
             const result = guillotineCutting(pieces, stock, { ...guillotineOptions, kerf });
@@ -353,9 +325,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p2', width: 200, height: 300, quantity: 1, orderItemId: 'o2', canRotate: false },
                 { id: 'p3', width: 250, height: 250, quantity: 1, orderItemId: 'o3', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = guillotineCutting(pieces, stock, guillotineOptions);
 
@@ -381,9 +351,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
 
         it('should handle empty pieces array', () => {
             const pieces: CuttingPiece2D[] = [];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 5 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 5 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -396,9 +364,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 1000, height: 800, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 800, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 800, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -412,9 +378,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'small', width: 50, height: 50, quantity: 100, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 500, height: 500, available: 2 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 500, height: 500, available: 2 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -431,9 +395,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'huge', width: 2000, height: 2000, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 10 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 10 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -456,9 +418,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 500, height: 400, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -474,9 +434,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 600, height: 800, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -496,9 +454,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', width: 200, height: 200, quantity: 5, orderItemId: 'o1', canRotate: false },
                 { id: 'p2', width: 150, height: 150, quantity: 3, orderItemId: 'o2', canRotate: false }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 1000, height: 1000, available: 2 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 1000, height: 1000, available: 2 }];
 
             const result = bottomLeftFill(pieces, stock, defaultOptions);
 
@@ -513,9 +469,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 100, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 500, height: 500, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 500, height: 500, available: 1 }];
 
             const result = optimize2D(pieces, stock, {
                 algorithm: 'BOTTOM_LEFT',
@@ -531,9 +485,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 100, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 500, height: 500, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 500, height: 500, available: 1 }];
 
             const result = optimize2D(pieces, stock, {
                 algorithm: 'GUILLOTINE',
@@ -549,9 +501,7 @@ describe('2D Cutting Algorithm - Mathematical Tests', () => {
             const pieces: CuttingPiece2D[] = [
                 { id: 'p1', width: 100, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock: StockSheet2D[] = [
-                { id: 's1', width: 500, height: 500, available: 1 }
-            ];
+            const stock: StockSheet2D[] = [{ id: 's1', width: 500, height: 500, available: 1 }];
 
             const result = optimize2D(pieces, stock, {
                 algorithm: 'MAXRECTS',

@@ -10,6 +10,7 @@ export interface ICircuitBreakerConfig {
     resetTimeout?: number;
     volumeThreshold?: number;
     name: string;
+    enableTracing?: boolean;
 }
 export interface ICircuitBreakerStats {
     name: string;
@@ -27,6 +28,10 @@ export declare class CircuitBreakerManager {
      * Create a circuit breaker for an async function
      */
     static create<TArgs extends unknown[], TResult>(action: (...args: TArgs) => Promise<TResult>, config: ICircuitBreakerConfig, fallback?: (...args: TArgs) => TResult | Promise<TResult>): CircuitBreaker<TArgs, TResult>;
+    /**
+     * Wrap function with OpenTelemetry tracing
+     */
+    private static wrapWithTracing;
     /**
      * Get existing breaker by name
      */

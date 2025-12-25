@@ -15,7 +15,7 @@ import { I2DOptimizationResult, buildResult } from './result-builder';
 
 /**
  * Guillotine Cutting Algorithm
- * 
+ *
  * Strategy:
  * 1. Sort pieces by area (descending)
  * 2. Track free rectangles in each sheet
@@ -45,9 +45,7 @@ export function guillotineCutting(
 
         // Try new sheet
         if (!placed) {
-            const orientations = getOrientations(
-                piece.width, piece.height, piece.canRotate, options.allowRotation
-            );
+            const orientations = getOrientations(piece.width, piece.height, piece.canRotate, options.allowRotation);
 
             for (const orient of orientations) {
                 const availableStock = stockManager.findAvailableStock(orient.width, orient.height);

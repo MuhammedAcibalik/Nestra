@@ -21,4 +21,3 @@ export type { RepositoryConfig } from './base.repository';
 // Tenant-Aware Repository
 export { TenantAwareRepository } from './tenant.repository';
 export type { TenantRepositoryConfig } from './tenant.repository';
-

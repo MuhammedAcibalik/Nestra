@@ -85,5 +85,5 @@ export function generateWasteCode(sourceCode: string): string {
  * Determines stock type based on dimensions
  */
 export function determineStockType(length?: number, width?: number, height?: number): 'BAR_1D' | 'SHEET_2D' {
-    return (length && !width && !height) ? 'BAR_1D' : 'SHEET_2D';
+    return length && !width && !height ? 'BAR_1D' : 'SHEET_2D';
 }

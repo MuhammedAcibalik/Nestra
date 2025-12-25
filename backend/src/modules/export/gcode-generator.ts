@@ -123,7 +123,7 @@ export class GcodeGenerator {
      * Generate G-code for multiple sheets
      */
     generateForMultipleSheets(sheets: ICuttingSheet[]): IGcodeOutput[] {
-        return sheets.map(sheet => this.generateForSheet(sheet));
+        return sheets.map((sheet) => this.generateForSheet(sheet));
     }
 
     private addHeader(sheet: ICuttingSheet): void {
@@ -242,7 +242,7 @@ export class GcodeGenerator {
     private calculateEstimatedTime(): number {
         // Rough estimate: cutting distance / feed rate + rapid moves
         const cuttingTime = this.totalDistance / this.options.feedRate;
-        const rapidTime = this.totalDistance * 0.2 / this.options.rapidRate; // Estimate 20% rapid
+        const rapidTime = (this.totalDistance * 0.2) / this.options.rapidRate; // Estimate 20% rapid
         return cuttingTime + rapidTime;
     }
 }

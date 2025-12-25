@@ -1,39 +1,56 @@
 /**
  * Security Headers Middleware
- * Adds security headers for XSS, clickjacking, etc. protection
+ * Uses Helmet for comprehensive HTTP security
  * Following Microservice Pattern: Defense in Depth
  */
 
-import { Request, Response, NextFunction } from 'express';
+import helmet from 'helmet';
+import { RequestHandler } from 'express';
 
 /**
- * Security Headers Middleware
- * Adds standard security headers to all responses
+ * Helmet configuration for production-ready security
  */
-export function securityHeadersMiddleware(_req: Request, res: Response, next: NextFunction): void {
+export const securityHeadersMiddleware: RequestHandler = helmet({
     // Prevent XSS attacks
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+    xssFilter: true,
 
     // Prevent MIME sniffing
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+    noSniff: true,
 
     // Prevent clickjacking
-    res.setHeader('X-Frame-Options', 'DENY');
+    frameguard: { action: 'deny' },
 
     // Strict transport security (HSTS)
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true
+    },
 
-    // Content Security Policy (basic)
-    res.setHeader('Content-Security-Policy', "default-src 'self'");
-
-    // Remove X-Powered-By header (information disclosure)
-    res.removeHeader('X-Powered-By');
+    // Content Security Policy
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"], // For Swagger UI
+            scriptSrc: ["'self'", "'unsafe-inline'"], // For Swagger UI
+            imgSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: ["'self'", 'ws:', 'wss:'], // WebSocket support
+            fontSrc: ["'self'", 'https:', 'data:']
+        }
+    },
 
     // Referrer Policy
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 
-    // Permissions Policy
-    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    // Hide X-Powered-By
+    hidePoweredBy: true,
 
-    next();
-}
+    // DNS Prefetch Control
+    dnsPrefetchControl: { allow: false },
+
+    // IE No Open
+    ieNoOpen: true,
+
+    // Permitted Cross-Domain Policies
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' }
+});

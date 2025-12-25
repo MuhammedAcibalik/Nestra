@@ -4,16 +4,8 @@
  * Following Microservice Pattern: Shared-Nothing, Message Passing
  */
 
-import {
-    firstFitDecreasing,
-    bestFitDecreasing,
-    Optimization1DResult
-} from '../../algorithms/1d/cutting1d';
-import {
-    bottomLeftFill,
-    guillotineCutting,
-    Optimization2DResult
-} from '../../algorithms/2d/cutting2d';
+import { firstFitDecreasing, bestFitDecreasing, Optimization1DResult } from '../../algorithms/1d/cutting1d';
+import { bottomLeftFill, guillotineCutting, Optimization2DResult } from '../../algorithms/2d/cutting2d';
 import { IOptimization1DPayload, IOptimization2DPayload } from '../pool/worker-task';
 import { createModuleLogger } from '../../core/logger';
 

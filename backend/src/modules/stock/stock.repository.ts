@@ -7,7 +7,13 @@ import { Database } from '../../db';
 import { stockItems, stockMovements } from '../../db/schema';
 import { StockType, MovementType } from '../../db/schema/enums';
 import { eq, desc, and, SQL } from 'drizzle-orm';
-import { IStockFilter, ICreateStockInput, IUpdateStockInput, ICreateMovementInput, IMovementFilter } from '../../core/interfaces';
+import {
+    IStockFilter,
+    ICreateStockInput,
+    IUpdateStockInput,
+    ICreateMovementInput,
+    IMovementFilter
+} from '../../core/interfaces';
 import { createFilter } from '../../core/database';
 import { getCurrentTenantIdOptional } from '../../core/tenant';
 
@@ -34,7 +40,7 @@ export interface IStockRepository {
 }
 
 export class StockRepository implements IStockRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT FILTERING ====================
 
@@ -104,21 +110,24 @@ export class StockRepository implements IStockRepository {
     // ==================== WRITE OPERATIONS ====================
 
     async create(data: ICreateStockInput): Promise<StockItem> {
-        const [result] = await this.db.insert(stockItems).values({
-            tenantId: this.getCurrentTenantId(),
-            code: data.code,
-            name: data.name,
-            materialTypeId: data.materialTypeId,
-            thicknessRangeId: data.thicknessRangeId,
-            thickness: data.thickness,
-            stockType: data.stockType as StockType,
-            length: data.length,
-            width: data.width,
-            height: data.height,
-            quantity: data.quantity,
-            unitPrice: data.unitPrice,
-            locationId: data.locationId
-        }).returning();
+        const [result] = await this.db
+            .insert(stockItems)
+            .values({
+                tenantId: this.getCurrentTenantId(),
+                code: data.code,
+                name: data.name,
+                materialTypeId: data.materialTypeId,
+                thicknessRangeId: data.thicknessRangeId,
+                thickness: data.thickness,
+                stockType: data.stockType as StockType,
+                length: data.length,
+                width: data.width,
+                height: data.height,
+                quantity: data.quantity,
+                unitPrice: data.unitPrice,
+                locationId: data.locationId
+            })
+            .returning();
         return result;
     }
 
@@ -126,7 +135,8 @@ export class StockRepository implements IStockRepository {
         const conditions = [eq(stockItems.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(stockItems)
+        const [result] = await this.db
+            .update(stockItems)
             .set({
                 code: data.code,
                 name: data.name,
@@ -161,7 +171,8 @@ export class StockRepository implements IStockRepository {
 
         if (!current) throw new Error('Stock item not found');
 
-        const [result] = await this.db.update(stockItems)
+        const [result] = await this.db
+            .update(stockItems)
             .set({
                 quantity: current.quantity + quantityDelta,
                 reservedQty: current.reservedQty + reservedDelta,
@@ -175,13 +186,16 @@ export class StockRepository implements IStockRepository {
     // ==================== MOVEMENTS ====================
 
     async createMovement(data: ICreateMovementInput): Promise<StockMovement> {
-        const [result] = await this.db.insert(stockMovements).values({
-            stockItemId: data.stockItemId,
-            movementType: data.movementType as MovementType,
-            quantity: data.quantity,
-            notes: data.notes,
-            productionLogId: data.productionLogId
-        }).returning();
+        const [result] = await this.db
+            .insert(stockMovements)
+            .values({
+                stockItemId: data.stockItemId,
+                movementType: data.movementType as MovementType,
+                quantity: data.quantity,
+                notes: data.notes,
+                productionLogId: data.productionLogId
+            })
+            .returning();
         return result;
     }
 
@@ -193,10 +207,6 @@ export class StockRepository implements IStockRepository {
             .lte(stockMovements.createdAt, filter?.endDate)
             .build();
 
-        return this.db.select().from(stockMovements)
-            .where(where)
-            .orderBy(desc(stockMovements.createdAt))
-            .limit(100);
+        return this.db.select().from(stockMovements).where(where).orderBy(desc(stockMovements.createdAt)).limit(100);
     }
 }
-

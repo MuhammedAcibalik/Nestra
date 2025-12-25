@@ -18,4 +18,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./api-gateway"), exports);
+__exportStar(require("./transformers"), exports);
+__exportStar(require("./aggregator"), exports);
+__exportStar(require("./response-cache"), exports);
 //# sourceMappingURL=index.js.map

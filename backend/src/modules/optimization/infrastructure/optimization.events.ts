@@ -9,7 +9,14 @@ import { websocketService } from '../../../websocket';
 export interface IOptimizationEventEmitter {
     emitStarted(scenarioId: string, scenarioName: string, cuttingJobId: string): void;
     emitProgress(scenarioId: string, progress: number, message: string): void;
-    emitCompleted(scenarioId: string, planId: string, planNumber: string, totalWaste: number, wastePercentage: number, stockUsedCount: number): void;
+    emitCompleted(
+        scenarioId: string,
+        planId: string,
+        planNumber: string,
+        totalWaste: number,
+        wastePercentage: number,
+        stockUsedCount: number
+    ): void;
     emitFailed(scenarioId: string, error: string): void;
 }
 
@@ -31,7 +38,14 @@ export class OptimizationEventEmitter implements IOptimizationEventEmitter {
         });
     }
 
-    emitCompleted(scenarioId: string, planId: string, planNumber: string, totalWaste: number, wastePercentage: number, stockUsedCount: number): void {
+    emitCompleted(
+        scenarioId: string,
+        planId: string,
+        planNumber: string,
+        totalWaste: number,
+        wastePercentage: number,
+        stockUsedCount: number
+    ): void {
         websocketService.emitOptimizationCompleted({
             scenarioId,
             planId,

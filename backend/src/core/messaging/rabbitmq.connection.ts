@@ -99,7 +99,6 @@ export class RabbitMQConnection extends EventEmitter implements IConnectionManag
 
             logger.info('Connected successfully');
             this.emit('connected');
-
         } catch (error) {
             logger.error('Connection failed', { error });
             await this.handleReconnect();
@@ -130,7 +129,6 @@ export class RabbitMQConnection extends EventEmitter implements IConnectionManag
 
             logger.info('Disconnected');
             this.emit('disconnected');
-
         } catch (error) {
             logger.error('Disconnect error', { error });
         }
@@ -173,30 +171,15 @@ export class RabbitMQConnection extends EventEmitter implements IConnectionManag
         if (!this.channel) return;
 
         // Main events exchange
-        await this.channel.assertExchange(
-            this.config.exchange,
-            this.config.exchangeType,
-            { durable: true }
-        );
+        await this.channel.assertExchange(this.config.exchange, this.config.exchangeType, { durable: true });
 
         // Dead letter exchange
-        await this.channel.assertExchange(
-            `${this.config.exchange}.dlx`,
-            'fanout',
-            { durable: true }
-        );
+        await this.channel.assertExchange(`${this.config.exchange}.dlx`, 'fanout', { durable: true });
 
         // Dead letter queue
-        await this.channel.assertQueue(
-            `${this.config.exchange}.dead-letter`,
-            { durable: true }
-        );
+        await this.channel.assertQueue(`${this.config.exchange}.dead-letter`, { durable: true });
 
-        await this.channel.bindQueue(
-            `${this.config.exchange}.dead-letter`,
-            `${this.config.exchange}.dlx`,
-            ''
-        );
+        await this.channel.bindQueue(`${this.config.exchange}.dead-letter`, `${this.config.exchange}.dlx`, '');
 
         logger.debug('Exchange ready', { exchange: this.config.exchange });
     }
@@ -255,7 +238,7 @@ export class RabbitMQConnection extends EventEmitter implements IConnectionManag
 
         logger.info('Reconnecting...', { delay, attempt: this.reconnectAttempts, maxRetries: this.config.maxRetries });
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
 
         this.isReconnecting = false;
         await this.connect();

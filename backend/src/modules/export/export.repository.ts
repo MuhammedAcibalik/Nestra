@@ -89,7 +89,7 @@ export interface IExportRepository {
 // ==================== REPOSITORY ====================
 
 export class ExportRepository implements IExportRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async getStockItemsForExport(): Promise<IExportStockItem[]> {
         const results = await this.db.query.stockItems.findMany({
@@ -100,7 +100,7 @@ export class ExportRepository implements IExportRepository {
             orderBy: [desc(stockItems.createdAt)]
         });
 
-        return results.map(item => ({
+        return results.map((item) => ({
             id: item.id,
             code: item.code,
             materialTypeName: (item as { materialType?: { name: string } }).materialType?.name ?? '',
@@ -113,25 +113,29 @@ export class ExportRepository implements IExportRepository {
     }
 
     async getMaterialsForExport(): Promise<IExportMaterial[]> {
-        const results = await this.db.select({
-            id: materialTypes.id,
-            name: materialTypes.name,
-            description: materialTypes.description,
-            defaultDensity: materialTypes.defaultDensity
-        }).from(materialTypes);
+        const results = await this.db
+            .select({
+                id: materialTypes.id,
+                name: materialTypes.name,
+                description: materialTypes.description,
+                defaultDensity: materialTypes.defaultDensity
+            })
+            .from(materialTypes);
 
         return results;
     }
 
     async getCustomersForExport(): Promise<IExportCustomer[]> {
-        const results = await this.db.select({
-            id: customers.id,
-            code: customers.code,
-            name: customers.name,
-            email: customers.email,
-            phone: customers.phone,
-            address: customers.address
-        }).from(customers);
+        const results = await this.db
+            .select({
+                id: customers.id,
+                code: customers.code,
+                name: customers.name,
+                email: customers.email,
+                phone: customers.phone,
+                address: customers.address
+            })
+            .from(customers);
 
         return results;
     }
@@ -145,7 +149,7 @@ export class ExportRepository implements IExportRepository {
             orderBy: [desc(orders.createdAt)]
         });
 
-        return results.map(order => ({
+        return results.map((order) => ({
             id: order.id,
             orderNumber: order.orderNumber,
             customerName: (order as { customer?: { name: string } }).customer?.name ?? null,
@@ -164,7 +168,7 @@ export class ExportRepository implements IExportRepository {
             orderBy: [desc(cuttingPlans.createdAt)]
         });
 
-        return results.map(plan => ({
+        return results.map((plan) => ({
             id: plan.id,
             planNumber: plan.planNumber,
             scenarioId: plan.scenarioId,
@@ -175,7 +179,19 @@ export class ExportRepository implements IExportRepository {
             totalWaste: plan.totalWaste,
             wastePercentage: plan.wastePercentage,
             stockUsedCount: plan.stockUsedCount,
-            stockItems: ((plan as { stockItems?: Array<{ stockItemId: string; sequence: number; waste: number; wastePercentage: number; layoutData: unknown }> }).stockItems ?? []).map(si => ({
+            stockItems: (
+                (
+                    plan as {
+                        stockItems?: Array<{
+                            stockItemId: string;
+                            sequence: number;
+                            waste: number;
+                            wastePercentage: number;
+                            layoutData: unknown;
+                        }>;
+                    }
+                ).stockItems ?? []
+            ).map((si) => ({
                 stockItemId: si.stockItemId,
                 sequence: si.sequence,
                 waste: si.waste,
@@ -208,7 +224,19 @@ export class ExportRepository implements IExportRepository {
             totalWaste: result.totalWaste,
             wastePercentage: result.wastePercentage,
             stockUsedCount: result.stockUsedCount,
-            stockItems: ((result as { stockItems?: Array<{ stockItemId: string; sequence: number; waste: number; wastePercentage: number; layoutData: unknown }> }).stockItems ?? []).map(si => ({
+            stockItems: (
+                (
+                    result as {
+                        stockItems?: Array<{
+                            stockItemId: string;
+                            sequence: number;
+                            waste: number;
+                            wastePercentage: number;
+                            layoutData: unknown;
+                        }>;
+                    }
+                ).stockItems ?? []
+            ).map((si) => ({
                 stockItemId: si.stockItemId,
                 sequence: si.sequence,
                 waste: si.waste,
@@ -220,11 +248,12 @@ export class ExportRepository implements IExportRepository {
     }
 
     async findMaterialTypeById(materialTypeId: string): Promise<IExportMaterialType | null> {
-        const result = await this.db.select({
-            id: materialTypes.id,
-            name: materialTypes.name,
-            description: materialTypes.description
-        })
+        const result = await this.db
+            .select({
+                id: materialTypes.id,
+                name: materialTypes.name,
+                description: materialTypes.description
+            })
             .from(materialTypes)
             .where(eq(materialTypes.id, materialTypeId))
             .limit(1);

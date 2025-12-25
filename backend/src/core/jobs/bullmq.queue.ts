@@ -6,14 +6,7 @@
 
 import { Queue, Worker, Job } from 'bullmq';
 import { RedisOptions } from 'ioredis';
-import {
-    IJobQueue,
-    IJob,
-    IJobData,
-    IJobOptions,
-    IJobProcessor,
-    JobStatus
-} from './job-queue.interface';
+import { IJobQueue, IJob, IJobData, IJobOptions, IJobProcessor, JobStatus } from './job-queue.interface';
 import { createModuleLogger } from '../logger';
 
 const logger = createModuleLogger('BullMQ');
@@ -121,7 +114,7 @@ export class BullMQQueue<T extends IJobData = IJobData> implements IJobQueue<T> 
     }
 
     async addBulk(jobs: Array<{ name: string; data: T; options?: IJobOptions }>): Promise<IJob<T>[]> {
-        const bulkJobs = jobs.map(j => ({
+        const bulkJobs = jobs.map((j) => ({
             name: j.name,
             data: j.data,
             opts: this.convertOptions(j.options)
@@ -129,7 +122,7 @@ export class BullMQQueue<T extends IJobData = IJobData> implements IJobQueue<T> 
 
         const addedJobs = await this.queue.addBulk(bulkJobs);
         logger.debug(`Bulk jobs added: ${addedJobs.length}`, { queue: this.name });
-        return addedJobs.map(j => this.convertJob(j));
+        return addedJobs.map((j) => this.convertJob(j));
     }
 
     async getJob(jobId: string): Promise<IJob<T> | null> {
@@ -140,7 +133,7 @@ export class BullMQQueue<T extends IJobData = IJobData> implements IJobQueue<T> 
     async getJobs(status: JobStatus | JobStatus[], start = 0, end = 100): Promise<IJob<T>[]> {
         const statuses = Array.isArray(status) ? status : [status];
         const jobs = await this.queue.getJobs(statuses, start, end);
-        return jobs.map(j => this.convertJob(j));
+        return jobs.map((j) => this.convertJob(j));
     }
 
     async removeJob(jobId: string): Promise<void> {
@@ -321,7 +314,7 @@ export class BullMQManager {
     async shutdown(): Promise<void> {
         logger.info('Shutting down all queues...');
 
-        const closePromises = Array.from(this.queues.values()).map(q => q.close());
+        const closePromises = Array.from(this.queues.values()).map((q) => q.close());
         await Promise.all(closePromises);
 
         this.queues.clear();

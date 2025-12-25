@@ -73,7 +73,11 @@ class Logger {
         return JSON.stringify(entry);
     }
 
-    private log(level: LogLevel, message: string, context?: Partial<Omit<ILogEntry, 'timestamp' | 'level' | 'message' | 'service'>>): void {
+    private log(
+        level: LogLevel,
+        message: string,
+        context?: Partial<Omit<ILogEntry, 'timestamp' | 'level' | 'message' | 'service'>>
+    ): void {
         if (!this.shouldLog(level)) return;
 
         const entry: ILogEntry = {
@@ -114,11 +118,13 @@ class Logger {
 
     error(message: string, error?: Error, metadata?: Record<string, unknown>): void {
         this.log('error', message, {
-            error: error ? {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            } : undefined,
+            error: error
+                ? {
+                      name: error.name,
+                      message: error.message,
+                      stack: error.stack
+                  }
+                : undefined,
             metadata
         });
     }

@@ -21,7 +21,7 @@ export interface IProductionDowntimeService {
  * Production Downtime Service Implementation
  */
 export class ProductionDowntimeService implements IProductionDowntimeService {
-    constructor(private readonly repository: IProductionRepository) { }
+    constructor(private readonly repository: IProductionRepository) {}
 
     async recordDowntime(input: ICreateDowntimeInput): Promise<IResult<IDowntimeLogDto>> {
         try {
@@ -47,11 +47,7 @@ export class ProductionDowntimeService implements IProductionDowntimeService {
             // The actual startedAt is stored in the record
             const durationMinutes = 0; // Will be calculated by repository or caller
 
-            const updated = await this.repository.updateDowntime(
-                downtimeId,
-                endedAt,
-                durationMinutes
-            );
+            const updated = await this.repository.updateDowntime(downtimeId, endedAt, durationMinutes);
 
             return success(toDowntimeDto({ ...updated, machine: null }));
         } catch (error) {

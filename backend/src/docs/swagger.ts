@@ -43,7 +43,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                    description: 'JWT token ile kimlik doğrulama. Login endpoint\'inden alınır.'
+                    description: "JWT token ile kimlik doğrulama. Login endpoint'inden alınır."
                 }
             },
             schemas: {
@@ -97,7 +97,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
                     in: 'path',
                     required: true,
                     schema: { type: 'string', format: 'uuid' },
-                    description: 'Kayıt ID\'si'
+                    description: "Kayıt ID'si"
                 },
                 PageQuery: {
                     name: 'page',
@@ -181,10 +181,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
             { name: 'Dashboard', description: 'Dashboard verileri' }
         ]
     },
-    apis: [
-        './src/modules/*/*.controller.ts',
-        './src/controllers/*.controller.ts'
-    ]
+    apis: ['./src/modules/*/*.controller.ts', './src/controllers/*.controller.ts']
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

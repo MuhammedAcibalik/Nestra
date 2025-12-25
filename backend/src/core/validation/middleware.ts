@@ -39,10 +39,7 @@ function formatZodErrors(error: ZodError): ValidationErrorResponse['error']['det
 /**
  * Create validation middleware for a specific schema and target
  */
-export function validate<T>(
-    schema: ZodType<T>,
-    target: ValidationTarget = 'body'
-) {
+export function validate<T>(schema: ZodType<T>, target: ValidationTarget = 'body') {
     return (req: Request, res: Response, next: NextFunction): void => {
         try {
             const data = req[target];
@@ -96,10 +93,12 @@ export function validateAll<B = unknown, Q = unknown, P = unknown>(options: {
             }
         } catch (error) {
             if (error instanceof ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
-                    ...e,
-                    field: `body.${e.field}`
-                })));
+                errors.push(
+                    ...formatZodErrors(error).map((e) => ({
+                        ...e,
+                        field: `body.${e.field}`
+                    }))
+                );
             }
         }
 
@@ -110,10 +109,12 @@ export function validateAll<B = unknown, Q = unknown, P = unknown>(options: {
             }
         } catch (error) {
             if (error instanceof ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
-                    ...e,
-                    field: `query.${e.field}`
-                })));
+                errors.push(
+                    ...formatZodErrors(error).map((e) => ({
+                        ...e,
+                        field: `query.${e.field}`
+                    }))
+                );
             }
         }
 
@@ -124,10 +125,12 @@ export function validateAll<B = unknown, Q = unknown, P = unknown>(options: {
             }
         } catch (error) {
             if (error instanceof ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
-                    ...e,
-                    field: `params.${e.field}`
-                })));
+                errors.push(
+                    ...formatZodErrors(error).map((e) => ({
+                        ...e,
+                        field: `params.${e.field}`
+                    }))
+                );
             }
         }
 

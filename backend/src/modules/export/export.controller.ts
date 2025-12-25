@@ -10,12 +10,7 @@
 
 import { Router, Request, Response } from 'express';
 import { IExportRepository, IExportPlanData } from './export.repository';
-import {
-    exportService,
-    ICuttingPlanExportData,
-    ILayoutExportData,
-    IExportOptions
-} from './export.service';
+import { exportService, ICuttingPlanExportData, ILayoutExportData, IExportOptions } from './export.service';
 
 // ==================== INTERFACES ====================
 
@@ -279,7 +274,7 @@ export class ExportController implements IExportController {
      * Transform stock items to layout export format
      */
     private transformLayouts(plan: IExportPlanData): ILayoutExportData[] {
-        return plan.stockItems.map(ps => {
+        return plan.stockItems.map((ps) => {
             // Parse layout data for pieces
             const layoutData = ps.layoutData as {
                 stockCode?: string;
@@ -301,7 +296,7 @@ export class ExportController implements IExportController {
                 ? `${layoutData?.width ?? 0} x ${layoutData?.height ?? 0} mm`
                 : `${layoutData?.length ?? 0} mm`;
 
-            const pieces = (layoutData?.pieces ?? []).map(p => ({
+            const pieces = (layoutData?.pieces ?? []).map((p) => ({
                 code: p.code,
                 dimensions: is2D ? `${p.width ?? 0} x ${p.height ?? 0}` : `${p.length ?? 0}`,
                 quantity: p.quantity ?? 1

@@ -25,14 +25,13 @@ export interface IAuthConfig {
     saltRounds: number;
 }
 
-
 export class AuthService implements IAuthService {
     private static readonly EXPIRES_REGEX = /^(\d+)([smhd])$/;
 
     constructor(
         private readonly userRepository: IUserRepository,
         private readonly config: IAuthConfig
-    ) { }
+    ) {}
 
     async login(email: string, password: string): Promise<IResult<IAuthToken>> {
         try {
@@ -158,10 +157,10 @@ export class AuthService implements IAuthService {
         const unit = match[2];
 
         const multipliers: Record<string, number> = {
-            's': 1,
-            'm': 60,
-            'h': 3600,
-            'd': 86400
+            s: 1,
+            m: 60,
+            h: 3600,
+            d: 86400
         };
 
         return value * (multipliers[unit] ?? 3600);

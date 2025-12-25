@@ -139,7 +139,7 @@ export interface IPlacement {
 /**
  * Free rectangle for guillotine algorithm
  */
-export interface IFreeRectangle extends IRectangle { }
+export interface IFreeRectangle extends IRectangle {}
 
 // ==================== ALGORITHM OPTIONS ====================
 

@@ -38,7 +38,7 @@ export interface IOptimizationPoolStats {
  * - maxThreads: 12 (leaving 4 cores for Node.js main thread, OS, I/O)
  * - idleTimeout: 60s (longer idle for heavy workloads)
  * - maxQueue: 256 (large queue for burst optimization requests)
- * 
+ *
  * Why 12 workers instead of 16?
  * - Node.js main thread needs headroom for I/O, RabbitMQ, WebSocket
  * - Workers are CPU-bound, leaving cores free improves overall responsiveness
@@ -48,7 +48,7 @@ export const defaultPiscinaConfig: Required<IPiscinaConfig> = {
     minThreads: 4,
     maxThreads: 12,
     idleTimeout: 60000, // 60 seconds (longer for production workloads)
-    maxQueue: 256,      // Large queue for burst requests
+    maxQueue: 256, // Large queue for burst requests
     concurrentTasksPerWorker: 1 // One task per worker for CPU-intensive work
 };
 
@@ -67,7 +67,7 @@ export interface IOptimizationTask {
 export interface ITaskProgress {
     readonly taskId: string;
     readonly phase: TaskPhase;
-    readonly progress: number;  // 0-100
+    readonly progress: number; // 0-100
     readonly message?: string;
     readonly startedAt?: Date;
     readonly completedAt?: Date;
@@ -116,9 +116,8 @@ export class OptimizationPool {
             minThreads: this.config.minThreads,
             maxThreads: this.config.maxThreads,
             idleTimeout: this.config.idleTimeout,
-            maxQueue: this.config.maxQueue === 'auto'
-                ? this.config.maxThreads * this.config.maxThreads
-                : this.config.maxQueue
+            maxQueue:
+                this.config.maxQueue === 'auto' ? this.config.maxThreads * this.config.maxThreads : this.config.maxQueue
         });
 
         this.initialized = true;
@@ -167,9 +166,10 @@ export class OptimizationPool {
         try {
             this.updateProgress(task.id, { phase: 'running', progress: 10 });
 
-            const result = task.type === '1D'
-                ? await this.run1D(task.payload, controller.signal)
-                : await this.run2D(task.payload, controller.signal);
+            const result =
+                task.type === '1D'
+                    ? await this.run1D(task.payload, controller.signal)
+                    : await this.run2D(task.payload, controller.signal);
 
             this.updateProgress(task.id, {
                 phase: 'completed',
@@ -178,7 +178,6 @@ export class OptimizationPool {
             });
 
             return result;
-
         } catch (error) {
             const phase: TaskPhase = controller.signal.aborted ? 'cancelled' : 'failed';
             this.updateProgress(task.id, {
@@ -188,7 +187,6 @@ export class OptimizationPool {
                 completedAt: new Date()
             });
             throw error;
-
         } finally {
             clearTimeout(timeoutId);
             this.activeTasks.delete(task.id);

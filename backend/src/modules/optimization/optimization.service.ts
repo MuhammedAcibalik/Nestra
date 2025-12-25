@@ -15,7 +15,12 @@ import {
     success,
     failure
 } from '../../core/interfaces';
-import { IOptimizationRepository, ScenarioWithRelations, PlanWithRelations, CuttingPlanStock } from './optimization.repository';
+import {
+    IOptimizationRepository,
+    ScenarioWithRelations,
+    PlanWithRelations,
+    CuttingPlanStock
+} from './optimization.repository';
 import { OptimizationEngine, OptimizationParameters } from './optimization.engine';
 import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
 
@@ -132,7 +137,7 @@ export class OptimizationService implements IOptimizationService {
                 await this.repository.updateScenarioStatus(scenarioId, 'FAILED');
                 return failure({
                     code: 'OPTIMIZATION_FAILED',
-                    message: result.error ?? 'Optimizasyon başarısız',
+                    message: result.error ?? 'Optimizasyon başarısız'
                 });
             }
 
@@ -141,7 +146,7 @@ export class OptimizationService implements IOptimizationService {
                 totalWaste: result.planData.totalWaste,
                 wastePercentage: result.planData.wastePercentage,
                 stockUsedCount: result.planData.stockUsedCount,
-                layoutData: result.planData.layouts.map(l => ({
+                layoutData: result.planData.layouts.map((l) => ({
                     stockItemId: l.stockItemId,
                     sequence: l.sequence,
                     waste: l.waste,
@@ -303,7 +308,7 @@ export class OptimizationService implements IOptimizationService {
     }
 
     private async toPlanDto(plan: PlanWithRelations): Promise<ICuttingPlanDto> {
-        const stockItems = plan.stockUsed ?? await this.repository.getPlanStockItems(plan.id);
+        const stockItems = plan.stockUsed ?? (await this.repository.getPlanStockItems(plan.id));
 
         return {
             id: plan.id,

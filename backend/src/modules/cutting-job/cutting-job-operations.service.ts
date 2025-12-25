@@ -24,7 +24,7 @@ export interface ICuttingJobOperationsService {
  * CuttingJob Operations Service Implementation
  */
 export class CuttingJobOperationsService implements ICuttingJobOperationsService {
-    constructor(private readonly repository: ICuttingJobRepository) { }
+    constructor(private readonly repository: ICuttingJobRepository) {}
 
     /**
      * Merge multiple jobs into one
@@ -70,7 +70,7 @@ export class CuttingJobOperationsService implements ICuttingJobOperationsService
 
             // Determine target job (use provided or first source)
             const targetId = targetJobId ?? sourceJobIds[0];
-            const targetJob = sourceJobs.find(j => j.id === targetId);
+            const targetJob = sourceJobs.find((j) => j.id === targetId);
             if (!targetJob) {
                 return failure({
                     code: 'TARGET_NOT_FOUND',
@@ -234,7 +234,7 @@ export class CuttingJobOperationsService implements ICuttingJobOperationsService
         itemsToSplit: { itemId: string; quantity: number }[]
     ): IResult<ICuttingJobDto> | null {
         for (const splitItem of itemsToSplit) {
-            const sourceItem = sourceItems.find(i => i.id === splitItem.itemId);
+            const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId);
             if (!sourceItem) {
                 return failure({
                     code: 'ITEM_NOT_FOUND',
@@ -267,7 +267,7 @@ export class CuttingJobOperationsService implements ICuttingJobOperationsService
         itemsToSplit: { itemId: string; quantity: number }[]
     ): Promise<void> {
         for (const splitItem of itemsToSplit) {
-            const sourceItem = sourceItems.find(i => i.id === splitItem.itemId)!;
+            const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId)!;
 
             // Add to new job
             await this.repository.addItem(newJobId, {

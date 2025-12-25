@@ -10,16 +10,17 @@ import pino from 'pino';
  */
 const loggerConfig: pino.LoggerOptions = {
     level: process.env.LOG_LEVEL ?? 'info',
-    transport: process.env.NODE_ENV === 'development'
-        ? {
-            target: 'pino-pretty',
-            options: {
-                colorize: true,
-                translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
-                ignore: 'pid,hostname'
-            }
-        }
-        : undefined,
+    transport:
+        process.env.NODE_ENV === 'development'
+            ? {
+                  target: 'pino-pretty',
+                  options: {
+                      colorize: true,
+                      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
+                      ignore: 'pid,hostname'
+                  }
+              }
+            : undefined,
     base: {
         service: 'nestra-backend',
         version: process.env.npm_package_version ?? '1.0.0'
@@ -138,4 +139,4 @@ export const LogLevels = {
     FATAL: 'fatal'
 } as const;
 
-export type LogLevel = typeof LogLevels[keyof typeof LogLevels];
+export type LogLevel = (typeof LogLevels)[keyof typeof LogLevels];

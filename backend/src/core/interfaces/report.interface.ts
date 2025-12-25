@@ -123,11 +123,11 @@ export interface ITrendFilter {
 
 /** Available metrics for trend analysis */
 export type TrendMetric =
-    | 'WASTE_PERCENTAGE'    // Fire yüzdesi
-    | 'EFFICIENCY'          // Verimlilik
-    | 'PRODUCTION_TIME'     // Üretim süresi
-    | 'PLAN_COUNT'          // Plan sayısı
-    | 'COST';               // Maliyet
+    | 'WASTE_PERCENTAGE' // Fire yüzdesi
+    | 'EFFICIENCY' // Verimlilik
+    | 'PRODUCTION_TIME' // Üretim süresi
+    | 'PLAN_COUNT' // Plan sayısı
+    | 'COST'; // Maliyet
 
 /** Trend report DTO */
 export interface ITrendReportDto {
@@ -161,10 +161,10 @@ export interface IComparativeFilter {
 
 /** Comparison dimensions */
 export type CompareBy =
-    | 'MATERIAL'    // Malzeme karşılaştırması
-    | 'MACHINE'     // Makine karşılaştırması
-    | 'OPERATOR'    // Operatör karşılaştırması
-    | 'PERIOD';     // Dönem karşılaştırması
+    | 'MATERIAL' // Malzeme karşılaştırması
+    | 'MACHINE' // Makine karşılaştırması
+    | 'OPERATOR' // Operatör karşılaştırması
+    | 'PERIOD'; // Dönem karşılaştırması
 
 /** Comparative report DTO */
 export interface IComparativeReportDto {
@@ -192,5 +192,3 @@ export interface IComparisonSummary {
     name: string;
     value: number;
 }
-
-

@@ -61,7 +61,7 @@ export const apiRateLimiter = rateLimit({
     // Use default keyGenerator which handles IPv6 properly
     // express-rate-limit v7+ has built-in X-Forwarded-For support
     validate: {
-        xForwardedForHeader: false  // Disable validation warning
+        xForwardedForHeader: false // Disable validation warning
     }
 });
 

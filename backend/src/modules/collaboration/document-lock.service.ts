@@ -31,11 +31,7 @@ export interface IDocumentLockService {
         userId: string
     ): Promise<boolean>;
 
-    forceReleaseLock(
-        tenantId: string,
-        documentType: LockableDocumentType,
-        documentId: string
-    ): Promise<boolean>;
+    forceReleaseLock(tenantId: string, documentType: LockableDocumentType, documentId: string): Promise<boolean>;
 
     // Lock status
     getLockStatus(
@@ -44,18 +40,9 @@ export interface IDocumentLockService {
         documentId: string
     ): Promise<ILockStatus | null>;
 
-    isLocked(
-        tenantId: string,
-        documentType: LockableDocumentType,
-        documentId: string
-    ): Promise<boolean>;
+    isLocked(tenantId: string, documentType: LockableDocumentType, documentId: string): Promise<boolean>;
 
-    canEdit(
-        tenantId: string,
-        documentType: LockableDocumentType,
-        documentId: string,
-        userId: string
-    ): Promise<boolean>;
+    canEdit(tenantId: string, documentType: LockableDocumentType, documentId: string, userId: string): Promise<boolean>;
 
     // Heartbeat
     refreshLock(
@@ -111,7 +98,7 @@ export interface IUserInfo {
 
 export class DocumentLockService implements IDocumentLockService {
     private readonly eventBus: EventBus;
-    private readonly lockDurationMs = 5 * 60 * 1000;  // 5 minutes default
+    private readonly lockDurationMs = 5 * 60 * 1000; // 5 minutes default
     private cleanupInterval: NodeJS.Timeout | null = null;
 
     constructor(private readonly repository: ICollaborationRepository) {
@@ -148,7 +135,9 @@ export class DocumentLockService implements IDocumentLockService {
                     };
                 } else {
                     // Lock held by another user
-                    const lockedByUser = existingLock as unknown as { lockedBy?: { email?: string; firstName?: string; lastName?: string } };
+                    const lockedByUser = existingLock as unknown as {
+                        lockedBy?: { email?: string; firstName?: string; lastName?: string };
+                    };
                     return {
                         success: false,
                         error: {
@@ -215,7 +204,7 @@ export class DocumentLockService implements IDocumentLockService {
             const lock = await this.repository.findLock(tenantId, documentType, documentId);
 
             if (!lock) {
-                return true;  // No lock to release
+                return true; // No lock to release
             }
 
             if (lock.lockedById !== userId) {
@@ -239,11 +228,7 @@ export class DocumentLockService implements IDocumentLockService {
         }
     }
 
-    async forceReleaseLock(
-        tenantId: string,
-        documentType: LockableDocumentType,
-        documentId: string
-    ): Promise<boolean> {
+    async forceReleaseLock(tenantId: string, documentType: LockableDocumentType, documentId: string): Promise<boolean> {
         try {
             const released = await this.repository.deleteLockByDocument(tenantId, documentType, documentId);
 
@@ -271,11 +256,7 @@ export class DocumentLockService implements IDocumentLockService {
         return this.toLockStatus(lock);
     }
 
-    async isLocked(
-        tenantId: string,
-        documentType: LockableDocumentType,
-        documentId: string
-    ): Promise<boolean> {
+    async isLocked(tenantId: string, documentType: LockableDocumentType, documentId: string): Promise<boolean> {
         const lock = await this.repository.findLock(tenantId, documentType, documentId);
         if (!lock) return false;
         return lock.expiresAt > new Date();
@@ -289,9 +270,9 @@ export class DocumentLockService implements IDocumentLockService {
     ): Promise<boolean> {
         const lock = await this.repository.findLock(tenantId, documentType, documentId);
 
-        if (!lock) return true;  // No lock, anyone can edit
-        if (lock.expiresAt < new Date()) return true;  // Lock expired
-        return lock.lockedById === userId;  // User owns the lock
+        if (!lock) return true; // No lock, anyone can edit
+        if (lock.expiresAt < new Date()) return true; // Lock expired
+        return lock.lockedById === userId; // User owns the lock
     }
 
     // ==================== HEARTBEAT ====================
@@ -341,7 +322,7 @@ export class DocumentLockService implements IDocumentLockService {
 
     async getUserLocks(tenantId: string, userId: string): Promise<ILockStatus[]> {
         const locks = await this.repository.getUserLocks(tenantId, userId);
-        return locks.map(lock => this.toLockStatus(lock));
+        return locks.map((lock) => this.toLockStatus(lock));
     }
 
     async releaseAllUserLocks(tenantId: string, userId: string): Promise<number> {
@@ -442,7 +423,7 @@ export class DocumentLockService implements IDocumentLockService {
     private startCleanupJob(): void {
         // Run cleanup every minute
         this.cleanupInterval = setInterval(() => {
-            this.cleanupExpiredLocks().catch(error => {
+            this.cleanupExpiredLocks().catch((error) => {
                 logger.error('Lock cleanup failed', { error });
             });
         }, 60 * 1000);

@@ -68,7 +68,9 @@ interface ActiveBar {
 /**
  * Expands pieces array based on quantity
  */
-function expandPieces(pieces: CuttingPiece1D[]): Array<{ id: string; length: number; orderItemId: string; originalId: string }> {
+function expandPieces(
+    pieces: CuttingPiece1D[]
+): Array<{ id: string; length: number; orderItemId: string; originalId: string }> {
     const expanded: Array<{ id: string; length: number; orderItemId: string; originalId: string }> = [];
 
     for (const piece of pieces) {
@@ -89,7 +91,7 @@ function expandPieces(pieces: CuttingPiece1D[]): Array<{ id: string; length: num
  * Helper: Find the first bar that fits the piece
  */
 function findFirstFitBar(activeBars: ActiveBar[], pieceLength: number, kerf: number): ActiveBar | undefined {
-    return activeBars.find(bar => {
+    return activeBars.find((bar) => {
         const required = pieceLength + (bar.cuts.length > 0 ? kerf : 0);
         return bar.remainingLength >= required;
     });
@@ -118,7 +120,7 @@ function findBestFitBar(activeBars: ActiveBar[], pieceLength: number, kerf: numb
 /**
  * Helper: Place a piece in a specific bar
  */
-function placePiece(bar: ActiveBar, piece: { id: string, orderItemId: string, length: number }, kerf: number): void {
+function placePiece(bar: ActiveBar, piece: { id: string; orderItemId: string; length: number }, kerf: number): void {
     const position = bar.currentPosition + (bar.cuts.length > 0 ? kerf : 0);
     const requiredLength = piece.length + (bar.cuts.length > 0 ? kerf : 0);
 
@@ -153,17 +155,19 @@ function findAvailableStock(
 /**
  * Helper: Create a new active bar from stock
  */
-function createActiveBar(stock: StockBar1D, piece: { id: string, orderItemId: string, length: number }): ActiveBar {
+function createActiveBar(stock: StockBar1D, piece: { id: string; orderItemId: string; length: number }): ActiveBar {
     return {
         stockId: stock.id,
         stockLength: stock.length,
         remainingLength: stock.length - piece.length,
-        cuts: [{
-            pieceId: piece.id,
-            orderItemId: piece.orderItemId,
-            position: 0,
-            length: piece.length
-        }],
+        cuts: [
+            {
+                pieceId: piece.id,
+                orderItemId: piece.orderItemId,
+                position: 0,
+                length: piece.length
+            }
+        ],
         currentPosition: piece.length
     };
 }
@@ -173,9 +177,9 @@ function createActiveBar(stock: StockBar1D, piece: { id: string, orderItemId: st
  */
 function addUnplacedPiece(
     unplacedPieces: CuttingPiece1D[],
-    piece: { originalId: string, length: number, orderItemId: string }
+    piece: { originalId: string; length: number; orderItemId: string }
 ): void {
-    const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+    const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
     if (existingUnplaced) {
         existingUnplaced.quantity++;
     } else {
@@ -191,7 +195,11 @@ function addUnplacedPiece(
 /**
  * Helper: Build results from active bars
  */
-function buildResults(activeBars: ActiveBar[], minUsableWaste: number, kerf: number): { results: BarCuttingResult[], totalWaste: number, totalStockLength: number, totalUsedLength: number } {
+function buildResults(
+    activeBars: ActiveBar[],
+    minUsableWaste: number,
+    kerf: number
+): { results: BarCuttingResult[]; totalWaste: number; totalStockLength: number; totalUsedLength: number } {
     const results: BarCuttingResult[] = [];
     let totalWaste = 0;
     let totalStockLength = 0;
@@ -237,7 +245,7 @@ export function firstFitDecreasing(
     const { kerf, minUsableWaste } = options;
 
     const expandedPieces = expandPieces(pieces).sort((a, b) => b.length - a.length);
-    const sortedStock = [...stockBars].filter(s => s.available > 0).sort((a, b) => b.length - a.length);
+    const sortedStock = [...stockBars].filter((s) => s.available > 0).sort((a, b) => b.length - a.length);
 
     const stockUsage = new Map<string, { remaining: number }>();
     for (const stock of sortedStock) {
@@ -306,7 +314,7 @@ export function bestFitDecreasing(
     const { kerf, minUsableWaste } = options;
 
     const expandedPieces = expandPieces(pieces).sort((a, b) => b.length - a.length);
-    const sortedStock = [...stockBars].filter(s => s.available > 0).sort((a, b) => a.length - b.length);
+    const sortedStock = [...stockBars].filter((s) => s.available > 0).sort((a, b) => a.length - b.length);
 
     const stockUsage = new Map<string, { remaining: number }>();
     for (const stock of sortedStock) {

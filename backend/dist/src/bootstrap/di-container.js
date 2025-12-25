@@ -42,6 +42,10 @@ const tenant_1 = require("../modules/tenant");
 const realtime_dashboard_1 = require("../modules/realtime-dashboard");
 // Collaboration Module
 const collaboration_1 = require("../modules/collaboration");
+// Audit Module
+const audit_1 = require("../modules/audit");
+// Notification Module
+const notification_1 = require("../modules/notification");
 /**
  * Initialize all dependencies - Composition Root
  */
@@ -69,6 +73,7 @@ function initializeDependencies(db) {
     const tenantRepository = new tenant_1.TenantRepository(db);
     const dashboardRepository = new realtime_dashboard_1.RealtimeDashboardRepository(db);
     const collaborationRepository = new collaboration_1.CollaborationRepository(db);
+    const auditRepository = new audit_1.AuditRepository(db);
     // ==================== MICROSERVICE INFRASTRUCTURE ====================
     const serviceRegistry = services_1.ServiceRegistry.getInstance();
     // Register service handlers
@@ -105,8 +110,13 @@ function initializeDependencies(db) {
         dashboardService: new realtime_dashboard_1.RealtimeDashboardService(dashboardRepository),
         presenceService: new collaboration_1.PresenceService(),
         documentLockService: new collaboration_1.DocumentLockService(collaborationRepository),
-        activityFeedService: new collaboration_1.ActivityFeedService(collaborationRepository)
+        activityFeedService: new collaboration_1.ActivityFeedService(collaborationRepository),
+        // Advanced Features
+        auditService: new audit_1.AuditService(auditRepository),
+        notificationService: new notification_1.NotificationService()
     };
+    // Initialize global audit service accessor
+    (0, audit_1.initializeAuditService)(services.auditService);
     // ==================== EVENT HANDLERS ====================
     // Store references for lifecycle management
     const eventHandlers = [

@@ -66,7 +66,9 @@ export function generateLayoutSvg(layout: ILayoutSheet, options: ISvgOptions = {
     const svg: string[] = [];
 
     // SVG header
-    svg.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`);
+    svg.push(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`
+    );
 
     // Styles
     svg.push(`<defs>
@@ -84,7 +86,9 @@ export function generateLayoutSvg(layout: ILayoutSheet, options: ISvgOptions = {
     svg.push(`<g transform="translate(${padding}, ${padding})">`);
 
     // Sheet background (waste area)
-    svg.push(`<rect class="sheet" x="0" y="0" width="${layout.sheetWidth * scale}" height="${layout.sheetHeight * scale}" />`);
+    svg.push(
+        `<rect class="sheet" x="0" y="0" width="${layout.sheetWidth * scale}" height="${layout.sheetHeight * scale}" />`
+    );
 
     // Pieces
     for (const piece of layout.pieces) {
@@ -118,17 +122,23 @@ export function generateLayoutSvg(layout: ILayoutSheet, options: ISvgOptions = {
         const sheetH = layout.sheetHeight * scale;
 
         // Width dimension (top)
-        svg.push(`<text class="dimension" x="${sheetW / 2}" y="-5" text-anchor="middle">${layout.sheetWidth} mm</text>`);
+        svg.push(
+            `<text class="dimension" x="${sheetW / 2}" y="-5" text-anchor="middle">${layout.sheetWidth} mm</text>`
+        );
 
         // Height dimension (left)
-        svg.push(`<text class="dimension" x="-5" y="${sheetH / 2}" text-anchor="end" transform="rotate(-90, -5, ${sheetH / 2})">${layout.sheetHeight} mm</text>`);
+        svg.push(
+            `<text class="dimension" x="-5" y="${sheetH / 2}" text-anchor="end" transform="rotate(-90, -5, ${sheetH / 2})">${layout.sheetHeight} mm</text>`
+        );
     }
 
     // Waste info
     if (layout.wastePercentage !== undefined) {
         const sheetW = layout.sheetWidth * scale;
         const sheetH = layout.sheetHeight * scale;
-        svg.push(`<text class="waste-text" x="${sheetW - 5}" y="${sheetH - 5}" text-anchor="end">Fire: ${layout.wastePercentage.toFixed(1)}%</text>`);
+        svg.push(
+            `<text class="waste-text" x="${sheetW - 5}" y="${sheetH - 5}" text-anchor="end">Fire: ${layout.wastePercentage.toFixed(1)}%</text>`
+        );
     }
 
     svg.push('</g>');
@@ -156,7 +166,9 @@ export function generateMultipleLayoutsSvg(layouts: ILayoutSheet[], options: ISv
     }
 
     const svg: string[] = [];
-    svg.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${maxWidth}" height="${totalHeight}" viewBox="0 0 ${maxWidth} ${totalHeight}">`);
+    svg.push(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${maxWidth}" height="${totalHeight}" viewBox="0 0 ${maxWidth} ${totalHeight}">`
+    );
 
     let currentY = 0;
     let sequence = 1;
@@ -164,12 +176,12 @@ export function generateMultipleLayoutsSvg(layouts: ILayoutSheet[], options: ISv
     for (const layout of layouts) {
         const layoutSvg = generateLayoutSvg(layout, opts);
         // Extract inner content (remove svg tags)
-        const innerContent = layoutSvg
-            .replace(/<svg[^>]*>/, '')
-            .replace(/<\/svg>/, '');
+        const innerContent = layoutSvg.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '');
 
         // Add layout title
-        svg.push(`<text x="10" y="${currentY + 15}" font-family="Arial" font-size="12" fill="#333">Levha ${sequence}</text>`);
+        svg.push(
+            `<text x="10" y="${currentY + 15}" font-family="Arial" font-size="12" fill="#333">Levha ${sequence}</text>`
+        );
 
         // Wrap in group with translation
         svg.push(`<g transform="translate(0, ${currentY + 20})">`);
@@ -196,7 +208,7 @@ export function svgToDataUrl(svg: string): string {
  * Layout SVG Generator class for dependency injection
  */
 export class LayoutSvgGenerator {
-    constructor(private readonly defaultOptions: ISvgOptions = {}) { }
+    constructor(private readonly defaultOptions: ISvgOptions = {}) {}
 
     generate(layout: ILayoutSheet): string {
         return generateLayoutSvg(layout, this.defaultOptions);

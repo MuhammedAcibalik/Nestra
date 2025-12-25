@@ -118,6 +118,62 @@ function checkMemory(): IHealthCheck {
     };
 }
 
+async function checkRedis(): Promise<IHealthCheck> {
+    const start = Date.now();
+    try {
+        const { getCacheClient } = await import('../core/cache');
+        const cache = await getCacheClient();
+
+        // Test set/get operation
+        const testKey = '__health_check__';
+        await cache.set(testKey, 'ok', 5);
+        const value = await cache.get(testKey);
+        await cache.del(testKey);
+
+        if (value === 'ok') {
+            return {
+                name: 'redis',
+                status: 'pass',
+                latency: Date.now() - start,
+                message: 'Redis connected'
+            };
+        }
+        return {
+            name: 'redis',
+            status: 'warn',
+            latency: Date.now() - start,
+            message: 'Using in-memory cache'
+        };
+    } catch {
+        return {
+            name: 'redis',
+            status: 'warn',
+            latency: Date.now() - start,
+            message: 'Redis not available (using in-memory fallback)'
+        };
+    }
+}
+
+async function checkWorkerPool(): Promise<IHealthCheck> {
+    try {
+        const { getOptimizationPool } = await import('../workers');
+        const pool = getOptimizationPool();
+        const isReady = pool.isReady();
+
+        return {
+            name: 'worker_pool',
+            status: isReady ? 'pass' : 'warn',
+            message: isReady ? 'Worker pool ready' : 'Worker pool not initialized'
+        };
+    } catch {
+        return {
+            name: 'worker_pool',
+            status: 'warn',
+            message: 'Worker pool not available'
+        };
+    }
+}
+
 // ==================== CONTROLLER ====================
 
 export class HealthController {
@@ -240,11 +296,13 @@ export class HealthController {
             const checks = await Promise.all([
                 checkDatabase(),
                 checkRabbitMQ(),
+                checkRedis(),
+                checkWorkerPool(),
                 Promise.resolve(checkMemory())
             ]);
 
-            const hasFailure = checks.some(c => c.status === 'fail');
-            const hasWarning = checks.some(c => c.status === 'warn');
+            const hasFailure = checks.some((c) => c.status === 'fail');
+            const hasWarning = checks.some((c) => c.status === 'warn');
 
             let overallStatus: IHealthStatus['status'] = 'healthy';
             if (hasFailure) overallStatus = 'unhealthy';

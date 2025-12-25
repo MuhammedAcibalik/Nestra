@@ -19,7 +19,11 @@ export interface IOrderService {
     createTemplate(data: ICreateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
     updateTemplate(id: string, data: IUpdateTemplateInput): Promise<IResult<IOrderTemplateDto>>;
     deleteTemplate(id: string): Promise<IResult<void>>;
-    createOrderFromTemplate(templateId: string, overrides: Partial<ICreateOrderInput>, userId: string): Promise<IResult<IOrderDto>>;
+    createOrderFromTemplate(
+        templateId: string,
+        overrides: Partial<ICreateOrderInput>,
+        userId: string
+    ): Promise<IResult<IOrderDto>>;
 }
 
 export interface IOrderFilter {
@@ -160,4 +164,3 @@ export interface IUpdateTemplateInput {
     defaultPriority?: number;
     items?: ICreateTemplateItemInput[];
 }
-

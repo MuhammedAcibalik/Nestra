@@ -4,7 +4,7 @@
  * - SRP: Only handles stock business logic
  * - DIP: Depends on IStockRepository abstraction
  * - OCP: Open for extension via new movement types
- * 
+ *
  * Core CRUD and movement operations - delegates alerts to sub-service
  */
 
@@ -200,7 +200,7 @@ export class StockService implements IStockService {
             }
 
             const isPositive = POSITIVE_MOVEMENT_TYPES.includes(
-                data.movementType as typeof POSITIVE_MOVEMENT_TYPES[number]
+                data.movementType as (typeof POSITIVE_MOVEMENT_TYPES)[number]
             );
             const quantityDelta = isPositive ? data.quantity : -data.quantity;
 
@@ -240,14 +240,16 @@ export class StockService implements IStockService {
         try {
             const movements = await this.stockRepository.getMovements(filter);
 
-            return success(movements.map((m) => ({
-                id: m.id,
-                stockItemId: m.stockItemId,
-                movementType: m.movementType,
-                quantity: m.quantity,
-                notes: m.notes ?? undefined,
-                createdAt: m.createdAt
-            })));
+            return success(
+                movements.map((m) => ({
+                    id: m.id,
+                    stockItemId: m.stockItemId,
+                    movementType: m.movementType,
+                    quantity: m.quantity,
+                    notes: m.notes ?? undefined,
+                    createdAt: m.createdAt
+                }))
+            );
         } catch (error) {
             return failure({
                 code: 'MOVEMENTS_FETCH_ERROR',

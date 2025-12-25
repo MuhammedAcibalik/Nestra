@@ -4,12 +4,7 @@
  * Uses maximal rectangles with multiple placement heuristics
  */
 
-import {
-    IFreeRect,
-    mergeFreeRectangles,
-    removeRedundantRects,
-    splitRectMaximal
-} from './free-rect-manager';
+import { IFreeRect, mergeFreeRectangles, removeRedundantRects, splitRectMaximal } from './free-rect-manager';
 
 // ==================== INTERFACES ====================
 
@@ -48,11 +43,11 @@ export interface IMaxRectsOptions {
 }
 
 export type MaxRectsHeuristic =
-    | 'BSSF'  // Best Short Side Fit
-    | 'BAF'   // Best Area Fit
-    | 'BLSF'  // Best Long Side Fit
-    | 'BL'    // Bottom-Left
-    | 'CP'    // Contact Point
+    | 'BSSF' // Best Short Side Fit
+    | 'BAF' // Best Area Fit
+    | 'BLSF' // Best Long Side Fit
+    | 'BL' // Bottom-Left
+    | 'CP' // Contact Point
     | 'BEST'; // Try all and pick best
 
 // ==================== HEURISTIC SCORES ====================
@@ -82,7 +77,7 @@ function scoreBSSF(rect: IFreeRect, pieceWidth: number, pieceHeight: number): nu
  * Prefers positions where remaining area is minimized
  */
 function scoreBAF(rect: IFreeRect, pieceWidth: number, pieceHeight: number): number {
-    return (rect.width * rect.height) - (pieceWidth * pieceHeight);
+    return rect.width * rect.height - pieceWidth * pieceHeight;
 }
 
 /**
@@ -190,7 +185,8 @@ export function findBestPlacement(
                         break;
                     case 'BEST':
                         // Use combination of metrics
-                        score = scoreBSSF(rect, orient.width, orient.height) * 0.5 +
+                        score =
+                            scoreBSSF(rect, orient.width, orient.height) * 0.5 +
                             scoreBAF(rect, orient.width, orient.height) * 0.3 +
                             scoreBL(rect) * 0.0001;
                         break;
@@ -266,10 +262,12 @@ export function placePieceMaxRects(
         const placedTop = candidate.y + candidate.height + kerf;
 
         // No intersection
-        if (candidate.x >= rect.x + rect.width ||
+        if (
+            candidate.x >= rect.x + rect.width ||
             placedRight <= rect.x ||
             candidate.y >= rect.y + rect.height ||
-            placedTop <= rect.y) {
+            placedTop <= rect.y
+        ) {
             newFreeRects.push(rect);
             continue;
         }
@@ -297,11 +295,7 @@ export function placePieceMaxRects(
 /**
  * Create a new MAXRECTS sheet
  */
-export function createMaxRectsSheet(
-    stockId: string,
-    width: number,
-    height: number
-): IMaxRectsSheet {
+export function createMaxRectsSheet(stockId: string, width: number, height: number): IMaxRectsSheet {
     return {
         stockId,
         width,
@@ -343,14 +337,11 @@ export function initializeMaxRectsSheet(
 /**
  * Try to place piece in existing sheet
  */
-export function tryPlaceInSheet(
-    sheet: IMaxRectsSheet,
-    piece: IMaxRectsPiece,
-    options: IMaxRectsOptions
-): boolean {
-    const candidate = options.heuristic === 'BEST'
-        ? findBestPlacementAllHeuristics(sheet, piece, options)
-        : findBestPlacement(sheet, piece, options);
+export function tryPlaceInSheet(sheet: IMaxRectsSheet, piece: IMaxRectsPiece, options: IMaxRectsOptions): boolean {
+    const candidate =
+        options.heuristic === 'BEST'
+            ? findBestPlacementAllHeuristics(sheet, piece, options)
+            : findBestPlacement(sheet, piece, options);
 
     if (!candidate) return false;
 
@@ -372,9 +363,10 @@ export function selectBestSheet(
     let best: { sheet: IMaxRectsSheet; candidate: PlacementCandidate; wasteScore: number } | null = null;
 
     for (const sheet of sheets) {
-        const candidate = options.heuristic === 'BEST'
-            ? findBestPlacementAllHeuristics(sheet, piece, options)
-            : findBestPlacement(sheet, piece, options);
+        const candidate =
+            options.heuristic === 'BEST'
+                ? findBestPlacementAllHeuristics(sheet, piece, options)
+                : findBestPlacement(sheet, piece, options);
 
         if (candidate) {
             // Calculate waste score (lower is better)

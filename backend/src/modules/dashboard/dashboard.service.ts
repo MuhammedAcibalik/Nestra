@@ -4,13 +4,7 @@
  * Refactored to use repository injection instead of direct Prisma
  */
 
-import {
-    IDashboardRepository,
-    IOrderStats,
-    IJobStats,
-    IStockStats,
-    IProductionStats
-} from './dashboard.repository';
+import { IDashboardRepository, IOrderStats, IJobStats, IStockStats, IProductionStats } from './dashboard.repository';
 
 // ==================== INTERFACES ====================
 
@@ -52,7 +46,7 @@ export interface IDashboardService {
 // ==================== SERVICE ====================
 
 export class DashboardService implements IDashboardService {
-    constructor(private readonly repository: IDashboardRepository) { }
+    constructor(private readonly repository: IDashboardRepository) {}
 
     async getStats(): Promise<IDashboardStats> {
         const [orders, cuttingJobs, stock, production] = await Promise.all([
@@ -105,11 +99,14 @@ export class DashboardService implements IDashboardService {
         const plans = await this.repository.getCompletedPlansInPeriod(startDate);
 
         // Group by week
-        const weeklyData = new Map<string, {
-            totalWaste: number;
-            wastePercentages: number[];
-            count: number;
-        }>();
+        const weeklyData = new Map<
+            string,
+            {
+                totalWaste: number;
+                wastePercentages: number[];
+                count: number;
+            }
+        >();
 
         for (const plan of plans) {
             const weekStart = this.getWeekStart(plan.createdAt);
@@ -149,7 +146,7 @@ export class DashboardService implements IDashboardService {
             this.repository.getAllMaterialTypes()
         ]);
 
-        const materialNameMap = new Map(materialTypes.map(m => [m.id, m.name]));
+        const materialNameMap = new Map(materialTypes.map((m) => [m.id, m.name]));
         const materialStats = new Map<string, { count: number; wastePercentages: number[] }>();
 
         for (const job of jobs) {
@@ -169,9 +166,10 @@ export class DashboardService implements IDashboardService {
         return Array.from(materialStats.entries()).map(([id, data]) => ({
             materialType: materialNameMap.get(id) ?? id,
             usageCount: data.count,
-            wastePercentage: data.wastePercentages.length > 0
-                ? data.wastePercentages.reduce((a, b) => a + b, 0) / data.wastePercentages.length
-                : 0
+            wastePercentage:
+                data.wastePercentages.length > 0
+                    ? data.wastePercentages.reduce((a, b) => a + b, 0) / data.wastePercentages.length
+                    : 0
         }));
     }
 }

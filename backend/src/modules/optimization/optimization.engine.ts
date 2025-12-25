@@ -3,7 +3,7 @@
  * Bridge layer between cutting algorithms and database
  * Following SRP - Only handles algorithm execution and data transformation
  * Following DIP - Uses service clients instead of direct database access
- * 
+ *
  * NOW WITH PISCINA WORKER THREADS:
  * - Data fetching: Main thread (async I/O)
  * - Algorithm execution: Piscina pool (CPU-intensive)
@@ -33,15 +33,13 @@ import {
     ICuttingJobWithItems,
     IStockItemForOptimization
 } from '../../core/services';
-import {
-    OptimizationPool,
-    getOptimizationPool,
-    IOptimization1DPayload,
-    IOptimization2DPayload
-} from '../../workers';
+import { OptimizationPool, getOptimizationPool, IOptimization1DPayload, IOptimization2DPayload } from '../../workers';
+import { trace, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
+import { ATTR_ERROR_TYPE } from '@opentelemetry/semantic-conventions';
 import { createModuleLogger } from '../../core/logger';
 
 const logger = createModuleLogger('OptimizationEngine');
+const tracer = trace.getTracer('optimization', '1.0.0');
 
 // ==================== TYPE ALIASES ====================
 
@@ -92,6 +90,7 @@ export interface LayoutData {
 
 export interface IOptimizationEngineConfig {
     useWorkerThreads?: boolean;
+    enableTracing?: boolean;
 }
 
 // ==================== ENGINE CLASS ====================
@@ -99,6 +98,7 @@ export interface IOptimizationEngineConfig {
 export class OptimizationEngine {
     private pool: OptimizationPool | null = null;
     private readonly useWorkerThreads: boolean;
+    private readonly enableTracing: boolean;
 
     constructor(
         private readonly cuttingJobClient: ICuttingJobServiceClient,
@@ -106,6 +106,7 @@ export class OptimizationEngine {
         config?: IOptimizationEngineConfig
     ) {
         this.useWorkerThreads = config?.useWorkerThreads ?? true;
+        this.enableTracing = config?.enableTracing ?? true;
     }
 
     /**
@@ -123,15 +124,71 @@ export class OptimizationEngine {
      * Main entry point - runs optimization for a cutting job
      */
     async runOptimization(input: OptimizationInput): Promise<OptimizationOutput> {
+        if (!this.enableTracing) {
+            return this.runOptimizationImpl(input);
+        }
+
+        const span = tracer.startSpan('optimization.run', {
+            attributes: {
+                'optimization.job_id': input.cuttingJobId,
+                'optimization.scenario_id': input.scenarioId,
+                'optimization.algorithm': input.parameters.algorithm ?? 'auto'
+            }
+        });
+
+        return otelContext.with(trace.setSpan(otelContext.active(), span), async () => {
+            const startTime = Date.now();
+            try {
+                const result = await this.runOptimizationImpl(input);
+                const duration = Date.now() - startTime;
+
+                span.setAttribute('optimization.duration_ms', duration);
+                span.setAttribute('optimization.success', result.success);
+                span.setAttribute('optimization.efficiency', result.planData.efficiency);
+                span.setAttribute('optimization.waste_percentage', result.planData.wastePercentage);
+                span.setAttribute('optimization.stock_used', result.planData.stockUsedCount);
+                span.setAttribute('optimization.unplaced_count', result.planData.unplacedCount);
+
+                if (result.success) {
+                    span.setStatus({ code: SpanStatusCode.OK });
+                } else {
+                    span.setStatus({ code: SpanStatusCode.ERROR, message: result.error });
+                }
+
+                return result;
+            } catch (error) {
+                span.setStatus({
+                    code: SpanStatusCode.ERROR,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                if (error instanceof Error) {
+                    span.setAttribute(ATTR_ERROR_TYPE, error.name);
+                    span.recordException(error);
+                }
+                throw error;
+            } finally {
+                span.end();
+            }
+        });
+    }
+
+    /**
+     * Internal optimization implementation
+     */
+    private async runOptimizationImpl(input: OptimizationInput): Promise<OptimizationOutput> {
         try {
             // 1. Get cutting job with items via service client (MAIN THREAD - async I/O)
+            const loadSpan = this.enableTracing ? tracer.startSpan('optimization.load_data') : null;
             const cuttingJob = await this.getCuttingJobWithItems(input.cuttingJobId);
             if (!cuttingJob) {
+                loadSpan?.end();
                 return { success: false, planData: this.emptyPlanData(), error: 'Cutting job not found' };
             }
 
             // 2. Determine if 1D or 2D based on geometry
             const is1D = this.is1DJob(cuttingJob);
+            loadSpan?.setAttribute('optimization.is_1d', is1D);
+            loadSpan?.setAttribute('optimization.pieces_count', cuttingJob.items.length);
 
             // 3. Get available stock via service client (MAIN THREAD - async I/O)
             const stock = await this.getAvailableStock(
@@ -140,6 +197,9 @@ export class OptimizationEngine {
                 is1D,
                 input.parameters
             );
+
+            loadSpan?.setAttribute('optimization.stock_count', stock.length);
+            loadSpan?.end();
 
             if (stock.length === 0) {
                 return { success: false, planData: this.emptyPlanData(), error: 'No available stock found' };
@@ -186,18 +246,33 @@ export class OptimizationEngine {
         let result: Optimization1DResult;
 
         // Try Piscina first, fallback to main thread
+        const algoSpan = this.enableTracing
+            ? tracer.startSpan('optimization.algorithm.1d', {
+                  attributes: {
+                      'algorithm.type': options.algorithm,
+                      'algorithm.pieces_count': pieces.length,
+                      'algorithm.stock_count': bars.length
+                  }
+              })
+            : null;
+
         if (this.pool?.isReady() && this.useWorkerThreads) {
             try {
+                algoSpan?.setAttribute('algorithm.execution_mode', 'worker');
                 const payload: IOptimization1DPayload = { pieces, stockBars: bars, options };
-                result = await this.pool.run1D(payload) as Optimization1DResult;
+                result = (await this.pool.run1D(payload)) as Optimization1DResult;
                 logger.debug('1D optimization completed in Piscina worker');
             } catch (error) {
                 logger.warn('Piscina failed, falling back to main thread', { error });
+                algoSpan?.setAttribute('algorithm.execution_mode', 'main_fallback');
                 result = this.run1DSync(pieces, bars, options);
             }
         } else {
+            algoSpan?.setAttribute('algorithm.execution_mode', 'main');
             result = this.run1DSync(pieces, bars, options);
         }
+        algoSpan?.setAttribute('algorithm.bars_used', result.bars.length);
+        algoSpan?.end();
 
         return {
             success: true,
@@ -205,7 +280,11 @@ export class OptimizationEngine {
         };
     }
 
-    private run1DSync(pieces: CuttingPiece1D[], bars: StockBar1D[], options: Optimization1DOptions): Optimization1DResult {
+    private run1DSync(
+        pieces: CuttingPiece1D[],
+        bars: StockBar1D[],
+        options: Optimization1DOptions
+    ): Optimization1DResult {
         if (options.algorithm === 'BFD') {
             return bestFitDecreasing(pieces, bars, options);
         }
@@ -213,7 +292,7 @@ export class OptimizationEngine {
     }
 
     private convertTo1DPieces(job: ICuttingJobWithItems): CuttingPiece1D[] {
-        return job.items.map(item => ({
+        return job.items.map((item) => ({
             id: item.id,
             length: item.orderItem?.length ?? 0,
             quantity: item.quantity,
@@ -223,7 +302,7 @@ export class OptimizationEngine {
     }
 
     private convertTo1DStock(stock: IStockItemForOptimization[]): StockBar1D[] {
-        return stock.map(s => ({
+        return stock.map((s) => ({
             id: s.id,
             length: s.length ?? 0,
             available: s.quantity,
@@ -278,7 +357,7 @@ export class OptimizationEngine {
         if (this.pool?.isReady() && this.useWorkerThreads) {
             try {
                 const payload: IOptimization2DPayload = { pieces, stockSheets: sheets, options };
-                result = await this.pool.run2D(payload) as Optimization2DResult;
+                result = (await this.pool.run2D(payload)) as Optimization2DResult;
                 logger.debug('2D optimization completed in Piscina worker');
             } catch (error) {
                 logger.warn('Piscina failed, falling back to main thread', { error });
@@ -294,7 +373,11 @@ export class OptimizationEngine {
         };
     }
 
-    private run2DSync(pieces: CuttingPiece2D[], sheets: StockSheet2D[], options: Optimization2DOptions): Optimization2DResult {
+    private run2DSync(
+        pieces: CuttingPiece2D[],
+        sheets: StockSheet2D[],
+        options: Optimization2DOptions
+    ): Optimization2DResult {
         if (options.algorithm === 'GUILLOTINE') {
             return guillotineCutting(pieces, sheets, options);
         }
@@ -302,7 +385,7 @@ export class OptimizationEngine {
     }
 
     private convertTo2DPieces(job: ICuttingJobWithItems, allowRotation: boolean): CuttingPiece2D[] {
-        return job.items.map(item => ({
+        return job.items.map((item) => ({
             id: item.id,
             width: item.orderItem?.width ?? 0,
             height: item.orderItem?.length ?? 0,
@@ -313,7 +396,7 @@ export class OptimizationEngine {
     }
 
     private convertTo2DStock(stock: IStockItemForOptimization[]): StockSheet2D[] {
-        return stock.map(s => ({
+        return stock.map((s) => ({
             id: s.id,
             width: s.width ?? 0,
             height: s.length ?? 0,
@@ -351,7 +434,7 @@ export class OptimizationEngine {
 
     private async getCuttingJobWithItems(jobId: string): Promise<ICuttingJobWithItems | null> {
         const response = await this.cuttingJobClient.getJobWithItems(jobId);
-        return response.success ? response.data ?? null : null;
+        return response.success ? (response.data ?? null) : null;
     }
 
     private async getAvailableStock(
@@ -366,7 +449,7 @@ export class OptimizationEngine {
             stockType: is1D ? 'BAR_1D' : 'SHEET_2D',
             selectedStockIds: params.selectedStockIds
         });
-        return response.success ? response.data ?? [] : [];
+        return response.success ? (response.data ?? []) : [];
     }
 
     private is1DJob(job: ICuttingJobWithItems): boolean {

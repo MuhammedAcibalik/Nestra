@@ -22,6 +22,7 @@ const customer_1 = require("../modules/customer");
 const location_1 = require("../modules/location");
 const export_1 = require("../modules/export");
 const dashboard_1 = require("../modules/dashboard");
+const audit_1 = require("../modules/audit");
 const health_controller_1 = require("../controllers/health.controller");
 // Middleware
 const authMiddleware_1 = require("../middleware/authMiddleware");
@@ -73,6 +74,9 @@ function initializeRoutes(app, services, db) {
     app.use('/api/locations', authMiddleware, locationController.router);
     app.use('/api/export', authMiddleware, exportController.router);
     app.use('/api/dashboard', authMiddleware, dashboardController.router);
+    // Advanced Features
+    const auditRouter = (0, audit_1.createAuditRouter)(services.auditService, authMiddleware);
+    app.use('/api/audit', auditRouter);
 }
 /**
  * Initialize error handling middleware

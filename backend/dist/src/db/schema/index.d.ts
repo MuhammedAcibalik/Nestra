@@ -17,4 +17,6 @@ export * from './production';
 export * from './activities';
 export * from './document_locks';
 export * from './settings';
+export * from './audit';
+export * from './domain_events';
 //# sourceMappingURL=index.d.ts.map

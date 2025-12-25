@@ -13,7 +13,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('StockEventHandler');
 
 export class StockEventHandler {
-    constructor(private readonly stockRepository: IStockRepository) { }
+    constructor(private readonly stockRepository: IStockRepository) {}
 
     /**
      * Register all event handlers
@@ -46,22 +46,26 @@ export class StockEventHandler {
             const stock = await this.stockRepository.findById(payload.stockItemId);
 
             if (!stock) {
-                await adapter.publish(DomainEvents.stockConsumeFailed({
-                    stockItemId: payload.stockItemId,
-                    quantity: payload.quantity,
-                    reason: 'Stock item not found',
-                    correlationId: payload.correlationId
-                }));
+                await adapter.publish(
+                    DomainEvents.stockConsumeFailed({
+                        stockItemId: payload.stockItemId,
+                        quantity: payload.quantity,
+                        reason: 'Stock item not found',
+                        correlationId: payload.correlationId
+                    })
+                );
                 return;
             }
 
             if (stock.quantity < payload.quantity) {
-                await adapter.publish(DomainEvents.stockConsumeFailed({
-                    stockItemId: payload.stockItemId,
-                    quantity: payload.quantity,
-                    reason: `Insufficient stock: ${stock.quantity} available, ${payload.quantity} requested`,
-                    correlationId: payload.correlationId
-                }));
+                await adapter.publish(
+                    DomainEvents.stockConsumeFailed({
+                        stockItemId: payload.stockItemId,
+                        quantity: payload.quantity,
+                        reason: `Insufficient stock: ${stock.quantity} available, ${payload.quantity} requested`,
+                        correlationId: payload.correlationId
+                    })
+                );
                 return;
             }
 
@@ -78,31 +82,36 @@ export class StockEventHandler {
             await this.stockRepository.updateQuantity(payload.stockItemId, -payload.quantity);
 
             // Publish success
-            await adapter.publish(DomainEvents.stockConsumeCompleted({
-                stockItemId: payload.stockItemId,
-                quantity: payload.quantity,
-                movementId: movement.id,
-                correlationId: payload.correlationId
-            }));
+            await adapter.publish(
+                DomainEvents.stockConsumeCompleted({
+                    stockItemId: payload.stockItemId,
+                    quantity: payload.quantity,
+                    movementId: movement.id,
+                    correlationId: payload.correlationId
+                })
+            );
 
             // Check for low stock alert
             const updatedStock = await this.stockRepository.findById(payload.stockItemId);
             if (updatedStock && updatedStock.quantity <= 5) {
-                await adapter.publish(DomainEvents.stockLowAlert({
-                    stockItemId: updatedStock.id,
-                    stockCode: updatedStock.code,
-                    currentQuantity: updatedStock.quantity,
-                    minThreshold: 5
-                }));
+                await adapter.publish(
+                    DomainEvents.stockLowAlert({
+                        stockItemId: updatedStock.id,
+                        stockCode: updatedStock.code,
+                        currentQuantity: updatedStock.quantity,
+                        minThreshold: 5
+                    })
+                );
             }
-
         } catch (error) {
-            await adapter.publish(DomainEvents.stockConsumeFailed({
-                stockItemId: payload.stockItemId,
-                quantity: payload.quantity,
-                reason: error instanceof Error ? error.message : 'Unknown error',
-                correlationId: payload.correlationId
-            }));
+            await adapter.publish(
+                DomainEvents.stockConsumeFailed({
+                    stockItemId: payload.stockItemId,
+                    quantity: payload.quantity,
+                    reason: error instanceof Error ? error.message : 'Unknown error',
+                    correlationId: payload.correlationId
+                })
+            );
         }
     }
 
@@ -135,13 +144,14 @@ export class StockEventHandler {
             // Update reserved quantity
             await this.stockRepository.updateQuantity(payload.stockItemId, 0, payload.quantity);
 
-            await adapter.publish(DomainEvents.stockReserveCompleted({
-                stockItemId: payload.stockItemId,
-                quantity: payload.quantity,
-                planId: payload.planId,
-                correlationId: payload.correlationId
-            }));
-
+            await adapter.publish(
+                DomainEvents.stockReserveCompleted({
+                    stockItemId: payload.stockItemId,
+                    quantity: payload.quantity,
+                    planId: payload.planId,
+                    correlationId: payload.correlationId
+                })
+            );
         } catch (error) {
             logger.error('Reserve failed', { error });
         }

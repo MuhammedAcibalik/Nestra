@@ -55,7 +55,7 @@ interface AuthenticatedRequest extends Request {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024 // 10MB limit
     },
     fileFilter: (_req, file, cb) => {
         const allowedTypes = [
@@ -160,14 +160,15 @@ export class ImportController {
             let mapping: IColumnMapping;
             try {
                 if (req.body.mapping) {
-                    mapping = typeof req.body.mapping === 'string'
-                        ? JSON.parse(req.body.mapping)
-                        : req.body.mapping;
+                    mapping = typeof req.body.mapping === 'string' ? JSON.parse(req.body.mapping) : req.body.mapping;
                 } else {
                     mapping = {};
                 }
             } catch (parseError: unknown) {
-                logger.debug('Mapping parse failed:', parseError instanceof Error ? { message: parseError.message } : {});
+                logger.debug(
+                    'Mapping parse failed:',
+                    parseError instanceof Error ? { message: parseError.message } : {}
+                );
                 res.status(400).json({
                     success: false,
                     error: {
@@ -194,11 +195,7 @@ export class ImportController {
                     userId
                 );
             } else if (fileType === 'csv') {
-                result = await this.service.importFromCSV(
-                    req.file.buffer,
-                    { mapping, notes: req.body.notes },
-                    userId
-                );
+                result = await this.service.importFromCSV(req.file.buffer, { mapping, notes: req.body.notes }, userId);
             } else {
                 res.status(400).json({
                     success: false,

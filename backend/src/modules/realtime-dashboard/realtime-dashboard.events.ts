@@ -40,10 +40,10 @@ export const DashboardEvents = {
     QUALITY_ALERT: 'dashboard:quality_alert',
 
     // Activity
-    ACTIVITY_NEW: 'dashboard:activity_new',
+    ACTIVITY_NEW: 'dashboard:activity_new'
 } as const;
 
-export type DashboardEventType = typeof DashboardEvents[keyof typeof DashboardEvents];
+export type DashboardEventType = (typeof DashboardEvents)[keyof typeof DashboardEvents];
 
 // ==================== PAYLOAD INTERFACES ====================
 

@@ -32,10 +32,10 @@ export const CollaborationEvents = {
     // Sync
     DOCUMENT_UPDATED: 'collab:document_updated',
     SYNC_REQUEST: 'collab:sync_request',
-    SYNC_RESPONSE: 'collab:sync_response',
+    SYNC_RESPONSE: 'collab:sync_response'
 } as const;
 
-export type CollaborationEventType = typeof CollaborationEvents[keyof typeof CollaborationEvents];
+export type CollaborationEventType = (typeof CollaborationEvents)[keyof typeof CollaborationEvents];
 
 // ==================== PAYLOAD INTERFACES ====================
 
@@ -125,7 +125,7 @@ export interface IMentionPayload {
         readonly name: string;
     };
     readonly context: {
-        readonly type: string;  // 'comment', 'activity', etc.
+        readonly type: string; // 'comment', 'activity', etc.
         readonly documentType?: string;
         readonly documentId?: string;
         readonly documentName?: string;

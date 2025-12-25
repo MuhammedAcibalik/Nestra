@@ -33,15 +33,14 @@ export class UnplacedCollector2D {
     }
 
     getAll(): I2DPieceInput[] {
-        return Array.from(this.unplaced.values()).map(entry => ({
+        return Array.from(this.unplaced.values()).map((entry) => ({
             ...entry.piece,
             quantity: entry.count
         }));
     }
 
     getCount(): number {
-        return Array.from(this.unplaced.values())
-            .reduce((sum, entry) => sum + entry.count, 0);
+        return Array.from(this.unplaced.values()).reduce((sum, entry) => sum + entry.count, 0);
     }
 
     isEmpty(): boolean {

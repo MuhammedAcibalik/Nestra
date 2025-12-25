@@ -65,13 +65,7 @@ export function initializeSentry(config: ISentryConfig): void {
             },
 
             // Ignore common non-critical errors
-            ignoreErrors: [
-                'ECONNREFUSED',
-                'ENOTFOUND',
-                'ETIMEDOUT',
-                'Request aborted',
-                'socket hang up'
-            ]
+            ignoreErrors: ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'Request aborted', 'socket hang up']
         });
 
         isInitialized = true;
@@ -169,7 +163,10 @@ export function captureException(error: Error, context?: Record<string, unknown>
 /**
  * Capture a message manually
  */
-export function captureMessage(message: string, level: 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug' = 'info'): string | undefined {
+export function captureMessage(
+    message: string,
+    level: 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug' = 'info'
+): string | undefined {
     if (!isInitialized) {
         logger.info('Untracked message', { message, level });
         return undefined;

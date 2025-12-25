@@ -146,4 +146,3 @@ export type WebSocketPayload =
     | IStockUpdatedPayload
     | ICuttingJobCreatedPayload
     | ICuttingJobStatusChangedPayload;
-

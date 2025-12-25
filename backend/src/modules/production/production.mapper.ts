@@ -5,7 +5,11 @@
  */
 
 import { IProductionLogDto, IDowntimeLogDto, IQualityCheckDto } from '../../core/interfaces';
-import { ProductionLogWithRelations, DowntimeLogWithRelations, QualityCheckWithRelations } from './production.repository';
+import {
+    ProductionLogWithRelations,
+    DowntimeLogWithRelations,
+    QualityCheckWithRelations
+} from './production.repository';
 
 /**
  * Maps ProductionLog entity to DTO
@@ -15,9 +19,7 @@ export function toProductionLogDto(log: ProductionLogWithRelations): IProduction
         id: log.id,
         cuttingPlanId: log.cuttingPlanId,
         planNumber: log.cuttingPlan?.planNumber ?? '',
-        operatorName: log.operator
-            ? `${log.operator.firstName} ${log.operator.lastName}`
-            : '',
+        operatorName: log.operator ? `${log.operator.firstName} ${log.operator.lastName}` : '',
         status: log.status,
         actualWaste: log.actualWaste ?? undefined,
         actualTime: log.actualTime ?? undefined,
@@ -54,11 +56,9 @@ export function toQualityCheckDto(qc: QualityCheckWithRelations): IQualityCheckD
         result: qc.result,
         passedCount: qc.passedCount,
         failedCount: qc.failedCount,
-        defectTypes: Array.isArray(qc.defectTypes) ? qc.defectTypes as string[] : undefined,
+        defectTypes: Array.isArray(qc.defectTypes) ? (qc.defectTypes as string[]) : undefined,
         inspectorId: qc.inspectorId ?? undefined,
-        inspectorName: qc.inspector
-            ? `${qc.inspector.firstName} ${qc.inspector.lastName}`
-            : undefined,
+        inspectorName: qc.inspector ? `${qc.inspector.firstName} ${qc.inspector.lastName}` : undefined,
         checkedAt: qc.checkedAt,
         notes: qc.notes ?? undefined
     };

@@ -4,11 +4,7 @@
  * Following ISP - only exposes operations needed by other modules
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { ICuttingJobRepository, CuttingJobWithRelations } from './cutting-job.repository';
 
 // ==================== INTERFACES ====================
@@ -25,7 +21,7 @@ export interface ICuttingJobSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class CuttingJobServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: ICuttingJobRepository) { }
+    constructor(private readonly repository: ICuttingJobRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path, data } = request;
@@ -88,16 +84,18 @@ export class CuttingJobServiceHandler implements IServiceHandler {
                     materialTypeId: job.materialTypeId,
                     thickness: job.thickness,
                     status: job.status,
-                    items: (job.items ?? []).map(item => ({
+                    items: (job.items ?? []).map((item) => ({
                         id: item.id,
                         orderItemId: item.orderItemId,
                         quantity: item.quantity,
-                        orderItem: item.orderItem ? {
-                            geometryType: item.orderItem.geometryType,
-                            length: item.orderItem.length,
-                            width: item.orderItem.width,
-                            height: item.orderItem.height
-                        } : null
+                        orderItem: item.orderItem
+                            ? {
+                                  geometryType: item.orderItem.geometryType,
+                                  length: item.orderItem.length,
+                                  width: item.orderItem.width,
+                                  height: item.orderItem.height
+                              }
+                            : null
                     }))
                 }
             };
@@ -144,7 +142,7 @@ export class CuttingJobServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: jobs.map(j => this.toSummary(j))
+                data: jobs.map((j) => this.toSummary(j))
             };
         } catch (error) {
             return {
@@ -163,7 +161,7 @@ export class CuttingJobServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: jobs.map(j => this.toSummary(j))
+                data: jobs.map((j) => this.toSummary(j))
             };
         } catch (error) {
             return {

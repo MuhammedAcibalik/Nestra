@@ -4,11 +4,7 @@
  * Following ISP - only exposes operations needed by other modules
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { IMaterialRepository, MaterialTypeWithRelations } from './material.repository';
 
 // ==================== INTERFACES ====================
@@ -23,7 +19,7 @@ export interface IMaterialTypeSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class MaterialServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: IMaterialRepository) { }
+    constructor(private readonly repository: IMaterialRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path } = request;
@@ -86,7 +82,7 @@ export class MaterialServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: materials.map(m => this.toSummary(m))
+                data: materials.map((m) => this.toSummary(m))
             };
         } catch (error) {
             return {

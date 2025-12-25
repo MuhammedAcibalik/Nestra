@@ -108,10 +108,7 @@ export interface IQueueManager {
     getQueue<T = IJobData>(name: string): IJobQueue<T>;
 
     /** Register a processor for a queue */
-    registerProcessor<T = IJobData, R = unknown>(
-        queueName: string,
-        processor: IJobProcessor<T, R>
-    ): void;
+    registerProcessor<T = IJobData, R = unknown>(queueName: string, processor: IJobProcessor<T, R>): void;
 
     /** Get all queue names */
     getQueueNames(): string[];
@@ -135,7 +132,7 @@ export const JobType = {
     CLEANUP_OLD_DATA: 'cleanup:old-data'
 } as const;
 
-export type JobTypeName = typeof JobType[keyof typeof JobType];
+export type JobTypeName = (typeof JobType)[keyof typeof JobType];
 
 /**
  * Job Data Types

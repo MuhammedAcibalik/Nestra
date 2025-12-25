@@ -90,11 +90,11 @@ export const CachePrefix = {
  * Default TTL values (in seconds)
  */
 export const CacheTTL = {
-    SHORT: 60,           // 1 minute
-    MEDIUM: 300,         // 5 minutes
-    LONG: 3600,          // 1 hour
-    SESSION: 86400,      // 24 hours
+    SHORT: 60, // 1 minute
+    MEDIUM: 300, // 5 minutes
+    LONG: 3600, // 1 hour
+    SESSION: 86400, // 24 hours
     MATERIAL_LIST: 3600, // 1 hour (rarely changes)
-    STOCK_SUMMARY: 300,  // 5 minutes (changes often)
-    OPTIMIZATION: 900    // 15 minutes
+    STOCK_SUMMARY: 300, // 5 minutes (changes often)
+    OPTIMIZATION: 900 // 15 minutes
 } as const;

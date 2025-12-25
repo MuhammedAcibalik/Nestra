@@ -39,7 +39,14 @@ export class OptimizationFacade {
     // ==================== SCENARIO OPERATIONS ====================
 
     async createScenario(
-        data: { name: string; cuttingJobId: string; parameters?: object; useWarehouseStock?: boolean; useStandardSizes?: boolean; selectedStockIds?: string[] },
+        data: {
+            name: string;
+            cuttingJobId: string;
+            parameters?: object;
+            useWarehouseStock?: boolean;
+            useStandardSizes?: boolean;
+            selectedStockIds?: string[];
+        },
         userId: string
     ): Promise<IResult<IScenarioDto>> {
         try {
@@ -78,7 +85,7 @@ export class OptimizationFacade {
             const scenarios = await this.repository.findAllScenarios(filter);
             return {
                 success: true,
-                data: scenarios.map(s => this.toScenarioDto(s))
+                data: scenarios.map((s) => this.toScenarioDto(s))
             };
         } catch (error) {
             return this.handleError(error, 'GET_SCENARIOS_ERROR');
@@ -190,7 +197,7 @@ export class OptimizationFacade {
     async getPlans(filter?: IPlanFilterDto): Promise<IResult<ICuttingPlanDto[]>> {
         try {
             const plans = await this.repository.findAllPlans(filter);
-            const planDtos = await Promise.all(plans.map(p => this.toPlanDto(p)));
+            const planDtos = await Promise.all(plans.map((p) => this.toPlanDto(p)));
             return { success: true, data: planDtos };
         } catch (error) {
             return this.handleError(error, 'GET_PLANS_ERROR');
@@ -217,7 +224,10 @@ export class OptimizationFacade {
             }
 
             if (plan.status !== 'DRAFT') {
-                return { success: false, error: { code: 'INVALID_STATUS', message: 'Plan already approved or in production' } };
+                return {
+                    success: false,
+                    error: { code: 'INVALID_STATUS', message: 'Plan already approved or in production' }
+                };
             }
 
             await this.repository.updatePlanStatus(planId, 'APPROVED', userId, machineId);
@@ -232,10 +242,13 @@ export class OptimizationFacade {
     async comparePlans(planIds: string[]): Promise<IResult<IPlanComparisonDto[]>> {
         try {
             if (planIds.length < 2) {
-                return { success: false, error: { code: 'VALIDATION_ERROR', message: 'At least 2 plans required for comparison' } };
+                return {
+                    success: false,
+                    error: { code: 'VALIDATION_ERROR', message: 'At least 2 plans required for comparison' }
+                };
             }
 
-            const plans = await Promise.all(planIds.map(id => this.repository.findPlanById(id)));
+            const plans = await Promise.all(planIds.map((id) => this.repository.findPlanById(id)));
             const validPlans = plans.filter((p): p is PlanWithRelations => p !== null);
 
             if (validPlans.length < 2) {
@@ -264,7 +277,7 @@ export class OptimizationFacade {
     // ==================== PRIVATE HELPERS ====================
 
     private parseParameters(scenario: ScenarioWithRelations): IOptimizationParameters {
-        const params = scenario.parameters as Record<string, unknown> ?? {};
+        const params = (scenario.parameters as Record<string, unknown>) ?? {};
         return {
             algorithm: params.algorithm as IOptimizationParameters['algorithm'],
             kerf: typeof params.kerf === 'number' ? params.kerf : undefined,
@@ -292,7 +305,7 @@ export class OptimizationFacade {
     }
 
     private async toPlanDto(plan: PlanWithRelations): Promise<ICuttingPlanDto> {
-        const stockItems = plan.stockUsed ?? await this.repository.getPlanStockItems(plan.id);
+        const stockItems = plan.stockUsed ?? (await this.repository.getPlanStockItems(plan.id));
 
         return {
             id: plan.id,
@@ -305,7 +318,7 @@ export class OptimizationFacade {
             stockUsedCount: plan.stockUsedCount,
             estimatedTime: plan.estimatedTime ?? undefined,
             estimatedCost: plan.estimatedCost ?? undefined,
-            layouts: stockItems.map(item => ({
+            layouts: stockItems.map((item) => ({
                 id: item.id,
                 sequence: item.sequence,
                 stockItemId: item.stockItemId,
@@ -314,9 +327,7 @@ export class OptimizationFacade {
                 layoutData: this.parseLayoutData(item.layoutData)
             })),
             assignedMachine: plan.assignedMachine ?? undefined,
-            approvedBy: plan.approvedBy
-                ? `${plan.approvedBy.firstName} ${plan.approvedBy.lastName}`
-                : undefined,
+            approvedBy: plan.approvedBy ? `${plan.approvedBy.firstName} ${plan.approvedBy.lastName}` : undefined,
             approvedAt: plan.approvedAt ?? undefined,
             createdAt: plan.createdAt
         };

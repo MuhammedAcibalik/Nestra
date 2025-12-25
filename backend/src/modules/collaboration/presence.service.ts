@@ -6,7 +6,12 @@
 
 import { EventBus } from '../../core/events/event-bus';
 import { createModuleLogger } from '../../core/logger';
-import { CollaborationEvents, IUserPresencePayload, IDocumentViewersPayload, IDocumentViewer } from './collaboration.events';
+import {
+    CollaborationEvents,
+    IUserPresencePayload,
+    IDocumentViewersPayload,
+    IDocumentViewer
+} from './collaboration.events';
 
 const logger = createModuleLogger('PresenceService');
 
@@ -60,7 +65,7 @@ export class PresenceService implements IPresenceService {
 
     // In-memory presence store (in production, use Redis)
     private readonly onlineUsers: Map<string, IOnlineUser> = new Map();
-    private readonly documentViewers: Map<string, Set<string>> = new Map();  // docKey -> userIds
+    private readonly documentViewers: Map<string, Set<string>> = new Map(); // docKey -> userIds
 
     private cleanupInterval: NodeJS.Timeout | null = null;
 
@@ -227,7 +232,7 @@ export class PresenceService implements IPresenceService {
                     firstName: user.firstName,
                     lastName: user.lastName,
                     joinedAt: user.lastActivity.toISOString(),
-                    isEditing: false  // Would need lock check
+                    isEditing: false // Would need lock check
                 });
             }
         }
@@ -323,7 +328,7 @@ export class PresenceService implements IPresenceService {
     private startCleanupJob(): void {
         // Run cleanup every minute
         this.cleanupInterval = setInterval(() => {
-            this.cleanupInactiveUsers().catch(error => {
+            this.cleanupInactiveUsers().catch((error) => {
                 logger.error('Presence cleanup failed', { error });
             });
         }, 60 * 1000);

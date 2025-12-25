@@ -53,9 +53,9 @@ export const allInstallers: readonly IModuleInstaller[] = [
     locationInstaller,
 
     // Dependent modules
-    cuttingJobInstaller,  // depends on order
+    cuttingJobInstaller, // depends on order
     optimizationInstaller, // depends on cutting-job, stock
-    productionInstaller,   // depends on optimization, stock
+    productionInstaller, // depends on optimization, stock
 
     // Utility modules
     reportInstaller,

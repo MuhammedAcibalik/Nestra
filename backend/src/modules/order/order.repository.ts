@@ -39,7 +39,7 @@ export interface IOrderRepository {
 export class OrderRepository implements IOrderRepository {
     private orderCounter = 1;
 
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== TENANT FILTERING ====================
 
@@ -119,15 +119,18 @@ export class OrderRepository implements IOrderRepository {
         // Generate order number if not provided
         const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
 
-        const [result] = await this.db.insert(orders).values({
-            orderNumber,
-            tenantId: this.getCurrentTenantId(), // Auto-inject tenant ID
-            customerId: data.customerId,
-            createdById: userId,
-            priority: data.priority ?? 5,
-            dueDate: data.dueDate,
-            notes: data.notes
-        }).returning();
+        const [result] = await this.db
+            .insert(orders)
+            .values({
+                orderNumber,
+                tenantId: this.getCurrentTenantId(), // Auto-inject tenant ID
+                customerId: data.customerId,
+                createdById: userId,
+                priority: data.priority ?? 5,
+                dueDate: data.dueDate,
+                notes: data.notes
+            })
+            .returning();
         return result;
     }
 
@@ -136,7 +139,8 @@ export class OrderRepository implements IOrderRepository {
         const conditions = [eq(orders.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(orders)
+        const [result] = await this.db
+            .update(orders)
             .set({
                 status: data.status as OrderStatus,
                 priority: data.priority,
@@ -153,7 +157,8 @@ export class OrderRepository implements IOrderRepository {
         const conditions = [eq(orders.id, id)];
         const where = this.withTenantFilter(conditions);
 
-        const [result] = await this.db.update(orders)
+        const [result] = await this.db
+            .update(orders)
             .set({
                 status: status as OrderStatus,
                 updatedAt: new Date()
@@ -173,21 +178,23 @@ export class OrderRepository implements IOrderRepository {
     // ==================== ORDER ITEMS ====================
 
     async addItem(orderId: string, data: ICreateOrderItemInput): Promise<OrderItem> {
-        const [result] = await this.db.insert(orderItems).values({
-            orderId: orderId,
-            itemCode: data.itemCode,
-            itemName: data.itemName,
-            geometryType: data.geometryType as GeometryType,
-            length: data.length,
-            width: data.width,
-            height: data.height,
-            diameter: data.diameter,
-            materialTypeId: data.materialTypeId,
-            thickness: data.thickness,
-            quantity: data.quantity,
-            canRotate: data.canRotate ?? true
-        }).returning();
+        const [result] = await this.db
+            .insert(orderItems)
+            .values({
+                orderId: orderId,
+                itemCode: data.itemCode,
+                itemName: data.itemName,
+                geometryType: data.geometryType as GeometryType,
+                length: data.length,
+                width: data.width,
+                height: data.height,
+                diameter: data.diameter,
+                materialTypeId: data.materialTypeId,
+                thickness: data.thickness,
+                quantity: data.quantity,
+                canRotate: data.canRotate ?? true
+            })
+            .returning();
         return result;
     }
 }
-

@@ -18,9 +18,7 @@ export interface IFreeRect {
  * (Same y, same height, adjacent x)
  */
 function canMergeHorizontal(r1: IFreeRect, r2: IFreeRect): boolean {
-    return r1.y === r2.y &&
-        r1.height === r2.height &&
-        (r1.x + r1.width === r2.x || r2.x + r2.width === r1.x);
+    return r1.y === r2.y && r1.height === r2.height && (r1.x + r1.width === r2.x || r2.x + r2.width === r1.x);
 }
 
 /**
@@ -28,9 +26,7 @@ function canMergeHorizontal(r1: IFreeRect, r2: IFreeRect): boolean {
  * (Same x, same width, adjacent y)
  */
 function canMergeVertical(r1: IFreeRect, r2: IFreeRect): boolean {
-    return r1.x === r2.x &&
-        r1.width === r2.width &&
-        (r1.y + r1.height === r2.y || r2.y + r2.height === r1.y);
+    return r1.x === r2.x && r1.width === r2.width && (r1.y + r1.height === r2.y || r2.y + r2.height === r1.y);
 }
 
 /**
@@ -101,10 +97,7 @@ export function mergeFreeRectangles(rects: IFreeRect[]): IFreeRect[] {
  * Check if r1 is completely contained within r2
  */
 function isContained(r1: IFreeRect, r2: IFreeRect): boolean {
-    return r1.x >= r2.x &&
-        r1.y >= r2.y &&
-        r1.x + r1.width <= r2.x + r2.width &&
-        r1.y + r1.height <= r2.y + r2.height;
+    return r1.x >= r2.x && r1.y >= r2.y && r1.x + r1.width <= r2.x + r2.width && r1.y + r1.height <= r2.y + r2.height;
 }
 
 /**
@@ -188,7 +181,7 @@ export function splitRectMaximal(
     }
 
     // Filter out invalid rectangles (too small)
-    return splits.filter(r => r.width > 10 && r.height > 10);
+    return splits.filter((r) => r.width > 10 && r.height > 10);
 }
 
 /**
@@ -243,7 +236,7 @@ export function splitRectGuillotine(
         }
     }
 
-    return splits.filter(r => r.width > 0 && r.height > 0);
+    return splits.filter((r) => r.width > 0 && r.height > 0);
 }
 
 // ==================== UTILITIES ====================
@@ -259,7 +252,7 @@ export function getTotalFreeArea(rects: IFreeRect[]): number {
  * Sort rectangles by area (descending)
  */
 export function sortByAreaDesc(rects: IFreeRect[]): IFreeRect[] {
-    return [...rects].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    return [...rects].sort((a, b) => b.width * b.height - a.width * a.height);
 }
 
 /**

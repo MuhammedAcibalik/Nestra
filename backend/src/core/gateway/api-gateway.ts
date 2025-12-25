@@ -2,7 +2,7 @@
  * API Gateway
  * Centralized entry point for all API requests
  * Following Microservice Pattern: API Gateway
- * 
+ *
  * Features:
  * - Rate limiting
  * - Request/Response logging
@@ -16,9 +16,9 @@ import { getMetricsService } from '../monitoring/metrics.service';
 // ==================== INTERFACES ====================
 
 export interface IRateLimitConfig {
-    windowMs: number;        // Time window in milliseconds
-    maxRequests: number;     // Max requests per window
-    skipPaths?: string[];    // Paths to skip rate limiting
+    windowMs: number; // Time window in milliseconds
+    maxRequests: number; // Max requests per window
+    skipPaths?: string[]; // Paths to skip rate limiting
 }
 
 export interface IRequestLog {
@@ -43,8 +43,8 @@ export interface IGatewayConfig {
 
 const defaultConfig: IGatewayConfig = {
     rateLimit: {
-        windowMs: 60 * 1000,  // 1 minute
-        maxRequests: 100,     // 100 requests per minute
+        windowMs: 60 * 1000, // 1 minute
+        maxRequests: 100, // 100 requests per minute
         skipPaths: ['/health', '/health/live', '/health/ready', '/metrics']
     },
     enableLogging: true,
@@ -63,7 +63,7 @@ class RateLimiter {
 
     isRateLimited(key: string, path: string): { limited: boolean; remaining: number; resetTime: number } {
         // Skip certain paths
-        if (this.config.skipPaths?.some(p => path.startsWith(p))) {
+        if (this.config.skipPaths?.some((p) => path.startsWith(p))) {
             return { limited: false, remaining: this.config.maxRequests, resetTime: 0 };
         }
 
@@ -122,7 +122,7 @@ class RequestLogger {
 
         console.log(
             `[${logEntry.timestamp.toISOString()}] ${logEntry.method} ${logEntry.path} ` +
-            `${logEntry.statusCode ?? '-'} ${logEntry.duration ?? '-'}ms`
+                `${logEntry.statusCode ?? '-'} ${logEntry.duration ?? '-'}ms`
         );
     }
 
@@ -238,9 +238,7 @@ export class ApiGateway {
 
             res.status(500).json({
                 error: 'Internal Server Error',
-                message: process.env.NODE_ENV === 'production'
-                    ? 'An unexpected error occurred'
-                    : err.message
+                message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
             });
         };
     }

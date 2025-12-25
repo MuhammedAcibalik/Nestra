@@ -228,10 +228,7 @@ export class ProductionController {
      */
     public async startProduction(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
         try {
-            const result = await this.productionService.startProduction(
-                req.params.planId,
-                req.user!.userId
-            );
+            const result = await this.productionService.startProduction(req.params.planId, req.user!.userId);
 
             if (result.success) {
                 res.status(201).json({ success: true, data: result.data });
@@ -335,8 +332,6 @@ export class ProductionController {
     }
 }
 
-export function createProductionController(
-    productionService: IProductionService
-): ProductionController {
+export function createProductionController(productionService: IProductionService): ProductionController {
     return new ProductionController(productionService);
 }

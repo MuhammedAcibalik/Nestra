@@ -127,11 +127,7 @@ export function getMetricsContentType(): string {
 /**
  * Update Piscina metrics from pool stats
  */
-export function updatePiscinaMetrics(stats: {
-    utilization: number;
-    queueSize: number;
-    completed: number;
-}): void {
+export function updatePiscinaMetrics(stats: { utilization: number; queueSize: number; completed: number }): void {
     piscinaUtilization.set(stats.utilization);
     piscinaQueueSize.set(stats.queueSize);
 }

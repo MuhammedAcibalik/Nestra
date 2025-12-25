@@ -12,7 +12,6 @@ jest.mock('pino', () => {
 });
 
 describe('Logger', () => {
-
     it('should create logger instance', () => {
         expect(logger).toBeDefined();
     });

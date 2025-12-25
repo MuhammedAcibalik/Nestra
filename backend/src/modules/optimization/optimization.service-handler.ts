@@ -4,17 +4,11 @@
  * Following ISP - only exposes needed operations
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse,
-    IPlanSummary,
-    IPlanStockItem
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse, IPlanSummary, IPlanStockItem } from '../../core/services';
 import { IOptimizationRepository } from './optimization.repository';
 
 export class OptimizationServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: IOptimizationRepository) { }
+    constructor(private readonly repository: IOptimizationRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path, data } = request;
@@ -93,7 +87,7 @@ export class OptimizationServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: items.map(item => ({
+                data: items.map((item) => ({
                     stockItemId: item.stockItemId,
                     sequence: item.sequence,
                     waste: item.waste
@@ -125,23 +119,25 @@ export class OptimizationServiceHandler implements IServiceHandler {
         }
     }
 
-    private async getApprovedPlans(
-        filter?: { scenarioId?: string; fromDate?: Date; toDate?: Date }
-    ): Promise<IServiceResponse<IPlanSummary[]>> {
+    private async getApprovedPlans(filter?: {
+        scenarioId?: string;
+        fromDate?: Date;
+        toDate?: Date;
+    }): Promise<IServiceResponse<IPlanSummary[]>> {
         try {
             const plans = await this.repository.findAllPlans({ status: 'APPROVED' });
 
             // Apply optional filters
             let filtered = plans;
             if (filter?.scenarioId) {
-                filtered = filtered.filter(p => p.scenarioId === filter.scenarioId);
+                filtered = filtered.filter((p) => p.scenarioId === filter.scenarioId);
             }
             // Note: Date filtering would require comparing plan dates
             // For now, we return all approved plans
 
             return {
                 success: true,
-                data: filtered.map(plan => ({
+                data: filtered.map((plan) => ({
                     id: plan.id,
                     planNumber: plan.planNumber,
                     scenarioId: plan.scenarioId,

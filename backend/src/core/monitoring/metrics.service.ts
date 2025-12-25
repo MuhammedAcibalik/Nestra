@@ -148,7 +148,7 @@ export class MetricsService implements IMetricsService {
             if (metric.type === 'histogram') {
                 // Output histogram format
                 for (const [labelKey, value] of metric.values.entries()) {
-                    const suffix = labelKey.includes('_sum') ? '' : (labelKey.includes('_count') ? '' : '');
+                    const suffix = labelKey.includes('_sum') ? '' : labelKey.includes('_count') ? '' : '';
                     const cleanKey = labelKey.replace('_sum', '').replace('_count', '');
                     const labelsPart = cleanKey ? `{${cleanKey}}` : '';
 

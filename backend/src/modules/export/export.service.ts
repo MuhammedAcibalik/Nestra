@@ -180,7 +180,13 @@ export class ExportService implements IExportService {
 
         // Layouts sheet
         if (options.includeLayouts && plan.layouts.length > 0) {
-            const layoutHeaders = [labels.sequence, labels.stockCode, labels.dimensions, labels.waste, labels.wastePercentage];
+            const layoutHeaders = [
+                labels.sequence,
+                labels.stockCode,
+                labels.dimensions,
+                labels.waste,
+                labels.wastePercentage
+            ];
             const layoutData = [layoutHeaders];
 
             for (const layout of plan.layouts) {
@@ -263,10 +269,7 @@ export class ExportService implements IExportService {
     /**
      * Export a single layout to SVG visualization
      */
-    exportLayoutToSvg(
-        layout: ILayoutExportData,
-        sheetDimensions: { width: number; height: number }
-    ): string {
+    exportLayoutToSvg(layout: ILayoutExportData, sheetDimensions: { width: number; height: number }): string {
         // Convert ILayoutExportData to ILayoutSheet format
         const layoutSheet: ILayoutSheet = {
             sheetWidth: sheetDimensions.width,
@@ -342,7 +345,7 @@ export class ExportService implements IExportService {
      */
     generatePieceLabels(pieces: ILabelData[], options?: Partial<IBarcodeOptions>): string[] {
         const generator = new BarcodeGenerator();
-        return pieces.map(piece => generator.generateLabel(piece, options));
+        return pieces.map((piece) => generator.generateLabel(piece, options));
     }
 
     /**
@@ -355,4 +358,3 @@ export class ExportService implements IExportService {
 }
 
 export const exportService = new ExportService();
-

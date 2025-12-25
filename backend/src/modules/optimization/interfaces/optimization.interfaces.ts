@@ -21,11 +21,7 @@ export interface IOptimizationParameters {
     selectedStockIds?: string[];
 }
 
-export type OptimizationAlgorithmType =
-    | '1D_FFD'
-    | '1D_BFD'
-    | '2D_BOTTOM_LEFT'
-    | '2D_GUILLOTINE';
+export type OptimizationAlgorithmType = '1D_FFD' | '1D_BFD' | '2D_BOTTOM_LEFT' | '2D_GUILLOTINE';
 
 export interface IOptimizationOutput {
     success: boolean;

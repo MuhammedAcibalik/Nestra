@@ -20,7 +20,7 @@ export interface IProductionQualityService {
  * Production Quality Service Implementation
  */
 export class ProductionQualityService implements IProductionQualityService {
-    constructor(private readonly repository: IProductionRepository) { }
+    constructor(private readonly repository: IProductionRepository) {}
 
     async recordQualityCheck(input: ICreateQualityCheckInput): Promise<IResult<IQualityCheckDto>> {
         try {

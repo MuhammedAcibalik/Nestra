@@ -21,7 +21,7 @@ export interface IUserRepository {
 }
 
 export class UserRepository implements IUserRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     async findById(id: string): Promise<User | null> {
         const result = await this.db.query.users.findFirst({
@@ -46,28 +46,35 @@ export class UserRepository implements IUserRepository {
 
         // Auto-create OPERATOR role if missing (prevents crash on fresh installation)
         if (!defaultRole) {
-            const [newRole] = await this.db.insert(roles).values({
-                name: 'OPERATOR',
-                displayName: 'Operator',
-                permissions: ['read', 'production.operate']
-            }).returning();
+            const [newRole] = await this.db
+                .insert(roles)
+                .values({
+                    name: 'OPERATOR',
+                    displayName: 'Operator',
+                    permissions: ['read', 'production.operate']
+                })
+                .returning();
             defaultRole = newRole;
             console.log('✅ Created default OPERATOR role');
         }
 
-        const [user] = await this.db.insert(users).values({
-            email: data.email,
-            password: data.password,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            roleId: defaultRole.id
-        }).returning();
+        const [user] = await this.db
+            .insert(users)
+            .values({
+                email: data.email,
+                password: data.password,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                roleId: defaultRole.id
+            })
+            .returning();
 
         return { ...user, role: defaultRole };
     }
 
     async update(id: string, data: Partial<User>): Promise<User> {
-        const [result] = await this.db.update(users)
+        const [result] = await this.db
+            .update(users)
             .set({ ...data, updatedAt: new Date() })
             .where(eq(users.id, id))
             .returning();

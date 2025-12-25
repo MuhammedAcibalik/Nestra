@@ -12,7 +12,7 @@ import { createModuleLogger } from '../../core/logger';
 const logger = createModuleLogger('MachineEventHandler');
 
 export class MachineEventHandler {
-    constructor(private readonly machineRepository: IMachineRepository) { }
+    constructor(private readonly machineRepository: IMachineRepository) {}
 
     /**
      * Register all event handlers

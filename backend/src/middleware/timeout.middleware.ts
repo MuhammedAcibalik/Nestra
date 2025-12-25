@@ -15,9 +15,9 @@ interface ITimeoutConfig {
 }
 
 const timeoutConfig: ITimeoutConfig = {
-    defaultTimeoutMs: 30000,      // 30 seconds
+    defaultTimeoutMs: 30000, // 30 seconds
     optimizationTimeoutMs: 120000, // 2 minutes for CPU-intensive
-    uploadTimeoutMs: 300000       // 5 minutes for uploads
+    uploadTimeoutMs: 300000 // 5 minutes for uploads
 };
 
 // ==================== MIDDLEWARE ====================

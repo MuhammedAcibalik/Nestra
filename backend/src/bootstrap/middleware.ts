@@ -70,12 +70,7 @@ export function initializeMiddleware(app: Express): void {
 
     // API Documentation (disabled in production)
     if (isSwaggerEnabled()) {
-        app.use(
-            '/api-docs',
-            swaggerAccessControl(),
-            swaggerUi.serve,
-            swaggerUi.setup(swaggerSpec, swaggerUiOptions)
-        );
+        app.use('/api-docs', swaggerAccessControl(), swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
         // JSON spec endpoint (development only)
         if (process.env.NODE_ENV === 'development') {

@@ -75,7 +75,12 @@ export class CuttingJobController {
         this.router.get('/:id', validateId(), this.getJobById.bind(this));
         this.router.post('/', validate(createCuttingJobSchema), this.createJob.bind(this));
         this.router.post('/auto-generate', this.autoGenerate.bind(this));
-        this.router.patch('/:id/status', validateId(), validate(updateCuttingJobStatusSchema), this.updateStatus.bind(this));
+        this.router.patch(
+            '/:id/status',
+            validateId(),
+            validate(updateCuttingJobStatusSchema),
+            this.updateStatus.bind(this)
+        );
         this.router.post('/:id/items', validateId(), validate(addJobItemSchema), this.addItem.bind(this));
         this.router.delete('/:id/items/:orderItemId', validateId(), this.removeItem.bind(this));
         this.router.delete('/:id', validateId(), this.deleteJob.bind(this));

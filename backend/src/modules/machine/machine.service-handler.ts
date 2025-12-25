@@ -4,11 +4,7 @@
  * Following ISP - only exposes operations needed by other modules
  */
 
-import {
-    IServiceHandler,
-    IServiceRequest,
-    IServiceResponse
-} from '../../core/services';
+import { IServiceHandler, IServiceRequest, IServiceResponse } from '../../core/services';
 import { IMachineRepository, MachineWithRelations } from './machine.repository';
 
 // ==================== INTERFACES ====================
@@ -25,7 +21,7 @@ export interface IMachineSummary {
 // ==================== SERVICE HANDLER ====================
 
 export class MachineServiceHandler implements IServiceHandler {
-    constructor(private readonly repository: IMachineRepository) { }
+    constructor(private readonly repository: IMachineRepository) {}
 
     async handle<TReq, TRes>(request: IServiceRequest<TReq>): Promise<IServiceResponse<TRes>> {
         const { method, path } = request;
@@ -87,7 +83,7 @@ export class MachineServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: machines.map(m => this.toSummary(m))
+                data: machines.map((m) => this.toSummary(m))
             };
         } catch (error) {
             return {
@@ -106,7 +102,7 @@ export class MachineServiceHandler implements IServiceHandler {
 
             return {
                 success: true,
-                data: machines.map(m => this.toSummary(m))
+                data: machines.map((m) => this.toSummary(m))
             };
         } catch (error) {
             return {

@@ -66,7 +66,7 @@ export function buildResult(
         barResults.push({
             stockId: bar.stockId,
             stockLength: bar.stockLength,
-            cuts: bar.cuts.map(cut => ({
+            cuts: bar.cuts.map((cut) => ({
                 pieceId: cut.pieceId,
                 orderItemId: cut.orderItemId,
                 position: cut.position,

@@ -3,7 +3,6 @@ import { IOptimizationRepository, ScenarioWithRelations } from '../optimization.
 import { mock, MockProxy } from 'jest-mock-extended';
 import { ICuttingJobServiceClient, IStockQueryClient } from '../../../core/services';
 
-
 // Mock the strategy registry class entirely
 jest.mock('../optimization.strategy', () => {
     return {
@@ -16,29 +15,28 @@ jest.mock('../optimization.strategy', () => {
 
 // Import after mock
 
-
 describe('OptimizationService', () => {
     let service: OptimizationService;
     let repository: MockProxy<IOptimizationRepository>;
     let cuttingJobClient: MockProxy<ICuttingJobServiceClient>;
     let stockQueryClient: MockProxy<IStockQueryClient>;
 
-
-    const createMockScenario = (overrides: Partial<ScenarioWithRelations> = {}): ScenarioWithRelations => ({
-        id: 'sc-1',
-        name: 'Test Scenario',
-        cuttingJobId: 'job-1',
-        status: 'PENDING',
-        parameters: {},
-        useWarehouseStock: true,
-        useStandardSizes: false,
-        selectedStockIds: [],
-        createdById: 'user-1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        _count: { results: 0 },
-        ...overrides
-    } as ScenarioWithRelations);
+    const createMockScenario = (overrides: Partial<ScenarioWithRelations> = {}): ScenarioWithRelations =>
+        ({
+            id: 'sc-1',
+            name: 'Test Scenario',
+            cuttingJobId: 'job-1',
+            status: 'PENDING',
+            parameters: {},
+            useWarehouseStock: true,
+            useStandardSizes: false,
+            selectedStockIds: [],
+            createdById: 'user-1',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            _count: { results: 0 },
+            ...overrides
+        }) as ScenarioWithRelations;
 
     beforeEach(() => {
         repository = mock<IOptimizationRepository>();
@@ -77,7 +75,7 @@ describe('OptimizationService', () => {
 
         it.each([
             [{ name: '', cuttingJobId: 'job-1' }, 'name'],
-            [{ name: 'Test', cuttingJobId: '' }, 'cuttingJobId'],
+            [{ name: 'Test', cuttingJobId: '' }, 'cuttingJobId']
             // Add more invalid cases here if needed, e.g. undefined (though TS prevents it mostly)
         ])('should fail validation when %s is invalid (missing %s)', async (input, _field) => {
             // @ts-expect-error Testing runtime validation

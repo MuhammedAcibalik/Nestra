@@ -25,7 +25,7 @@ export interface OptimizationRequestPayload {
 // ==================== CONSUMER CLASS ====================
 
 export class OptimizationConsumer {
-    constructor(private readonly engine: OptimizationEngine) { }
+    constructor(private readonly engine: OptimizationEngine) {}
 
     /**
      * Register event handlers
@@ -34,10 +34,7 @@ export class OptimizationConsumer {
         const adapter = getEventAdapter();
 
         // Listen for optimization run requests
-        adapter.subscribe(
-            EventTypes.OPTIMIZATION_RUN_REQUESTED,
-            this.handleOptimizationRequest.bind(this)
-        );
+        adapter.subscribe(EventTypes.OPTIMIZATION_RUN_REQUESTED, this.handleOptimizationRequest.bind(this));
 
         logger.info('Registered for optimization requests');
     }
@@ -69,32 +66,37 @@ export class OptimizationConsumer {
             if (result.success) {
                 // Publish success event
                 const planNumber = `PLAN-${Date.now()}`;
-                await adapter.publish(DomainEvents.optimizationCompleted({
-                    scenarioId: payload.scenarioId,
-                    planId: `plan_${Date.now()}`,
-                    planNumber,
-                    efficiency: result.planData.efficiency,
-                    wastePercentage: result.planData.wastePercentage
-                }));
+                await adapter.publish(
+                    DomainEvents.optimizationCompleted({
+                        scenarioId: payload.scenarioId,
+                        planId: `plan_${Date.now()}`,
+                        planNumber,
+                        efficiency: result.planData.efficiency,
+                        wastePercentage: result.planData.wastePercentage
+                    })
+                );
 
                 logger.info('Optimization completed', { correlationId: payload.correlationId });
             } else {
                 // Publish failure event
-                await adapter.publish(DomainEvents.optimizationFailed({
-                    scenarioId: payload.scenarioId,
-                    reason: result.error ?? 'Unknown error'
-                }));
+                await adapter.publish(
+                    DomainEvents.optimizationFailed({
+                        scenarioId: payload.scenarioId,
+                        reason: result.error ?? 'Unknown error'
+                    })
+                );
 
                 logger.error('Optimization failed', { error: result.error });
             }
-
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-            await adapter.publish(DomainEvents.optimizationFailed({
-                scenarioId: payload.scenarioId,
-                reason: errorMessage
-            }));
+            await adapter.publish(
+                DomainEvents.optimizationFailed({
+                    scenarioId: payload.scenarioId,
+                    reason: errorMessage
+                })
+            );
 
             logger.error('Optimization consumer error', { error });
         }
@@ -105,11 +107,16 @@ export class OptimizationConsumer {
      */
     private mapAlgorithm(algo?: string): OptimizationAlgorithm | undefined {
         switch (algo?.toUpperCase()) {
-            case '1D_FFD': return '1D_FFD';
-            case '1D_BFD': return '1D_BFD';
-            case '2D_BOTTOM_LEFT': return '2D_BOTTOM_LEFT';
-            case '2D_GUILLOTINE': return '2D_GUILLOTINE';
-            default: return undefined;
+            case '1D_FFD':
+                return '1D_FFD';
+            case '1D_BFD':
+                return '1D_BFD';
+            case '2D_BOTTOM_LEFT':
+                return '2D_BOTTOM_LEFT';
+            case '2D_GUILLOTINE':
+                return '2D_GUILLOTINE';
+            default:
+                return undefined;
         }
     }
 }

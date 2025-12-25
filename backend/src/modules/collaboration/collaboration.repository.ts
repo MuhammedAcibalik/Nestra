@@ -47,13 +47,13 @@ export interface IActivityQueryOptions {
     readonly activityTypes?: string[];
     readonly targetType?: string;
     readonly targetId?: string;
-    readonly userId?: string;  // Filter by mentioned user
+    readonly userId?: string; // Filter by mentioned user
 }
 
 // ==================== REPOSITORY ====================
 
 export class CollaborationRepository implements ICollaborationRepository {
-    constructor(private readonly db: Database) { }
+    constructor(private readonly db: Database) {}
 
     // ==================== DOCUMENT LOCKS ====================
 
@@ -76,10 +76,7 @@ export class CollaborationRepository implements ICollaborationRepository {
     }
 
     async createLock(data: NewDocumentLock): Promise<DocumentLock> {
-        const [result] = await this.db
-            .insert(documentLocks)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(documentLocks).values(data).returning();
 
         logger.info('Lock created', {
             documentType: result.documentType,
@@ -92,7 +89,7 @@ export class CollaborationRepository implements ICollaborationRepository {
 
     async updateLockHeartbeat(lockId: string): Promise<boolean> {
         const now = new Date();
-        const newExpiry = new Date(now.getTime() + 5 * 60 * 1000);  // 5 minutes from now
+        const newExpiry = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
 
         const result = await this.db
             .update(documentLocks)
@@ -157,20 +154,14 @@ export class CollaborationRepository implements ICollaborationRepository {
 
     async getUserLocks(tenantId: string, userId: string): Promise<DocumentLock[]> {
         return this.db.query.documentLocks.findMany({
-            where: and(
-                eq(documentLocks.tenantId, tenantId),
-                eq(documentLocks.lockedById, userId)
-            )
+            where: and(eq(documentLocks.tenantId, tenantId), eq(documentLocks.lockedById, userId))
         });
     }
 
     // ==================== ACTIVITIES ====================
 
     async createActivity(data: NewActivity): Promise<Activity> {
-        const [result] = await this.db
-            .insert(activities)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(activities).values(data).returning();
 
         logger.debug('Activity created', {
             id: result.id,
@@ -220,29 +211,23 @@ export class CollaborationRepository implements ICollaborationRepository {
             .from(activities)
             .leftJoin(
                 activityReadStatus,
-                and(
-                    eq(activityReadStatus.activityId, activities.id),
-                    eq(activityReadStatus.userId, userId)
-                )
+                and(eq(activityReadStatus.activityId, activities.id), eq(activityReadStatus.userId, userId))
             )
             .where(
                 and(
                     eq(activities.tenantId, tenantId),
-                    eq(activityReadStatus.activityId, null as unknown as string)  // NULL = not read
+                    eq(activityReadStatus.activityId, null as unknown as string) // NULL = not read
                 )
             );
 
         // Mark all as read
         if (unreadActivities.length > 0) {
-            const values = unreadActivities.map(a => ({
+            const values = unreadActivities.map((a) => ({
                 activityId: a.id,
                 userId
             }));
 
-            await this.db
-                .insert(activityReadStatus)
-                .values(values)
-                .onConflictDoNothing();
+            await this.db.insert(activityReadStatus).values(values).onConflictDoNothing();
         }
     }
 
@@ -252,16 +237,10 @@ export class CollaborationRepository implements ICollaborationRepository {
             .from(activities)
             .leftJoin(
                 activityReadStatus,
-                and(
-                    eq(activityReadStatus.activityId, activities.id),
-                    eq(activityReadStatus.userId, userId)
-                )
+                and(eq(activityReadStatus.activityId, activities.id), eq(activityReadStatus.userId, userId))
             )
             .where(
-                and(
-                    eq(activities.tenantId, tenantId),
-                    eq(activityReadStatus.activityId, null as unknown as string)
-                )
+                and(eq(activities.tenantId, tenantId), eq(activityReadStatus.activityId, null as unknown as string))
             );
 
         return result.length;

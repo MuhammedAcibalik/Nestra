@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 
 /**
  * Access control middleware for Swagger documentation
- * 
+ *
  * - Development: Open access
  * - Staging: Requires DOCS_ACCESS_TOKEN header
  * - Production: Completely disabled (404)

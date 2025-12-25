@@ -32,3 +32,8 @@ export * from './document_locks';
 // Settings
 export * from './settings';
 
+// Audit
+export * from './audit';
+
+// Domain Events
+export * from './domain_events';

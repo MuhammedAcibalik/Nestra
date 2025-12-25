@@ -48,9 +48,9 @@ export class BottomLeftStrategy implements I2DAlgorithm {
         }
 
         const expandedPieces = this.expandPieces(pieces);
-        expandedPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        expandedPieces.sort((a, b) => b.width * b.height - a.width * a.height);
 
-        const sortedStock = [...stock].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        const sortedStock = [...stock].sort((a, b) => b.width * b.height - a.width * a.height);
         const activeSheets: ActiveSheet[] = [];
         const unplacedPieces: I2DPiece[] = [];
         const stockUsage = new Map<string, number>();
@@ -121,7 +121,10 @@ export class BottomLeftStrategy implements I2DAlgorithm {
         return false;
     }
 
-    private getOrientations(piece: ExpandedPiece, allowRotation: boolean): Array<{ width: number; height: number; rotated: boolean }> {
+    private getOrientations(
+        piece: ExpandedPiece,
+        allowRotation: boolean
+    ): Array<{ width: number; height: number; rotated: boolean }> {
         const orientations = [{ width: piece.width, height: piece.height, rotated: false }];
         if (allowRotation && piece.canRotate && piece.width !== piece.height) {
             orientations.push({ width: piece.height, height: piece.width, rotated: true });
@@ -167,8 +170,12 @@ export class BottomLeftStrategy implements I2DAlgorithm {
     }
 
     private rectanglesOverlap(r1: Rectangle, r2: Rectangle): boolean {
-        return !(r1.x + r1.width <= r2.x || r2.x + r2.width <= r1.x ||
-            r1.y + r1.height <= r2.y || r2.y + r2.height <= r1.y);
+        return !(
+            r1.x + r1.width <= r2.x ||
+            r2.x + r2.width <= r1.x ||
+            r1.y + r1.height <= r2.y ||
+            r2.y + r2.height <= r1.y
+        );
     }
 
     private tryCreateNewSheet(
@@ -191,15 +198,17 @@ export class BottomLeftStrategy implements I2DAlgorithm {
                         stockId: s.id,
                         width: s.width,
                         height: s.height,
-                        placements: [{
-                            pieceId: piece.id,
-                            orderItemId: piece.orderItemId,
-                            x: 0,
-                            y: 0,
-                            width: orient.width,
-                            height: orient.height,
-                            rotated: orient.rotated
-                        }]
+                        placements: [
+                            {
+                                pieceId: piece.id,
+                                orderItemId: piece.orderItemId,
+                                x: 0,
+                                y: 0,
+                                width: orient.width,
+                                height: orient.height,
+                                rotated: orient.rotated
+                            }
+                        ]
                     };
                 }
             }
@@ -208,7 +217,7 @@ export class BottomLeftStrategy implements I2DAlgorithm {
     }
 
     private addUnplacedPiece(unplacedPieces: I2DPiece[], piece: ExpandedPiece): void {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         } else {
@@ -223,18 +232,14 @@ export class BottomLeftStrategy implements I2DAlgorithm {
         }
     }
 
-    private buildResult(
-        sheets: ActiveSheet[],
-        expandedPieces: ExpandedPiece[],
-        unplacedPieces: I2DPiece[]
-    ): I2DResult {
+    private buildResult(sheets: ActiveSheet[], expandedPieces: ExpandedPiece[], unplacedPieces: I2DPiece[]): I2DResult {
         let totalWasteArea = 0;
         let totalStockArea = 0;
         let totalUsedArea = 0;
 
-        const sheetResults: I2DSheetResult[] = sheets.map(sheet => {
+        const sheetResults: I2DSheetResult[] = sheets.map((sheet) => {
             const stockArea = sheet.width * sheet.height;
-            const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+            const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
             const wasteArea = stockArea - usedArea;
             const wastePercentage = (wasteArea / stockArea) * 100;
 
@@ -253,9 +258,7 @@ export class BottomLeftStrategy implements I2DAlgorithm {
             };
         });
 
-        const totalWastePercentage = totalStockArea > 0
-            ? (totalWasteArea / totalStockArea) * 100
-            : 0;
+        const totalWastePercentage = totalStockArea > 0 ? (totalWasteArea / totalStockArea) * 100 : 0;
 
         return {
             success: unplacedPieces.length === 0,

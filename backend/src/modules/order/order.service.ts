@@ -100,13 +100,15 @@ export class OrderService implements IOrderService {
 
             // Publish order created event
             const eventBus = EventBus.getInstance();
-            await eventBus.publish(DomainEvents.orderCreated({
-                orderId: order.id,
-                orderNumber: order.orderNumber,
-                customerId: data.customerId,
-                itemCount: data.items?.length ?? 0,
-                createdById: userId
-            }));
+            await eventBus.publish(
+                DomainEvents.orderCreated({
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                    customerId: data.customerId,
+                    itemCount: data.items?.length ?? 0,
+                    createdById: userId
+                })
+            );
 
             return success(toOrderDto(fullOrder!));
         } catch (error) {
@@ -135,12 +137,14 @@ export class OrderService implements IOrderService {
             // Publish status update event if status changed
             if (data.status && data.status !== existing.status) {
                 const eventBus = EventBus.getInstance();
-                await eventBus.publish(DomainEvents.orderStatusUpdated({
-                    orderId: order.id,
-                    oldStatus: existing.status,
-                    newStatus: data.status,
-                    correlationId: order.id
-                }));
+                await eventBus.publish(
+                    DomainEvents.orderStatusUpdated({
+                        orderId: order.id,
+                        oldStatus: existing.status,
+                        newStatus: data.status,
+                        correlationId: order.id
+                    })
+                );
             }
 
             return success(toOrderDto(fullOrder!));

@@ -25,11 +25,7 @@ import {
     failure
 } from '../../core/interfaces';
 import { IReportRepository } from './report.repository';
-import {
-    calculateWasteSummary,
-    groupWasteByPeriod,
-    getErrorMessage
-} from './report.mapper';
+import { calculateWasteSummary, groupWasteByPeriod, getErrorMessage } from './report.mapper';
 import { IReportAnalyticsService, ReportAnalyticsService } from './report-analytics.service';
 
 export class ReportService implements IReportService {
@@ -103,7 +99,7 @@ export class ReportService implements IReportService {
                 itemCount: c.itemCount,
                 planCount: 0,
                 totalWaste: 0, // Not available in repository
-                avgWaste: 0    // Not available in repository
+                avgWaste: 0 // Not available in repository
             }));
 
             return success(dtos);
