@@ -17,6 +17,7 @@ import { securityHeadersMiddleware } from '../middleware/security-headers.middle
 import { compressionMiddleware } from '../middleware/compression.middleware';
 import { defaultTimeout } from '../middleware/timeout.middleware';
 import { requestLoggingMiddleware } from '../middleware/request-logging.middleware';
+import { versionMiddleware, deprecationMiddleware } from '../api';
 
 // Monitoring
 import { getMetrics, getMetricsContentType } from '../core/monitoring';
@@ -37,8 +38,15 @@ export function initializeMiddleware(app: Express): void {
     // Compression (before other middleware)
     app.use(compressionMiddleware);
 
-    // CORS
-    app.use(cors());
+    // CORS - Security: Configure allowed origins from environment
+    // Supports both CORS_ORIGINS (preferred, from config) and CORS_ORIGIN (legacy)
+    const corsOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)?.split(',').map(o => o.trim()) || ['http://localhost:3000'];
+    app.use(cors({
+        origin: corsOrigins,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Version']
+    }));
 
     // Body parsing
     app.use(express.json({ limit: '10mb' }));
@@ -55,6 +63,10 @@ export function initializeMiddleware(app: Express): void {
 
     // Prometheus metrics middleware
     app.use(metricsMiddleware);
+
+    // API Version detection (for /api/* routes)
+    app.use('/api', versionMiddleware);
+    app.use('/api', deprecationMiddleware);
 
     // Metrics endpoint for Prometheus scraping
     app.get('/metrics', async (_req, res) => {

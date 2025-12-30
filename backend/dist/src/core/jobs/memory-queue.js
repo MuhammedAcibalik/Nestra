@@ -156,8 +156,7 @@ class InMemoryJobQueue {
         if (this.paused || this.processing)
             return;
         // Find next waiting job
-        const waitingJob = Array.from(this.jobs.values())
-            .find(j => j.status === 'waiting');
+        const waitingJob = Array.from(this.jobs.values()).find((j) => j.status === 'waiting');
         if (!waitingJob)
             return;
         const processor = this.processors.get(waitingJob.name);

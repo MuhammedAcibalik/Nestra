@@ -5,14 +5,12 @@
 
 import { ICacheClient } from './cache.interface';
 import { RedisCache, IRedisConfig } from './redis.cache';
-import { MemoryCache } from './memory.cache';
 import { createModuleLogger } from '../logger';
 
 const logger = createModuleLogger('CacheFactory');
 
 export { ICacheClient, CachePrefix, CacheTTL } from './cache.interface';
 export { RedisCache, IRedisConfig } from './redis.cache';
-export { MemoryCache } from './memory.cache';
 
 // Singleton cache instance
 let cacheInstance: ICacheClient | null = null;
@@ -61,23 +59,22 @@ function getDefaultConfig(): ICacheFactoryConfig {
 
 /**
  * Create cache client based on configuration
+ * Redis is REQUIRED - no in-memory fallback
  */
 export async function createCacheClient(config?: ICacheFactoryConfig): Promise<ICacheClient> {
     const finalConfig = config ?? getDefaultConfig();
 
-    if (finalConfig.useRedis && finalConfig.redis) {
-        try {
-            const redisCache = new RedisCache(finalConfig.redis);
-            await redisCache.connect();
-            logger.info('Using Redis cache');
-            return redisCache;
-        } catch (error) {
-            logger.warn('Redis connection failed, falling back to in-memory cache', { error });
-        }
+    if (!finalConfig.useRedis || !finalConfig.redis) {
+        throw new Error('Redis configuration is required. Set USE_REDIS=true and provide REDIS_HOST/REDIS_PORT or REDIS_URL');
     }
 
-    logger.info('Using in-memory cache');
-    return new MemoryCache();
+    const redisCache = new RedisCache(finalConfig.redis);
+    await redisCache.connect();
+    logger.info('Redis cache connected', {
+        host: finalConfig.redis.host,
+        port: finalConfig.redis.port
+    });
+    return redisCache;
 }
 
 /**

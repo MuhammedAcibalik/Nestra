@@ -47,7 +47,8 @@ describe('CuttingJobController', () => {
     });
     describe('getJobs', () => {
         it('should return jobs on success', async () => {
-            const jobs = [{
+            const jobs = [
+                {
                     id: 'job-1',
                     jobNumber: 'JOB-001',
                     materialTypeId: 'mat-1',
@@ -56,7 +57,8 @@ describe('CuttingJobController', () => {
                     itemCount: 0,
                     scenarioCount: 0,
                     createdAt: new Date()
-                }];
+                }
+            ];
             service.getJobs.mockResolvedValue((0, interfaces_1.success)(jobs));
             req.query = {};
             await controller.getJobs(req, res);

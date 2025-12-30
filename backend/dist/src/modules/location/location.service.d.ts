@@ -3,23 +3,7 @@
  * Following SOLID principles with proper types
  */
 import { IResult } from '../../core/interfaces';
-import { ILocationRepository, ILocationFilter, ICreateLocationInput, IUpdateLocationInput } from './location.repository';
-export interface ILocationDto {
-    id: string;
-    name: string;
-    description?: string;
-    address?: string;
-    stockItemCount: number;
-    machineCount: number;
-    createdAt: Date;
-}
-export interface ILocationService {
-    getLocations(filter?: ILocationFilter): Promise<IResult<ILocationDto[]>>;
-    getLocationById(id: string): Promise<IResult<ILocationDto>>;
-    createLocation(data: ICreateLocationInput): Promise<IResult<ILocationDto>>;
-    updateLocation(id: string, data: IUpdateLocationInput): Promise<IResult<ILocationDto>>;
-    deleteLocation(id: string): Promise<IResult<void>>;
-}
+import { ILocationRepository, ILocationFilter, ICreateLocationInput, IUpdateLocationInput, ILocationDto, ILocationService } from './interfaces';
 export declare class LocationService implements ILocationService {
     private readonly repository;
     constructor(repository: ILocationRepository);
@@ -31,4 +15,5 @@ export declare class LocationService implements ILocationService {
     private toDto;
     private getErrorMessage;
 }
+export type { ILocationDto, ILocationService } from './interfaces';
 //# sourceMappingURL=location.service.d.ts.map

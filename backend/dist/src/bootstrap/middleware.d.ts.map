@@ -1,1 +1,1 @@
-{"version":3,"file":"middleware.d.ts","sourceRoot":"","sources":["../../../src/bootstrap/middleware.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,EAAE,OAAO,EAAE,MAAM,SAAS,CAAC;AAoBlC;;GAEG;AACH,wBAAgB,oBAAoB,CAAC,GAAG,EAAE,OAAO,GAAG,IAAI,CA2DvD"}
+{"version":3,"file":"middleware.d.ts","sourceRoot":"","sources":["../../../src/bootstrap/middleware.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,EAAE,OAAO,EAAE,MAAM,SAAS,CAAC;AAqBlC;;GAEG;AACH,wBAAgB,oBAAoB,CAAC,GAAG,EAAE,OAAO,GAAG,IAAI,CAiEvD"}

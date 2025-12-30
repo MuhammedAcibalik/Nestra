@@ -46,7 +46,7 @@ const logger = (0, logger_1.createModuleLogger)('ImportController');
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
+        fileSize: 10 * 1024 * 1024 // 10MB limit
     },
     fileFilter: (_req, file, cb) => {
         const allowedTypes = [
@@ -147,9 +147,7 @@ class ImportController {
             let mapping;
             try {
                 if (req.body.mapping) {
-                    mapping = typeof req.body.mapping === 'string'
-                        ? JSON.parse(req.body.mapping)
-                        : req.body.mapping;
+                    mapping = typeof req.body.mapping === 'string' ? JSON.parse(req.body.mapping) : req.body.mapping;
                 }
                 else {
                     mapping = {};

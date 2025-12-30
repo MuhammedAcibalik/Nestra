@@ -16,11 +16,11 @@ const cutting_job_operations_service_1 = require("./cutting-job-operations.servi
  * Status transition rules
  */
 const STATUS_TRANSITIONS = {
-    'PENDING': ['OPTIMIZING'],
-    'OPTIMIZING': ['OPTIMIZED', 'PENDING'],
-    'OPTIMIZED': ['IN_PRODUCTION', 'PENDING'],
-    'IN_PRODUCTION': ['COMPLETED'],
-    'COMPLETED': []
+    PENDING: ['OPTIMIZING'],
+    OPTIMIZING: ['OPTIMIZED', 'PENDING'],
+    OPTIMIZED: ['IN_PRODUCTION', 'PENDING'],
+    IN_PRODUCTION: ['COMPLETED'],
+    COMPLETED: []
 };
 /**
  * CuttingJob Service Implementation
@@ -40,7 +40,7 @@ class CuttingJobService {
     async getJobs(filter) {
         try {
             const jobs = await this.repository.findAll(filter);
-            const dtos = jobs.map(job => (0, cutting_job_mapper_1.toCuttingJobDto)(job));
+            const dtos = jobs.map((job) => (0, cutting_job_mapper_1.toCuttingJobDto)(job));
             return (0, interfaces_1.success)(dtos);
         }
         catch (error) {

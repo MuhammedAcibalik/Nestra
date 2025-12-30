@@ -27,10 +27,7 @@ class CollaborationRepository {
         return result ?? null;
     }
     async createLock(data) {
-        const [result] = await this.db
-            .insert(schema_1.documentLocks)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(schema_1.documentLocks).values(data).returning();
         logger.info('Lock created', {
             documentType: result.documentType,
             documentId: result.documentId,
@@ -91,10 +88,7 @@ class CollaborationRepository {
     }
     // ==================== ACTIVITIES ====================
     async createActivity(data) {
-        const [result] = await this.db
-            .insert(schema_1.activities)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(schema_1.activities).values(data).returning();
         logger.debug('Activity created', {
             id: result.id,
             type: result.activityType
@@ -139,14 +133,11 @@ class CollaborationRepository {
         ));
         // Mark all as read
         if (unreadActivities.length > 0) {
-            const values = unreadActivities.map(a => ({
+            const values = unreadActivities.map((a) => ({
                 activityId: a.id,
                 userId
             }));
-            await this.db
-                .insert(schema_1.activityReadStatus)
-                .values(values)
-                .onConflictDoNothing();
+            await this.db.insert(schema_1.activityReadStatus).values(values).onConflictDoNothing();
         }
     }
     async getUnreadCount(tenantId, userId) {

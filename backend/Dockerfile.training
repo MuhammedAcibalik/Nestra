@@ -1,0 +1,26 @@
+# Dockerfile for ML Training with GPU Support
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY src/modules/ml-analytics/training/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy training scripts
+COPY src/modules/ml-analytics/training/ ./training/
+
+# Create data and model directories
+RUN mkdir -p /app/data /app/models/onnx
+
+# Volume for data (input) and models (output)
+VOLUME ["/app/data", "/app/models"]
+
+# Default command: Train all models
+CMD ["sh", "-c", "python training/train_waste_predictor.py && python training/train_time_estimator.py && python training/train_algorithm_selector.py && python training/train_anomaly_predictor.py"]

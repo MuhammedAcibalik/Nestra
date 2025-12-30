@@ -20,6 +20,7 @@ const security_headers_middleware_1 = require("../middleware/security-headers.mi
 const compression_middleware_1 = require("../middleware/compression.middleware");
 const timeout_middleware_1 = require("../middleware/timeout.middleware");
 const request_logging_middleware_1 = require("../middleware/request-logging.middleware");
+const api_1 = require("../api");
 // Monitoring
 const monitoring_1 = require("../core/monitoring");
 // API Documentation
@@ -34,8 +35,15 @@ function initializeMiddleware(app) {
     app.use(request_id_middleware_1.requestIdMiddleware);
     // Compression (before other middleware)
     app.use(compression_middleware_1.compressionMiddleware);
-    // CORS
-    app.use((0, cors_1.default)());
+    // CORS - Security: Configure allowed origins from environment
+    // Supports both CORS_ORIGINS (preferred, from config) and CORS_ORIGIN (legacy)
+    const corsOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)?.split(',').map(o => o.trim()) || ['http://localhost:3000'];
+    app.use((0, cors_1.default)({
+        origin: corsOrigins,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Version']
+    }));
     // Body parsing
     app.use(express_1.default.json({ limit: '10mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
@@ -47,6 +55,9 @@ function initializeMiddleware(app) {
     app.use(timeout_middleware_1.defaultTimeout);
     // Prometheus metrics middleware
     app.use(metrics_middleware_1.metricsMiddleware);
+    // API Version detection (for /api/* routes)
+    app.use('/api', api_1.versionMiddleware);
+    app.use('/api', api_1.deprecationMiddleware);
     // Metrics endpoint for Prometheus scraping
     app.get('/metrics', async (_req, res) => {
         try {

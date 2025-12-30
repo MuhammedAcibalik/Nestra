@@ -59,7 +59,7 @@ class CuttingJobOperationsService {
             }
             // Determine target job (use provided or first source)
             const targetId = targetJobId ?? sourceJobIds[0];
-            const targetJob = sourceJobs.find(j => j.id === targetId);
+            const targetJob = sourceJobs.find((j) => j.id === targetId);
             if (!targetJob) {
                 return (0, interfaces_1.failure)({
                     code: 'TARGET_NOT_FOUND',
@@ -201,7 +201,7 @@ class CuttingJobOperationsService {
      */
     validateSplitItems(sourceItems, itemsToSplit) {
         for (const splitItem of itemsToSplit) {
-            const sourceItem = sourceItems.find(i => i.id === splitItem.itemId);
+            const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId);
             if (!sourceItem) {
                 return (0, interfaces_1.failure)({
                     code: 'ITEM_NOT_FOUND',
@@ -228,7 +228,7 @@ class CuttingJobOperationsService {
      */
     async moveItemsToNewJob(sourceJobId, newJobId, sourceItems, itemsToSplit) {
         for (const splitItem of itemsToSplit) {
-            const sourceItem = sourceItems.find(i => i.id === splitItem.itemId);
+            const sourceItem = sourceItems.find((i) => i.id === splitItem.itemId);
             // Add to new job
             await this.repository.addItem(newJobId, {
                 orderItemId: sourceItem.orderItemId,

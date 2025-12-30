@@ -71,7 +71,7 @@ function sanitizeBody(body) {
     const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'authorization'];
     const sanitized = {};
     for (const [key, value] of Object.entries(body)) {
-        if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+        if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
             sanitized[key] = '[REDACTED]';
         }
         else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {

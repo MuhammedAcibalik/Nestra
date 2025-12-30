@@ -52,7 +52,7 @@ class ActivityFeedService {
     // ==================== QUERY ACTIVITIES ====================
     async getActivities(tenantId, options) {
         const activities = await this.repository.getActivities(tenantId, options ?? {});
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
     async getActivityById(activityId) {
         const activity = await this.repository.getActivityById(activityId);
@@ -64,7 +64,7 @@ class ActivityFeedService {
             targetId: documentId,
             limit
         });
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
     // ==================== UNREAD MANAGEMENT ====================
     async getUnreadCount(tenantId, userId) {
@@ -86,7 +86,7 @@ class ActivityFeedService {
             limit
         });
         // Filter to only those with mentions (would need schema support)
-        return activities.map(a => this.toActivityDto(a));
+        return activities.map((a) => this.toActivityDto(a));
     }
     // ==================== HELPERS ====================
     toActivityDto(activity) {

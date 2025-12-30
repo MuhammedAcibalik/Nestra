@@ -46,7 +46,10 @@ class MaterialEventHandler {
     async handleLowStockAlert(event) {
         const payload = event.payload;
         try {
-            logger.info('Low stock alert', { stockItemId: payload.stockItemId, currentQuantity: payload.currentQuantity });
+            logger.info('Low stock alert', {
+                stockItemId: payload.stockItemId,
+                currentQuantity: payload.currentQuantity
+            });
             // Could trigger reorder workflow or notifications
         }
         catch (error) {

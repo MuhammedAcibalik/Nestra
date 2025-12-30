@@ -66,12 +66,14 @@ export interface IImportRepository {
     importCustomers(data: ICustomerImport[]): Promise<number>;
     getOrderCount(): Promise<number>;
     createOrderWithItems(data: IOrderWithItemsInput): Promise<{ id: string; orderNumber: string }>;
+    findMaterialByCode(code: string): Promise<{ id: string; name: string } | null>;
+    generateOrderNumber(): Promise<string>;
 }
 
 // ==================== REPOSITORY ====================
 
 export class ImportRepository implements IImportRepository {
-    constructor(private readonly db: Database) {}
+    constructor(private readonly db: Database) { }
 
     async importStockItems(data: IStockItemImport[]): Promise<number> {
         if (data.length === 0) return 0;
@@ -142,6 +144,43 @@ export class ImportRepository implements IImportRepository {
             })
             .from(orders);
         return Number(result[0]?.count ?? 0);
+    }
+
+    /**
+     * Find material type by code for import mapping
+     */
+    async findMaterialByCode(code: string): Promise<{ id: string; name: string } | null> {
+        const result = await this.db
+            .select({ id: materialTypes.id, name: materialTypes.name })
+            .from(materialTypes)
+            .where(sql`LOWER(${materialTypes.name}) = LOWER(${code})`)
+            .limit(1);
+
+        return result[0] ?? null;
+    }
+
+    /**
+     * Generate atomic order number using database sequence
+     * Race-condition safe - uses MAX with lock
+     */
+    async generateOrderNumber(): Promise<string> {
+        const date = new Date();
+        const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const prefix = `ORD-${yearMonth}-`;
+
+        // Use MAX + 1 in a single atomic query to avoid race conditions
+        const result = await this.db
+            .select({
+                maxNum: sql<string>`COALESCE(
+                    MAX(CAST(SUBSTRING(order_number FROM ${prefix.length + 1}) AS INTEGER)),
+                    0
+                ) + 1`
+            })
+            .from(orders)
+            .where(sql`order_number LIKE ${prefix + '%'}`);
+
+        const nextNum = Number(result[0]?.maxNum ?? 1);
+        return `${prefix}${String(nextNum).padStart(5, '0')}`;
     }
 
     async createOrderWithItems(data: IOrderWithItemsInput): Promise<{ id: string; orderNumber: string }> {

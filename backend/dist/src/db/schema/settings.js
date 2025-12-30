@@ -17,7 +17,7 @@ exports.wastePolicies = (0, pg_core_1.pgTable)('waste_policies', {
     min2DHeight: (0, pg_core_1.real)('min_2d_height').default(100).notNull(),
     isDefault: (0, pg_core_1.boolean)('is_default').default(false).notNull(),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 // ==================== CUSTOM FIELD DEFINITION ====================
 exports.customFieldDefinitions = (0, pg_core_1.pgTable)('custom_field_definitions', {
@@ -31,10 +31,8 @@ exports.customFieldDefinitions = (0, pg_core_1.pgTable)('custom_field_definition
     defaultValue: (0, pg_core_1.text)('default_value'),
     sortOrder: (0, pg_core_1.integer)('sort_order').default(0).notNull(),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
-}, (table) => [
-    (0, pg_core_1.unique)('custom_field_entity_name').on(table.entityType, table.fieldName)
-]);
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
+}, (table) => [(0, pg_core_1.unique)('custom_field_entity_name').on(table.entityType, table.fieldName)]);
 // ==================== TRANSLATION ====================
 exports.translations = (0, pg_core_1.pgTable)('translations', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
@@ -42,8 +40,6 @@ exports.translations = (0, pg_core_1.pgTable)('translations', {
     key: (0, pg_core_1.text)('key').notNull(),
     value: (0, pg_core_1.text)('value').notNull(),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
-}, (table) => [
-    (0, pg_core_1.unique)('translation_lang_key').on(table.languageCode, table.key)
-]);
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
+}, (table) => [(0, pg_core_1.unique)('translation_lang_key').on(table.languageCode, table.key)]);
 //# sourceMappingURL=settings.js.map

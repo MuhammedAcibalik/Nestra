@@ -45,8 +45,13 @@ export const stockItems = pgTable('stock_items', {
     parentStockId: text('parent_stock_id'),
 
     customFields: jsonb('custom_fields'),
+    // Optimistic Locking
+    version: integer('version').default(1).notNull(),
+    // Timestamps
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull()
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    // Soft Delete
+    deletedAt: timestamp('deleted_at')
 });
 
 export const stockItemsRelations = relations(stockItems, ({ one, many }) => ({

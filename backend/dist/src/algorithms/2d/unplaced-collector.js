@@ -30,14 +30,13 @@ class UnplacedCollector2D {
         }
     }
     getAll() {
-        return Array.from(this.unplaced.values()).map(entry => ({
+        return Array.from(this.unplaced.values()).map((entry) => ({
             ...entry.piece,
             quantity: entry.count
         }));
     }
     getCount() {
-        return Array.from(this.unplaced.values())
-            .reduce((sum, entry) => sum + entry.count, 0);
+        return Array.from(this.unplaced.values()).reduce((sum, entry) => sum + entry.count, 0);
     }
     isEmpty() {
         return this.unplaced.size === 0;

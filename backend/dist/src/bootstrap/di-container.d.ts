@@ -21,6 +21,10 @@ import { RealtimeDashboardService } from '../modules/realtime-dashboard';
 import { PresenceService, DocumentLockService, ActivityFeedService } from '../modules/collaboration';
 import { AuditService } from '../modules/audit';
 import { NotificationService } from '../modules/notification';
+import { ForecastingService, AnomalyService, RecommendationService } from '../modules/analytics';
+import { EnhancedPredictionService, ModelRegistryService, PredictionLoggerService } from '../modules/ml-analytics';
+import { SupplierService } from '../modules/supplier';
+import { RbacService } from '../modules/rbac';
 /**
  * Application Services Container
  */
@@ -44,6 +48,14 @@ export interface IAppServices {
     activityFeedService: ActivityFeedService;
     auditService: AuditService;
     notificationService: NotificationService;
+    forecastingService: ForecastingService;
+    anomalyService: AnomalyService;
+    recommendationService: RecommendationService;
+    mlPredictionService: EnhancedPredictionService;
+    modelRegistryService: ModelRegistryService;
+    predictionLoggerService: PredictionLoggerService;
+    supplierService: SupplierService;
+    rbacService: RbacService;
 }
 /**
  * Initialize all dependencies - Composition Root

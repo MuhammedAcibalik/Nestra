@@ -106,7 +106,7 @@ class FixedWindowLimiter {
         const windowId = Math.floor(now / this.config.windowMs);
         const windowKey = `fw:${key}:${windowId}`;
         const windowEnd = (windowId + 1) * this.config.windowMs;
-        const count = await this.storage.get(windowKey) ?? 0;
+        const count = (await this.storage.get(windowKey)) ?? 0;
         return {
             allowed: count < this.config.maxRequests,
             remaining: Math.max(0, this.config.maxRequests - count),

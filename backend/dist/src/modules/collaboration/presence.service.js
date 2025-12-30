@@ -236,7 +236,7 @@ class PresenceService {
     startCleanupJob() {
         // Run cleanup every minute
         this.cleanupInterval = setInterval(() => {
-            this.cleanupInactiveUsers().catch(error => {
+            this.cleanupInactiveUsers().catch((error) => {
                 logger.error('Presence cleanup failed', { error });
             });
         }, 60 * 1000);

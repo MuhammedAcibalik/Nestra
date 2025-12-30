@@ -18,8 +18,13 @@ export const cuttingJobs = pgTable('cutting_jobs', {
     materialTypeId: uuid('material_type_id').notNull(),
     thickness: real('thickness').notNull(),
     status: cuttingJobStatusEnum('status').default('PENDING').notNull(),
+    // Optimistic Locking
+    version: integer('version').default(1).notNull(),
+    // Timestamps
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull()
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    // Soft Delete
+    deletedAt: timestamp('deleted_at')
 });
 
 export const cuttingJobsRelations = relations(cuttingJobs, ({ many }) => ({

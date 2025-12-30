@@ -23,7 +23,7 @@ export declare const NotificationEvents: {
     readonly DOCUMENT_SHARED: "document_shared";
     readonly COMMENT_ADDED: "comment_added";
 };
-export type NotificationEventType = typeof NotificationEvents[keyof typeof NotificationEvents];
+export type NotificationEventType = (typeof NotificationEvents)[keyof typeof NotificationEvents];
 export interface INotificationMessage {
     readonly title: string;
     readonly body: string;

@@ -63,7 +63,9 @@ class OptimizationRepository {
         });
     }
     async createScenario(data, userId) {
-        const [result] = await this.db.insert(schema_1.optimizationScenarios).values({
+        const [result] = await this.db
+            .insert(schema_1.optimizationScenarios)
+            .values({
             tenantId: this.getCurrentTenantId(),
             name: data.name,
             cuttingJobId: data.cuttingJobId,
@@ -72,13 +74,15 @@ class OptimizationRepository {
             useWarehouseStock: data.useWarehouseStock ?? true,
             useStandardSizes: data.useStandardSizes ?? true,
             selectedStockIds: data.selectedStockIds
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async updateScenarioStatus(id, status) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.optimizationScenarios)
+        const [result] = await this.db
+            .update(schema_1.optimizationScenarios)
             .set({
             status: status,
             updatedAt: new Date()
@@ -115,11 +119,13 @@ class OptimizationRepository {
             },
             orderBy: [(0, drizzle_orm_1.desc)(schema_1.cuttingPlans.createdAt)]
         });
-        return plans.map(p => ({ ...p, stockUsed: p.stockItems }));
+        return plans.map((p) => ({ ...p, stockUsed: p.stockItems }));
     }
     async createPlan(scenarioId, data) {
         const planNumber = `PLN-${Date.now()}-${this.planCounter++}`;
-        const [plan] = await this.db.insert(schema_1.cuttingPlans).values({
+        const [plan] = await this.db
+            .insert(schema_1.cuttingPlans)
+            .values({
             planNumber,
             scenarioId,
             totalWaste: data.totalWaste,
@@ -127,9 +133,10 @@ class OptimizationRepository {
             stockUsedCount: data.stockUsedCount,
             estimatedTime: data.estimatedTime,
             estimatedCost: data.estimatedCost
-        }).returning();
+        })
+            .returning();
         if (data.layoutData && data.layoutData.length > 0) {
-            await this.db.insert(schema_1.cuttingPlanStocks).values(data.layoutData.map(layout => ({
+            await this.db.insert(schema_1.cuttingPlanStocks).values(data.layoutData.map((layout) => ({
                 cuttingPlanId: plan.id,
                 stockItemId: layout.stockItemId,
                 sequence: layout.sequence,
@@ -141,7 +148,8 @@ class OptimizationRepository {
         return plan;
     }
     async updatePlanStatus(id, status, approvedById, machineId) {
-        const [result] = await this.db.update(schema_1.cuttingPlans)
+        const [result] = await this.db
+            .update(schema_1.cuttingPlans)
             .set({
             status: status,
             approvedById,
@@ -154,8 +162,7 @@ class OptimizationRepository {
         return result;
     }
     async getPlanStockItems(planId) {
-        return this.db.select().from(schema_1.cuttingPlanStocks)
-            .where((0, drizzle_orm_1.eq)(schema_1.cuttingPlanStocks.cuttingPlanId, planId));
+        return this.db.select().from(schema_1.cuttingPlanStocks).where((0, drizzle_orm_1.eq)(schema_1.cuttingPlanStocks.cuttingPlanId, planId));
     }
 }
 exports.OptimizationRepository = OptimizationRepository;

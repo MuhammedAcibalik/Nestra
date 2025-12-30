@@ -27,7 +27,7 @@ function scoreBSSF(rect, pieceWidth, pieceHeight) {
  * Prefers positions where remaining area is minimized
  */
 function scoreBAF(rect, pieceWidth, pieceHeight) {
-    return (rect.width * rect.height) - (pieceWidth * pieceHeight);
+    return rect.width * rect.height - pieceWidth * pieceHeight;
 }
 /**
  * Best Long Side Fit (BLSF)
@@ -107,9 +107,10 @@ function findBestPlacement(sheet, piece, options) {
                         break;
                     case 'BEST':
                         // Use combination of metrics
-                        score = scoreBSSF(rect, orient.width, orient.height) * 0.5 +
-                            scoreBAF(rect, orient.width, orient.height) * 0.3 +
-                            scoreBL(rect) * 0.0001;
+                        score =
+                            scoreBSSF(rect, orient.width, orient.height) * 0.5 +
+                                scoreBAF(rect, orient.width, orient.height) * 0.3 +
+                                scoreBL(rect) * 0.0001;
                         break;
                     default:
                         score = scoreBSSF(rect, orient.width, orient.height);

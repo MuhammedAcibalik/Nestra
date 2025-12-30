@@ -64,7 +64,7 @@ describe('OptimizationService', () => {
         });
         it.each([
             [{ name: '', cuttingJobId: 'job-1' }, 'name'],
-            [{ name: 'Test', cuttingJobId: '' }, 'cuttingJobId'],
+            [{ name: 'Test', cuttingJobId: '' }, 'cuttingJobId']
             // Add more invalid cases here if needed, e.g. undefined (though TS prevents it mostly)
         ])('should fail validation when %s is invalid (missing %s)', async (input, _field) => {
             // @ts-expect-error Testing runtime validation

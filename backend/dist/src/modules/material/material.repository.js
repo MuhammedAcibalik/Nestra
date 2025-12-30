@@ -37,16 +37,20 @@ class MaterialRepository {
         return result ?? null;
     }
     async create(data) {
-        const [result] = await this.db.insert(schema_1.materialTypes).values({
+        const [result] = await this.db
+            .insert(schema_1.materialTypes)
+            .values({
             name: data.name,
             description: data.description,
             isRotatable: data.isRotatable ?? true,
             defaultDensity: data.defaultDensity
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
-        const [result] = await this.db.update(schema_1.materialTypes)
+        const [result] = await this.db
+            .update(schema_1.materialTypes)
             .set({
             name: data.name,
             description: data.description,
@@ -62,12 +66,15 @@ class MaterialRepository {
         await this.db.delete(schema_1.materialTypes).where((0, drizzle_orm_1.eq)(schema_1.materialTypes.id, id));
     }
     async addThicknessRange(materialId, data) {
-        const [result] = await this.db.insert(schema_1.thicknessRanges).values({
+        const [result] = await this.db
+            .insert(schema_1.thicknessRanges)
+            .values({
             materialTypeId: materialId,
             name: data.name,
             minThickness: data.minThickness,
             maxThickness: data.maxThickness
-        }).returning();
+        })
+            .returning();
         return result;
     }
 }

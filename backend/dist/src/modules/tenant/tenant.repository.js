@@ -51,10 +51,7 @@ class TenantRepository {
         return query;
     }
     async create(data) {
-        const [result] = await this.db
-            .insert(schema_1.tenants)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(schema_1.tenants).values(data).returning();
         logger.info('Tenant created', { id: result.id, slug: result.slug });
         return result;
     }
@@ -70,10 +67,7 @@ class TenantRepository {
         return result ?? null;
     }
     async delete(id) {
-        const result = await this.db
-            .delete(schema_1.tenants)
-            .where((0, drizzle_orm_1.eq)(schema_1.tenants.id, id))
-            .returning({ id: schema_1.tenants.id });
+        const result = await this.db.delete(schema_1.tenants).where((0, drizzle_orm_1.eq)(schema_1.tenants.id, id)).returning({ id: schema_1.tenants.id });
         if (result.length > 0) {
             logger.info('Tenant deleted', { id });
             return true;
@@ -82,10 +76,7 @@ class TenantRepository {
     }
     // ==================== TENANT USERS ====================
     async addUserToTenant(data) {
-        const [result] = await this.db
-            .insert(schema_1.tenantUsers)
-            .values(data)
-            .returning();
+        const [result] = await this.db.insert(schema_1.tenantUsers).values(data).returning();
         logger.info('User added to tenant', {
             userId: result.userId,
             tenantId: result.tenantId

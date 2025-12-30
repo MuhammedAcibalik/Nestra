@@ -64,16 +64,18 @@ class CuttingJobServiceHandler {
                     materialTypeId: job.materialTypeId,
                     thickness: job.thickness,
                     status: job.status,
-                    items: (job.items ?? []).map(item => ({
+                    items: (job.items ?? []).map((item) => ({
                         id: item.id,
                         orderItemId: item.orderItemId,
                         quantity: item.quantity,
-                        orderItem: item.orderItem ? {
-                            geometryType: item.orderItem.geometryType,
-                            length: item.orderItem.length,
-                            width: item.orderItem.width,
-                            height: item.orderItem.height
-                        } : null
+                        orderItem: item.orderItem
+                            ? {
+                                geometryType: item.orderItem.geometryType,
+                                length: item.orderItem.length,
+                                width: item.orderItem.width,
+                                height: item.orderItem.height
+                            }
+                            : null
                     }))
                 }
             };
@@ -117,7 +119,7 @@ class CuttingJobServiceHandler {
             const jobs = await this.repository.findAll();
             return {
                 success: true,
-                data: jobs.map(j => this.toSummary(j))
+                data: jobs.map((j) => this.toSummary(j))
             };
         }
         catch (error) {
@@ -135,7 +137,7 @@ class CuttingJobServiceHandler {
             const jobs = await this.repository.findAll({ status: 'PENDING' });
             return {
                 success: true,
-                data: jobs.map(j => this.toSummary(j))
+                data: jobs.map((j) => this.toSummary(j))
             };
         }
         catch (error) {

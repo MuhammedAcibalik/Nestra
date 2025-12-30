@@ -18,6 +18,10 @@ export declare const rabbitmqMessagesConsumed: promClient.Counter<"status" | "qu
 export declare const rabbitmqConnectionState: promClient.Gauge<string>;
 export declare const circuitBreakerStateGauge: promClient.Gauge<"name">;
 export declare const circuitBreakerCallsTotal: promClient.Counter<"name" | "result">;
+export declare const mlPredictionsTotal: promClient.Counter<"status" | "variant" | "model_type">;
+export declare const mlPredictionLatency: promClient.Histogram<"model_type">;
+export declare const mlModelHealthGauge: promClient.Gauge<"version" | "model_type">;
+export declare const mlExperimentAssignmentsTotal: promClient.Counter<"variant" | "experiment_id">;
 export declare function getMetrics(): Promise<string>;
 export declare function getMetricsContentType(): string;
 /**

@@ -90,13 +90,7 @@ function initializeSentry(config) {
                 return event;
             },
             // Ignore common non-critical errors
-            ignoreErrors: [
-                'ECONNREFUSED',
-                'ENOTFOUND',
-                'ETIMEDOUT',
-                'Request aborted',
-                'socket hang up'
-            ]
+            ignoreErrors: ['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'Request aborted', 'socket hang up']
         });
         isInitialized = true;
         logger.info('Sentry initialized', {

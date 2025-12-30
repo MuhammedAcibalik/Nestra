@@ -72,18 +72,22 @@ class ProductionRepository {
         });
     }
     async create(planId, operatorId) {
-        const [result] = await this.db.insert(schema_1.productionLogs).values({
+        const [result] = await this.db
+            .insert(schema_1.productionLogs)
+            .values({
             tenantId: this.getCurrentTenantId(),
             cuttingPlanId: planId,
             operatorId: operatorId,
             startedAt: new Date()
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.productionLogs)
+        const [result] = await this.db
+            .update(schema_1.productionLogs)
             .set({
             actualWaste: data.actualWaste,
             actualTime: data.actualTime,
@@ -100,7 +104,8 @@ class ProductionRepository {
     async complete(logId, data) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.productionLogs.id, logId)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.productionLogs)
+        const [result] = await this.db
+            .update(schema_1.productionLogs)
             .set({
             actualWaste: data.actualWaste,
             actualTime: data.actualTime,
@@ -116,17 +121,21 @@ class ProductionRepository {
     }
     // ==================== DOWNTIME METHODS ====================
     async createDowntime(input) {
-        const [result] = await this.db.insert(schema_1.downtimeLogs).values({
+        const [result] = await this.db
+            .insert(schema_1.downtimeLogs)
+            .values({
             productionLogId: input.productionLogId,
             machineId: input.machineId,
             reason: input.reason,
             notes: input.notes,
             startedAt: new Date()
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async updateDowntime(id, endedAt, durationMinutes) {
-        const [result] = await this.db.update(schema_1.downtimeLogs)
+        const [result] = await this.db
+            .update(schema_1.downtimeLogs)
             .set({
             endedAt,
             durationMinutes
@@ -146,7 +155,9 @@ class ProductionRepository {
     }
     // ==================== QUALITY CHECK METHODS ====================
     async createQualityCheck(input) {
-        const [result] = await this.db.insert(schema_1.qualityChecks).values({
+        const [result] = await this.db
+            .insert(schema_1.qualityChecks)
+            .values({
             productionLogId: input.productionLogId,
             result: input.result,
             passedCount: input.passedCount,
@@ -155,7 +166,8 @@ class ProductionRepository {
             inspectorId: input.inspectorId,
             notes: input.notes,
             checkedAt: new Date()
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async findQualityChecksByLogId(productionLogId) {

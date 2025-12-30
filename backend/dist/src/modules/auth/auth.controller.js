@@ -7,6 +7,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 exports.createAuthController = createAuthController;
 const express_1 = require("express");
+const middleware_1 = require("../../core/validation/middleware");
+const schemas_1 = require("../../core/validation/schemas");
 /**
  * @openapi
  * components:
@@ -76,8 +78,8 @@ class AuthController {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post('/login', this.login.bind(this));
-        this.router.post('/register', this.register.bind(this));
+        this.router.post('/login', (0, middleware_1.validate)(schemas_1.loginSchema), this.login.bind(this));
+        this.router.post('/register', (0, middleware_1.validate)(schemas_1.registerSchema), this.register.bind(this));
         this.router.post('/logout', this.logout.bind(this));
         this.router.post('/validate', this.validateToken.bind(this));
     }

@@ -71,7 +71,7 @@ class CuttingJobRepository {
             },
             orderBy: [(0, drizzle_orm_1.desc)(schema_1.cuttingJobs.createdAt)]
         });
-        return results.map(job => ({
+        return results.map((job) => ({
             ...job,
             _count: { items: job.items?.length ?? 0, scenarios: 0 }
         }));
@@ -93,7 +93,7 @@ class CuttingJobRepository {
                 }
             }
         });
-        return results.map(job => ({
+        return results.map((job) => ({
             ...job,
             _count: { items: job.items?.length ?? 0, scenarios: 0 }
         }));
@@ -101,12 +101,15 @@ class CuttingJobRepository {
     // ==================== WRITE OPERATIONS ====================
     async create(data) {
         const jobNumber = `JOB-${Date.now()}-${this.jobCounter++}`;
-        const [result] = await this.db.insert(schema_1.cuttingJobs).values({
+        const [result] = await this.db
+            .insert(schema_1.cuttingJobs)
+            .values({
             tenantId: this.getCurrentTenantId(),
             jobNumber: jobNumber,
             materialTypeId: data.materialTypeId,
             thickness: data.thickness
-        }).returning();
+        })
+            .returning();
         if (data.orderItemIds && data.orderItemIds.length > 0) {
             const orderItemsData = await this.getOrderItemsByIds(data.orderItemIds);
             for (const item of orderItemsData) {
@@ -122,7 +125,8 @@ class CuttingJobRepository {
     async update(id, data) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.cuttingJobs.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.cuttingJobs)
+        const [result] = await this.db
+            .update(schema_1.cuttingJobs)
             .set({
             status: data.status,
             updatedAt: new Date()
@@ -134,7 +138,8 @@ class CuttingJobRepository {
     async updateStatus(id, status) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.cuttingJobs.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.cuttingJobs)
+        const [result] = await this.db
+            .update(schema_1.cuttingJobs)
             .set({
             status: status,
             updatedAt: new Date()
@@ -150,22 +155,27 @@ class CuttingJobRepository {
     }
     // ==================== JOB ITEMS ====================
     async addItem(jobId, data) {
-        const [result] = await this.db.insert(schema_1.cuttingJobItems).values({
+        const [result] = await this.db
+            .insert(schema_1.cuttingJobItems)
+            .values({
             cuttingJobId: jobId,
             orderItemId: data.orderItemId,
             quantity: data.quantity
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async removeItem(jobId, orderItemId) {
-        await this.db.delete(schema_1.cuttingJobItems)
+        await this.db
+            .delete(schema_1.cuttingJobItems)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.cuttingJobItems.cuttingJobId, jobId), (0, drizzle_orm_1.eq)(schema_1.cuttingJobItems.orderItemId, orderItemId)));
     }
     // ==================== ORDER ITEMS ====================
     async getOrderItemsByIds(ids) {
         if (ids.length === 0)
             return [];
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             id: schema_1.orderItems.id,
             itemCode: schema_1.orderItems.itemCode,
             itemName: schema_1.orderItems.itemName,
@@ -185,8 +195,9 @@ class CuttingJobRepository {
         const assignedItemIds = await this.db
             .select({ orderItemId: schema_1.cuttingJobItems.orderItemId })
             .from(schema_1.cuttingJobItems);
-        const assignedIds = assignedItemIds.map(a => a.orderItemId);
-        const query = this.db.select({
+        const assignedIds = assignedItemIds.map((a) => a.orderItemId);
+        const query = this.db
+            .select({
             id: schema_1.orderItems.id,
             itemCode: schema_1.orderItems.itemCode,
             itemName: schema_1.orderItems.itemName,
@@ -210,7 +221,7 @@ class CuttingJobRepository {
             conditions.push((0, drizzle_orm_1.eq)(schema_1.orders.status, 'CONFIRMED'));
         }
         if (assignedIds.length > 0) {
-            conditions.push((0, drizzle_orm_1.sql) `${schema_1.orderItems.id} NOT IN (${drizzle_orm_1.sql.join(assignedIds.map(id => (0, drizzle_orm_1.sql) `${id}`), (0, drizzle_orm_1.sql) `, `)})`);
+            conditions.push((0, drizzle_orm_1.sql) `${schema_1.orderItems.id} NOT IN (${drizzle_orm_1.sql.join(assignedIds.map((id) => (0, drizzle_orm_1.sql) `${id}`), (0, drizzle_orm_1.sql) `, `)})`);
         }
         if (conditions.length > 0) {
             return query.where((0, drizzle_orm_1.and)(...conditions));

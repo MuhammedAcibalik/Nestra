@@ -67,9 +67,7 @@ class TenantAwareRepository extends base_repository_1.EnhancedBaseRepository {
      * Create tenant filter condition
      */
     tenantFilter() {
-        const tenantId = this.tenantConfig.allowWithoutTenant
-            ? this.getTenantIdOptional()
-            : this.getTenantId();
+        const tenantId = this.tenantConfig.allowWithoutTenant ? this.getTenantIdOptional() : this.getTenantId();
         if (!tenantId)
             return undefined;
         return (0, drizzle_orm_1.eq)(this.getTenantIdColumn(), tenantId);
@@ -125,9 +123,7 @@ class TenantAwareRepository extends base_repository_1.EnhancedBaseRepository {
      */
     async delete(id) {
         const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where(this.withTenantFilter((0, drizzle_orm_1.eq)(this.getIdColumn(), id)));
+        await this.db.delete(table).where(this.withTenantFilter((0, drizzle_orm_1.eq)(this.getIdColumn(), id)));
     }
     // ==================== TENANT-SPECIFIC METHODS ====================
     /**
@@ -155,11 +151,7 @@ class TenantAwareRepository extends base_repository_1.EnhancedBaseRepository {
      */
     async findByIdCrossTenant(id) {
         const table = this.getTable();
-        const results = await this.db
-            .select()
-            .from(table)
-            .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id))
-            .limit(1);
+        const results = await this.db.select().from(table).where((0, drizzle_orm_1.eq)(this.getIdColumn(), id)).limit(1);
         return results[0] ?? null;
     }
     /**
@@ -170,11 +162,7 @@ class TenantAwareRepository extends base_repository_1.EnhancedBaseRepository {
         const table = this.getTable();
         const { limit = 100 } = pagination ?? {};
         const finalWhere = where ?? (0, drizzle_orm_1.sql) `1=1`;
-        const results = await this.db
-            .select()
-            .from(table)
-            .where(finalWhere)
-            .limit(limit);
+        const results = await this.db.select().from(table).where(finalWhere).limit(limit);
         return results;
     }
 }

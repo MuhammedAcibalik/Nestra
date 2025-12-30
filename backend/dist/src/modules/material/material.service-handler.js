@@ -65,7 +65,7 @@ class MaterialServiceHandler {
             const materials = await this.repository.findAll();
             return {
                 success: true,
-                data: materials.map(m => this.toSummary(m))
+                data: materials.map((m) => this.toSummary(m))
             };
         }
         catch (error) {

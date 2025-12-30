@@ -1,12 +1,11 @@
 /**
  * Security Headers Middleware
- * Adds security headers for XSS, clickjacking, etc. protection
+ * Uses Helmet for comprehensive HTTP security
  * Following Microservice Pattern: Defense in Depth
  */
-import { Request, Response, NextFunction } from 'express';
+import { RequestHandler } from 'express';
 /**
- * Security Headers Middleware
- * Adds standard security headers to all responses
+ * Helmet configuration for production-ready security
  */
-export declare function securityHeadersMiddleware(_req: Request, res: Response, next: NextFunction): void;
+export declare const securityHeadersMiddleware: RequestHandler;
 //# sourceMappingURL=security-headers.middleware.d.ts.map

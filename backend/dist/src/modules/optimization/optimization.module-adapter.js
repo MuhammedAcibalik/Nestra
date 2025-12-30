@@ -23,7 +23,7 @@ class OptimizationModuleAdapter {
     }
     async getApprovedPlans() {
         const plans = await this.repository.findAllPlans({ status: 'APPROVED' });
-        return plans.map(plan => this.toContract(plan));
+        return plans.map((plan) => this.toContract(plan));
     }
     /**
      * Health check

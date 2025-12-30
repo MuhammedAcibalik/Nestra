@@ -44,4 +44,12 @@ __exportStar(require("./settings"), exports);
 __exportStar(require("./audit"), exports);
 // Domain Events
 __exportStar(require("./domain_events"), exports);
+// ML Analytics
+__exportStar(require("./ml-analytics"), exports);
+// Indexes
+__exportStar(require("./indexes"), exports);
+// Supplier & Purchasing
+__exportStar(require("./supplier"), exports);
+// RBAC (Role-Based Access Control)
+__exportStar(require("./rbac"), exports);
 //# sourceMappingURL=index.js.map

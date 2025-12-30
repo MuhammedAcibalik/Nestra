@@ -6,6 +6,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { IOptimizationService } from '../../core/interfaces';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { validate, validateId } from '../../core/validation/middleware';
+import { createScenarioSchema } from '../../core/validation/schemas';
 
 export class ScenarioController {
     public router: Router;
@@ -17,9 +19,9 @@ export class ScenarioController {
 
     private initializeRoutes(): void {
         this.router.get('/', this.getScenarios.bind(this));
-        this.router.get('/:id', this.getScenarioById.bind(this));
-        this.router.post('/', this.createScenario.bind(this));
-        this.router.post('/:id/run', this.runOptimization.bind(this));
+        this.router.get('/:id', validateId(), this.getScenarioById.bind(this));
+        this.router.post('/', validate(createScenarioSchema), this.createScenario.bind(this));
+        this.router.post('/:id/run', validateId(), this.runOptimization.bind(this));
     }
 
     /**

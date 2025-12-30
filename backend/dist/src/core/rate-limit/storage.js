@@ -79,7 +79,7 @@ class MemoryRateLimitStorage {
             this.sortedSets.set(key, set);
         }
         // Remove existing member if present
-        const existingIdx = set.findIndex(e => e.member === member);
+        const existingIdx = set.findIndex((e) => e.member === member);
         if (existingIdx >= 0) {
             set.splice(existingIdx, 1);
         }
@@ -93,7 +93,7 @@ class MemoryRateLimitStorage {
         if (!set)
             return 0;
         const before = set.length;
-        const filtered = set.filter(e => e.score < min || e.score > max);
+        const filtered = set.filter((e) => e.score < min || e.score > max);
         this.sortedSets.set(key, filtered);
         return before - filtered.length;
     }
@@ -101,7 +101,7 @@ class MemoryRateLimitStorage {
         const set = this.sortedSets.get(key);
         if (!set)
             return 0;
-        return set.filter(e => e.score >= min && e.score <= max).length;
+        return set.filter((e) => e.score >= min && e.score <= max).length;
     }
     async del(key) {
         this.data.delete(key);

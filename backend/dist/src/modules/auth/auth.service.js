@@ -130,10 +130,10 @@ class AuthService {
         const value = Number.parseInt(match[1], 10);
         const unit = match[2];
         const multipliers = {
-            's': 1,
-            'm': 60,
-            'h': 3600,
-            'd': 86400
+            s: 1,
+            m: 60,
+            h: 3600,
+            d: 86400
         };
         return value * (multipliers[unit] ?? 3600);
     }

@@ -6,46 +6,17 @@
 import { Database } from '../../db';
 import { customers } from '../../db/schema';
 import { eq, asc, ilike, or } from 'drizzle-orm';
-
-// Type definitions
-export type Customer = typeof customers.$inferSelect;
-
-export type CustomerWithRelations = Customer & {
-    _count?: { orders: number };
-};
-
-export interface ICustomerFilter {
-    search?: string;
-}
-
-export interface ICreateCustomerInput {
-    code: string;
-    name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    taxId?: string;
-}
-
-export interface IUpdateCustomerInput {
-    name?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    taxId?: string;
-}
-
-export interface ICustomerRepository {
-    findById(id: string): Promise<CustomerWithRelations | null>;
-    findByCode(code: string): Promise<Customer | null>;
-    findAll(filter?: ICustomerFilter): Promise<CustomerWithRelations[]>;
-    create(data: ICreateCustomerInput): Promise<Customer>;
-    update(id: string, data: IUpdateCustomerInput): Promise<Customer>;
-    delete(id: string): Promise<void>;
-}
+import {
+    Customer,
+    CustomerWithRelations,
+    ICustomerRepository,
+    ICustomerFilter,
+    ICreateCustomerInput,
+    IUpdateCustomerInput
+} from './interfaces';
 
 export class CustomerRepository implements ICustomerRepository {
-    constructor(private readonly db: Database) {}
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<Customer | null> {
         const result = await this.db.query.customers.findFirst({
@@ -116,3 +87,6 @@ export class CustomerRepository implements ICustomerRepository {
         await this.db.delete(customers).where(eq(customers.id, id));
     }
 }
+
+// Re-export types for backward compatibility
+export type { Customer, CustomerWithRelations, ICustomerRepository, ICustomerFilter, ICreateCustomerInput, IUpdateCustomerInput } from './interfaces';

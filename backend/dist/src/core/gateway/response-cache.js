@@ -32,7 +32,7 @@ class ResponseCache {
         if (!entry)
             return null;
         // Check if expired
-        if (Date.now() > entry.cachedAt + (entry.ttl * 1000)) {
+        if (Date.now() > entry.cachedAt + entry.ttl * 1000) {
             this.cache.delete(key);
             return null;
         }
@@ -92,7 +92,7 @@ class ResponseCache {
         const now = Date.now();
         let cleaned = 0;
         for (const [key, entry] of this.cache.entries()) {
-            if (now > entry.cachedAt + (entry.ttl * 1000)) {
+            if (now > entry.cachedAt + entry.ttl * 1000) {
                 this.cache.delete(key);
                 cleaned++;
             }

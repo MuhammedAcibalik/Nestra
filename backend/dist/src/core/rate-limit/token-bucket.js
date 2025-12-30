@@ -82,7 +82,7 @@ class TokenBucketLimiter {
             const tokensToAdd = intervalsElapsed * this.config.refillRate;
             return {
                 tokens: Math.min(this.config.capacity, state.tokens + tokensToAdd),
-                lastRefill: state.lastRefill + (intervalsElapsed * this.config.refillInterval)
+                lastRefill: state.lastRefill + intervalsElapsed * this.config.refillInterval
             };
         }
         return state;

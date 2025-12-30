@@ -24,7 +24,7 @@ async function createRateLimitMiddleware(options = {}) {
         return (_req, _res, next) => next();
     }
     // Get or create storage
-    const storage = options.storage ?? await (0, storage_1.getRateLimitStorage)(config.redisUrl);
+    const storage = options.storage ?? (await (0, storage_1.getRateLimitStorage)(config.redisUrl));
     // Create limiters cache
     const limiters = new Map();
     function getLimiter(endpointConfig) {
@@ -116,9 +116,7 @@ function findEndpointConfig(req, config) {
 }
 function matchPattern(methodPath, pattern) {
     // Convert wildcard pattern to regex
-    const escapedPattern = pattern
-        .replaceAll('*', '[^/]+')
-        .replaceAll('/', String.raw `\/`);
+    const escapedPattern = pattern.replaceAll('*', '[^/]+').replaceAll('/', String.raw `\/`);
     const regex = new RegExp(`^${escapedPattern}$`);
     return regex.test(methodPath);
 }

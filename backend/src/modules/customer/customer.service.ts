@@ -9,31 +9,13 @@ import {
     CustomerWithRelations,
     ICustomerFilter,
     ICreateCustomerInput,
-    IUpdateCustomerInput
-} from './customer.repository';
-
-export interface ICustomerDto {
-    id: string;
-    code: string;
-    name: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    taxId?: string;
-    orderCount: number;
-    createdAt: Date;
-}
-
-export interface ICustomerService {
-    getCustomers(filter?: ICustomerFilter): Promise<IResult<ICustomerDto[]>>;
-    getCustomerById(id: string): Promise<IResult<ICustomerDto>>;
-    createCustomer(data: ICreateCustomerInput): Promise<IResult<ICustomerDto>>;
-    updateCustomer(id: string, data: IUpdateCustomerInput): Promise<IResult<ICustomerDto>>;
-    deleteCustomer(id: string): Promise<IResult<void>>;
-}
+    IUpdateCustomerInput,
+    ICustomerDto,
+    ICustomerService
+} from './interfaces';
 
 export class CustomerService implements ICustomerService {
-    constructor(private readonly repository: ICustomerRepository) {}
+    constructor(private readonly repository: ICustomerRepository) { }
 
     async getCustomers(filter?: ICustomerFilter): Promise<IResult<ICustomerDto[]>> {
         try {
@@ -175,3 +157,6 @@ export class CustomerService implements ICustomerService {
         return String(error);
     }
 }
+
+// Re-export types for backward compatibility
+export type { ICustomerDto, ICustomerService } from './interfaces';

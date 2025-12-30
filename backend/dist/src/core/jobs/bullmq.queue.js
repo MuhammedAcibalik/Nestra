@@ -98,14 +98,14 @@ class BullMQQueue {
         return this.convertJob(job);
     }
     async addBulk(jobs) {
-        const bulkJobs = jobs.map(j => ({
+        const bulkJobs = jobs.map((j) => ({
             name: j.name,
             data: j.data,
             opts: this.convertOptions(j.options)
         }));
         const addedJobs = await this.queue.addBulk(bulkJobs);
         logger.debug(`Bulk jobs added: ${addedJobs.length}`, { queue: this.name });
-        return addedJobs.map(j => this.convertJob(j));
+        return addedJobs.map((j) => this.convertJob(j));
     }
     async getJob(jobId) {
         const job = await this.queue.getJob(jobId);
@@ -114,7 +114,7 @@ class BullMQQueue {
     async getJobs(status, start = 0, end = 100) {
         const statuses = Array.isArray(status) ? status : [status];
         const jobs = await this.queue.getJobs(statuses, start, end);
-        return jobs.map(j => this.convertJob(j));
+        return jobs.map((j) => this.convertJob(j));
     }
     async removeJob(jobId) {
         const job = await this.queue.getJob(jobId);
@@ -247,7 +247,7 @@ class BullMQManager {
     }
     async shutdown() {
         logger.info('Shutting down all queues...');
-        const closePromises = Array.from(this.queues.values()).map(q => q.close());
+        const closePromises = Array.from(this.queues.values()).map((q) => q.close());
         await Promise.all(closePromises);
         this.queues.clear();
         logger.info('All queues closed');

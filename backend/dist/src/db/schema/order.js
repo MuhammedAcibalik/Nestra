@@ -11,36 +11,46 @@ const enums_1 = require("./enums");
 const customer_1 = require("./customer");
 const auth_1 = require("./auth");
 const tenant_1 = require("./tenant");
+const material_1 = require("./material");
 // ==================== ORDER ====================
 exports.orders = (0, pg_core_1.pgTable)('orders', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
     tenantId: (0, pg_core_1.uuid)('tenant_id').references(() => tenant_1.tenants.id), // Nullable for backward compatibility
     orderNumber: (0, pg_core_1.text)('order_number').unique().notNull(),
     customerId: (0, pg_core_1.uuid)('customer_id').references(() => customer_1.customers.id),
-    createdById: (0, pg_core_1.uuid)('created_by_id').notNull().references(() => auth_1.users.id),
+    createdById: (0, pg_core_1.uuid)('created_by_id')
+        .notNull()
+        .references(() => auth_1.users.id),
     status: (0, enums_1.orderStatusEnum)('status').default('DRAFT').notNull(),
     priority: (0, pg_core_1.integer)('priority').default(5).notNull(),
     dueDate: (0, pg_core_1.timestamp)('due_date'),
     notes: (0, pg_core_1.text)('notes'),
     customFields: (0, pg_core_1.jsonb)('custom_fields'),
+    // Optimistic Locking
+    version: (0, pg_core_1.integer)('version').default(1).notNull(),
+    // Timestamps
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
     updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    // Soft Delete
+    deletedAt: (0, pg_core_1.timestamp)('deleted_at')
 });
 exports.ordersRelations = (0, drizzle_orm_1.relations)(exports.orders, ({ one, many }) => ({
     customer: one(customer_1.customers, {
         fields: [exports.orders.customerId],
-        references: [customer_1.customers.id],
+        references: [customer_1.customers.id]
     }),
     createdBy: one(auth_1.users, {
         fields: [exports.orders.createdById],
-        references: [auth_1.users.id],
+        references: [auth_1.users.id]
     }),
-    items: many(exports.orderItems),
+    items: many(exports.orderItems)
 }));
 // ==================== ORDER ITEM ====================
 exports.orderItems = (0, pg_core_1.pgTable)('order_items', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
-    orderId: (0, pg_core_1.uuid)('order_id').notNull().references(() => exports.orders.id, { onDelete: 'cascade' }),
+    orderId: (0, pg_core_1.uuid)('order_id')
+        .notNull()
+        .references(() => exports.orders.id, { onDelete: 'cascade' }),
     itemCode: (0, pg_core_1.text)('item_code'),
     itemName: (0, pg_core_1.text)('item_name'),
     geometryType: (0, enums_1.geometryTypeEnum)('geometry_type').notNull(),
@@ -52,7 +62,9 @@ exports.orderItems = (0, pg_core_1.pgTable)('order_items', {
     diameter: (0, pg_core_1.real)('diameter'),
     polygonData: (0, pg_core_1.jsonb)('polygon_data'),
     // Material
-    materialTypeId: (0, pg_core_1.uuid)('material_type_id').notNull(),
+    materialTypeId: (0, pg_core_1.uuid)('material_type_id')
+        .notNull()
+        .references(() => material_1.materialTypes.id),
     thickness: (0, pg_core_1.real)('thickness').notNull(),
     // Quantity
     quantity: (0, pg_core_1.integer)('quantity').notNull(),
@@ -62,12 +74,16 @@ exports.orderItems = (0, pg_core_1.pgTable)('order_items', {
     grainDirection: (0, pg_core_1.text)('grain_direction'),
     customFields: (0, pg_core_1.jsonb)('custom_fields'),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 exports.orderItemsRelations = (0, drizzle_orm_1.relations)(exports.orderItems, ({ one }) => ({
     order: one(exports.orders, {
         fields: [exports.orderItems.orderId],
-        references: [exports.orders.id],
+        references: [exports.orders.id]
     }),
+    materialType: one(material_1.materialTypes, {
+        fields: [exports.orderItems.materialTypeId],
+        references: [material_1.materialTypes.id]
+    })
 }));
 //# sourceMappingURL=order.js.map

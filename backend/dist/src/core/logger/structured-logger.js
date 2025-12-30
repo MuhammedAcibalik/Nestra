@@ -3,6 +3,10 @@
  * Structured Logger
  * JSON logging with correlation ID support
  * Following Microservice Pattern: Observability, Structured Logging
+ *
+ * @deprecated Use `createModuleLogger` from './logger' instead.
+ * This console-based logger is kept for backward compatibility.
+ * Migrate to Pino-based logger for production use.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLogger = getLogger;
@@ -78,11 +82,13 @@ class Logger {
     }
     error(message, error, metadata) {
         this.log('error', message, {
-            error: error ? {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            } : undefined,
+            error: error
+                ? {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                }
+                : undefined,
             metadata
         });
     }

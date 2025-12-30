@@ -36,7 +36,7 @@ class UnplacedCollector1D {
      * Get all unplaced pieces with aggregated quantities
      */
     getAll() {
-        return Array.from(this.unplaced.values()).map(entry => ({
+        return Array.from(this.unplaced.values()).map((entry) => ({
             ...entry.piece,
             quantity: entry.count
         }));
@@ -45,8 +45,7 @@ class UnplacedCollector1D {
      * Get count of unplaced pieces
      */
     getCount() {
-        return Array.from(this.unplaced.values())
-            .reduce((sum, entry) => sum + entry.count, 0);
+        return Array.from(this.unplaced.values()).reduce((sum, entry) => sum + entry.count, 0);
     }
     /**
      * Check if there are any unplaced pieces

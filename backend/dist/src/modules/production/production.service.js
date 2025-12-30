@@ -40,7 +40,7 @@ class ProductionService {
                     message: 'Onaylı planlar getirilemedi'
                 });
             }
-            const plans = response.data.map(plan => ({
+            const plans = response.data.map((plan) => ({
                 id: plan.id,
                 planNumber: plan.planNumber,
                 scenarioId: plan.scenarioId,
@@ -209,7 +209,7 @@ class ProductionService {
                     });
                 }
             }
-            const summaries = Array.from(machineWorkMap.values()).map(entry => ({
+            const summaries = Array.from(machineWorkMap.values()).map((entry) => ({
                 machineId: entry.machineId,
                 machineName: entry.machineName,
                 machineCode: entry.machineCode,
@@ -262,7 +262,7 @@ class ProductionService {
         if (validationErrors.length > 0) {
             logger.warn('Stock validation failed', { failedItems: validationErrors });
         }
-        return items.filter(i => !validationErrors.includes(i.stockItemId));
+        return items.filter((i) => !validationErrors.includes(i.stockItemId));
     }
     async processStockConsumption(items, planId, productionLogId) {
         const results = [];
@@ -293,10 +293,10 @@ class ProductionService {
         }
     }
     logConsumptionResults(results, totalItems) {
-        const successCount = results.filter(r => r.success).length;
-        const failedItems = results.filter(r => !r.success);
+        const successCount = results.filter((r) => r.success).length;
+        const failedItems = results.filter((r) => !r.success);
         if (failedItems.length > 0) {
-            const failedIds = failedItems.map(f => f.stockItemId).join(', ');
+            const failedIds = failedItems.map((f) => f.stockItemId).join(', ');
             logger.warn('Partial stock consumption', { successCount, totalItems, failedIds });
         }
         else {

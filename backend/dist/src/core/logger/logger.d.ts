@@ -48,6 +48,6 @@ export declare const LogLevels: {
     readonly ERROR: "error";
     readonly FATAL: "fatal";
 };
-export type LogLevel = typeof LogLevels[keyof typeof LogLevels];
+export type LogLevel = (typeof LogLevels)[keyof typeof LogLevels];
 export {};
 //# sourceMappingURL=logger.d.ts.map

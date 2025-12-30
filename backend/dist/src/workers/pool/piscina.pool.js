@@ -73,9 +73,7 @@ class OptimizationPool {
             minThreads: this.config.minThreads,
             maxThreads: this.config.maxThreads,
             idleTimeout: this.config.idleTimeout,
-            maxQueue: this.config.maxQueue === 'auto'
-                ? this.config.maxThreads * this.config.maxThreads
-                : this.config.maxQueue
+            maxQueue: this.config.maxQueue === 'auto' ? this.config.maxThreads * this.config.maxThreads : this.config.maxQueue
         });
         this.initialized = true;
         logger.info('Pool initialized', { minThreads: this.config.minThreads, maxThreads: this.config.maxThreads });

@@ -79,7 +79,7 @@ class OptimizationServiceHandler {
             const items = await this.repository.getPlanStockItems(planId);
             return {
                 success: true,
-                data: items.map(item => ({
+                data: items.map((item) => ({
                     stockItemId: item.stockItemId,
                     sequence: item.sequence,
                     waste: item.waste
@@ -117,13 +117,13 @@ class OptimizationServiceHandler {
             // Apply optional filters
             let filtered = plans;
             if (filter?.scenarioId) {
-                filtered = filtered.filter(p => p.scenarioId === filter.scenarioId);
+                filtered = filtered.filter((p) => p.scenarioId === filter.scenarioId);
             }
             // Note: Date filtering would require comparing plan dates
             // For now, we return all approved plans
             return {
                 success: true,
-                data: filtered.map(plan => ({
+                data: filtered.map((plan) => ({
                     id: plan.id,
                     planNumber: plan.planNumber,
                     scenarioId: plan.scenarioId,

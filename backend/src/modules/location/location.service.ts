@@ -9,29 +9,13 @@ import {
     LocationWithRelations,
     ILocationFilter,
     ICreateLocationInput,
-    IUpdateLocationInput
-} from './location.repository';
-
-export interface ILocationDto {
-    id: string;
-    name: string;
-    description?: string;
-    address?: string;
-    stockItemCount: number;
-    machineCount: number;
-    createdAt: Date;
-}
-
-export interface ILocationService {
-    getLocations(filter?: ILocationFilter): Promise<IResult<ILocationDto[]>>;
-    getLocationById(id: string): Promise<IResult<ILocationDto>>;
-    createLocation(data: ICreateLocationInput): Promise<IResult<ILocationDto>>;
-    updateLocation(id: string, data: IUpdateLocationInput): Promise<IResult<ILocationDto>>;
-    deleteLocation(id: string): Promise<IResult<void>>;
-}
+    IUpdateLocationInput,
+    ILocationDto,
+    ILocationService
+} from './interfaces';
 
 export class LocationService implements ILocationService {
-    constructor(private readonly repository: ILocationRepository) {}
+    constructor(private readonly repository: ILocationRepository) { }
 
     async getLocations(filter?: ILocationFilter): Promise<IResult<ILocationDto[]>> {
         try {
@@ -181,3 +165,6 @@ export class LocationService implements ILocationService {
         return String(error);
     }
 }
+
+// Re-export types for backward compatibility
+export type { ILocationDto, ILocationService } from './interfaces';

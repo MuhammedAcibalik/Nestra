@@ -5,6 +5,8 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { IAuthService } from '../../core/interfaces';
+import { validate } from '../../core/validation/middleware';
+import { loginSchema, registerSchema } from '../../core/validation/schemas';
 
 /**
  * @openapi
@@ -76,8 +78,8 @@ export class AuthController {
     }
 
     private initializeRoutes(): void {
-        this.router.post('/login', this.login.bind(this));
-        this.router.post('/register', this.register.bind(this));
+        this.router.post('/login', validate(loginSchema), this.login.bind(this));
+        this.router.post('/register', validate(registerSchema), this.register.bind(this));
         this.router.post('/logout', this.logout.bind(this));
         this.router.post('/validate', this.validateToken.bind(this));
     }

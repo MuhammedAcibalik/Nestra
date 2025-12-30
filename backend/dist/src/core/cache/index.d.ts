@@ -6,7 +6,6 @@ import { ICacheClient } from './cache.interface';
 import { IRedisConfig } from './redis.cache';
 export { ICacheClient, CachePrefix, CacheTTL } from './cache.interface';
 export { RedisCache, IRedisConfig } from './redis.cache';
-export { MemoryCache } from './memory.cache';
 /**
  * Cache configuration from environment
  */
@@ -16,6 +15,7 @@ export interface ICacheFactoryConfig {
 }
 /**
  * Create cache client based on configuration
+ * Redis is REQUIRED - no in-memory fallback
  */
 export declare function createCacheClient(config?: ICacheFactoryConfig): Promise<ICacheClient>;
 /**

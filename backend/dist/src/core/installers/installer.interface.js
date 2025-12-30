@@ -19,7 +19,7 @@ class InstallerRegistry {
         return this.installers;
     }
     installAll(context) {
-        return this.installers.map(installer => {
+        return this.installers.map((installer) => {
             console.log(`[INSTALLER] Installing module: ${installer.name}`);
             return installer.install(context);
         });

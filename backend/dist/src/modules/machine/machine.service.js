@@ -139,7 +139,7 @@ class MachineService {
             const compatibility = await this.repository.addCompatibility(machineId, data);
             // Fetch full compatibility with relations
             const compatibilities = await this.repository.getCompatibilities(machineId);
-            const fullCompatibility = compatibilities.find(c => c.id === compatibility.id);
+            const fullCompatibility = compatibilities.find((c) => c.id === compatibility.id);
             return (0, interfaces_1.success)(this.toCompatibilityDto(fullCompatibility));
         }
         catch (error) {

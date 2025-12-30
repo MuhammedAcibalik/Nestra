@@ -32,7 +32,8 @@ export class OptimizationService implements IOptimizationService {
         cuttingJobClient: ICuttingJobServiceClient,
         stockQueryClient: IStockQueryClient
     ) {
-        this.engine = new OptimizationEngine(cuttingJobClient, stockQueryClient, {
+        // mlClient is undefined - uses NullMLPredictionClient as fallback
+        this.engine = new OptimizationEngine(cuttingJobClient, stockQueryClient, undefined, {
             useWorkerThreads: true
         });
     }

@@ -14,28 +14,30 @@ exports.materialTypes = (0, pg_core_1.pgTable)('material_types', {
     description: (0, pg_core_1.text)('description'),
     isRotatable: (0, pg_core_1.boolean)('is_rotatable').default(true).notNull(),
     defaultDensity: (0, pg_core_1.real)('default_density'),
+    unitPrice: (0, pg_core_1.real)('unit_price').default(0), // Price per unit for cost calculations
+    wasteCostMultiplier: (0, pg_core_1.real)('waste_cost_multiplier').default(0.5), // Waste cost as percentage of unit price
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 exports.materialTypesRelations = (0, drizzle_orm_1.relations)(exports.materialTypes, ({ many }) => ({
-    thicknessRanges: many(exports.thicknessRanges),
+    thicknessRanges: many(exports.thicknessRanges)
 }));
 // ==================== THICKNESS RANGE ====================
 exports.thicknessRanges = (0, pg_core_1.pgTable)('thickness_ranges', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
-    materialTypeId: (0, pg_core_1.uuid)('material_type_id').notNull().references(() => exports.materialTypes.id, { onDelete: 'cascade' }),
+    materialTypeId: (0, pg_core_1.uuid)('material_type_id')
+        .notNull()
+        .references(() => exports.materialTypes.id, { onDelete: 'cascade' }),
     name: (0, pg_core_1.text)('name').notNull(),
     minThickness: (0, pg_core_1.real)('min_thickness').notNull(),
     maxThickness: (0, pg_core_1.real)('max_thickness').notNull(),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
-}, (table) => [
-    (0, pg_core_1.unique)('thickness_range_material_name').on(table.materialTypeId, table.name)
-]);
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
+}, (table) => [(0, pg_core_1.unique)('thickness_range_material_name').on(table.materialTypeId, table.name)]);
 exports.thicknessRangesRelations = (0, drizzle_orm_1.relations)(exports.thicknessRanges, ({ one }) => ({
     materialType: one(exports.materialTypes, {
         fields: [exports.thicknessRanges.materialTypeId],
-        references: [exports.materialTypes.id],
-    }),
+        references: [exports.materialTypes.id]
+    })
 }));
 //# sourceMappingURL=material.js.map

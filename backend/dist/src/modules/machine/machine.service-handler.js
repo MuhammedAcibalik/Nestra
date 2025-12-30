@@ -64,7 +64,7 @@ class MachineServiceHandler {
             const machines = await this.repository.findAll();
             return {
                 success: true,
-                data: machines.map(m => this.toSummary(m))
+                data: machines.map((m) => this.toSummary(m))
             };
         }
         catch (error) {
@@ -82,7 +82,7 @@ class MachineServiceHandler {
             const machines = await this.repository.findAll({ isActive: true });
             return {
                 success: true,
-                data: machines.map(m => this.toSummary(m))
+                data: machines.map((m) => this.toSummary(m))
             };
         }
         catch (error) {

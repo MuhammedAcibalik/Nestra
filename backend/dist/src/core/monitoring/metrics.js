@@ -38,7 +38,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.circuitBreakerCallsTotal = exports.circuitBreakerStateGauge = exports.rabbitmqConnectionState = exports.rabbitmqMessagesConsumed = exports.rabbitmqMessagesPublished = exports.piscinaCompleted = exports.piscinaQueueSize = exports.piscinaUtilization = exports.optimizationDuration = exports.optimizationTasksTotal = exports.httpActiveRequests = exports.httpRequestDuration = exports.httpRequestsTotal = exports.metricsRegistry = void 0;
+exports.mlExperimentAssignmentsTotal = exports.mlModelHealthGauge = exports.mlPredictionLatency = exports.mlPredictionsTotal = exports.circuitBreakerCallsTotal = exports.circuitBreakerStateGauge = exports.rabbitmqConnectionState = exports.rabbitmqMessagesConsumed = exports.rabbitmqMessagesPublished = exports.piscinaCompleted = exports.piscinaQueueSize = exports.piscinaUtilization = exports.optimizationDuration = exports.optimizationTasksTotal = exports.httpActiveRequests = exports.httpRequestDuration = exports.httpRequestsTotal = exports.metricsRegistry = void 0;
 exports.getMetrics = getMetrics;
 exports.getMetricsContentType = getMetricsContentType;
 exports.updatePiscinaMetrics = updatePiscinaMetrics;
@@ -129,6 +129,32 @@ exports.circuitBreakerCallsTotal = new promClient.Counter({
     name: 'nestra_circuit_breaker_calls_total',
     help: 'Total circuit breaker calls',
     labelNames: ['name', 'result'],
+    registers: [exports.metricsRegistry]
+});
+// ==================== ML PREDICTION METRICS ====================
+exports.mlPredictionsTotal = new promClient.Counter({
+    name: 'nestra_ml_predictions_total',
+    help: 'Total ML predictions',
+    labelNames: ['model_type', 'variant', 'status'],
+    registers: [exports.metricsRegistry]
+});
+exports.mlPredictionLatency = new promClient.Histogram({
+    name: 'nestra_ml_prediction_latency_seconds',
+    help: 'ML prediction latency in seconds',
+    labelNames: ['model_type'],
+    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+    registers: [exports.metricsRegistry]
+});
+exports.mlModelHealthGauge = new promClient.Gauge({
+    name: 'nestra_ml_model_health',
+    help: 'ML model health (0=unhealthy, 1=healthy)',
+    labelNames: ['model_type', 'version'],
+    registers: [exports.metricsRegistry]
+});
+exports.mlExperimentAssignmentsTotal = new promClient.Counter({
+    name: 'nestra_ml_experiment_assignments_total',
+    help: 'Total A/B experiment assignments',
+    labelNames: ['experiment_id', 'variant'],
     registers: [exports.metricsRegistry]
 });
 // ==================== HELPER FUNCTIONS ====================

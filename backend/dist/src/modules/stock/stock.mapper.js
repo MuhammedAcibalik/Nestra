@@ -80,6 +80,6 @@ function generateWasteCode(sourceCode) {
  * Determines stock type based on dimensions
  */
 function determineStockType(length, width, height) {
-    return (length && !width && !height) ? 'BAR_1D' : 'SHEET_2D';
+    return length && !width && !height ? 'BAR_1D' : 'SHEET_2D';
 }
 //# sourceMappingURL=stock.mapper.js.map

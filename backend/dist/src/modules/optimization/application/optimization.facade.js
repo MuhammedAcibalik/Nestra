@@ -53,7 +53,7 @@ class OptimizationFacade {
             const scenarios = await this.repository.findAllScenarios(filter);
             return {
                 success: true,
-                data: scenarios.map(s => this.toScenarioDto(s))
+                data: scenarios.map((s) => this.toScenarioDto(s))
             };
         }
         catch (error) {
@@ -152,7 +152,7 @@ class OptimizationFacade {
     async getPlans(filter) {
         try {
             const plans = await this.repository.findAllPlans(filter);
-            const planDtos = await Promise.all(plans.map(p => this.toPlanDto(p)));
+            const planDtos = await Promise.all(plans.map((p) => this.toPlanDto(p)));
             return { success: true, data: planDtos };
         }
         catch (error) {
@@ -178,7 +178,10 @@ class OptimizationFacade {
                 return { success: false, error: { code: 'NOT_FOUND', message: 'Plan not found' } };
             }
             if (plan.status !== 'DRAFT') {
-                return { success: false, error: { code: 'INVALID_STATUS', message: 'Plan already approved or in production' } };
+                return {
+                    success: false,
+                    error: { code: 'INVALID_STATUS', message: 'Plan already approved or in production' }
+                };
             }
             await this.repository.updatePlanStatus(planId, 'APPROVED', userId, machineId);
             const updatedPlan = await this.repository.findPlanById(planId);
@@ -191,9 +194,12 @@ class OptimizationFacade {
     async comparePlans(planIds) {
         try {
             if (planIds.length < 2) {
-                return { success: false, error: { code: 'VALIDATION_ERROR', message: 'At least 2 plans required for comparison' } };
+                return {
+                    success: false,
+                    error: { code: 'VALIDATION_ERROR', message: 'At least 2 plans required for comparison' }
+                };
             }
-            const plans = await Promise.all(planIds.map(id => this.repository.findPlanById(id)));
+            const plans = await Promise.all(planIds.map((id) => this.repository.findPlanById(id)));
             const validPlans = plans.filter((p) => p !== null);
             if (validPlans.length < 2) {
                 return { success: false, error: { code: 'NOT_FOUND', message: 'Not enough valid plans found' } };
@@ -243,7 +249,7 @@ class OptimizationFacade {
         };
     }
     async toPlanDto(plan) {
-        const stockItems = plan.stockUsed ?? await this.repository.getPlanStockItems(plan.id);
+        const stockItems = plan.stockUsed ?? (await this.repository.getPlanStockItems(plan.id));
         return {
             id: plan.id,
             planNumber: plan.planNumber,
@@ -255,7 +261,7 @@ class OptimizationFacade {
             stockUsedCount: plan.stockUsedCount,
             estimatedTime: plan.estimatedTime ?? undefined,
             estimatedCost: plan.estimatedCost ?? undefined,
-            layouts: stockItems.map(item => ({
+            layouts: stockItems.map((item) => ({
                 id: item.id,
                 sequence: item.sequence,
                 stockItemId: item.stockItemId,
@@ -264,9 +270,7 @@ class OptimizationFacade {
                 layoutData: this.parseLayoutData(item.layoutData)
             })),
             assignedMachine: plan.assignedMachine ?? undefined,
-            approvedBy: plan.approvedBy
-                ? `${plan.approvedBy.firstName} ${plan.approvedBy.lastName}`
-                : undefined,
+            approvedBy: plan.approvedBy ? `${plan.approvedBy.firstName} ${plan.approvedBy.lastName}` : undefined,
             approvedAt: plan.approvedAt ?? undefined,
             createdAt: plan.createdAt
         };

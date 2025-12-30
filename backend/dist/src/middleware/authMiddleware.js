@@ -14,7 +14,7 @@ function createAuthMiddleware(authService) {
                 success: false,
                 error: {
                     code: 'NO_TOKEN',
-                    message: 'Yetkilendirme token\'ı bulunamadı'
+                    message: "Yetkilendirme token'ı bulunamadı"
                 }
             });
             return;

@@ -250,14 +250,14 @@ class ExportController {
      * Transform stock items to layout export format
      */
     transformLayouts(plan) {
-        return plan.stockItems.map(ps => {
+        return plan.stockItems.map((ps) => {
             // Parse layout data for pieces
             const layoutData = ps.layoutData;
             const is2D = layoutData?.stockType === 'SHEET_2D';
             const dimensions = is2D
                 ? `${layoutData?.width ?? 0} x ${layoutData?.height ?? 0} mm`
                 : `${layoutData?.length ?? 0} mm`;
-            const pieces = (layoutData?.pieces ?? []).map(p => ({
+            const pieces = (layoutData?.pieces ?? []).map((p) => ({
                 code: p.code,
                 dimensions: is2D ? `${p.width ?? 0} x ${p.height ?? 0}` : `${p.length ?? 0}`,
                 quantity: p.quantity ?? 1

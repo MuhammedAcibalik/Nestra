@@ -119,7 +119,7 @@ class TenantService {
     async listTenants(options) {
         try {
             const tenants = await this.repository.findAll(options);
-            return (0, interfaces_1.success)(tenants.map(t => this.toTenantInfo(t)));
+            return (0, interfaces_1.success)(tenants.map((t) => this.toTenantInfo(t)));
         }
         catch (error) {
             logger.error('Failed to list tenants', { error });

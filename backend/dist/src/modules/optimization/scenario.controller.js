@@ -7,6 +7,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScenarioController = void 0;
 exports.createScenarioController = createScenarioController;
 const express_1 = require("express");
+const middleware_1 = require("../../core/validation/middleware");
+const schemas_1 = require("../../core/validation/schemas");
 class ScenarioController {
     optimizationService;
     router;
@@ -17,9 +19,9 @@ class ScenarioController {
     }
     initializeRoutes() {
         this.router.get('/', this.getScenarios.bind(this));
-        this.router.get('/:id', this.getScenarioById.bind(this));
-        this.router.post('/', this.createScenario.bind(this));
-        this.router.post('/:id/run', this.runOptimization.bind(this));
+        this.router.get('/:id', (0, middleware_1.validateId)(), this.getScenarioById.bind(this));
+        this.router.post('/', (0, middleware_1.validate)(schemas_1.createScenarioSchema), this.createScenario.bind(this));
+        this.router.post('/:id/run', (0, middleware_1.validateId)(), this.runOptimization.bind(this));
     }
     /**
      * @openapi

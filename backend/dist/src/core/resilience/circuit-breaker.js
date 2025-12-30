@@ -38,9 +38,7 @@ class CircuitBreakerManager {
             ...config
         };
         // Wrap action with tracing if enabled
-        const tracedAction = fullConfig.enableTracing
-            ? this.wrapWithTracing(action, config.name)
-            : action;
+        const tracedAction = fullConfig.enableTracing ? this.wrapWithTracing(action, config.name) : action;
         const breaker = new opossum_1.default(tracedAction, {
             timeout: fullConfig.timeout,
             errorThresholdPercentage: fullConfig.errorThresholdPercentage,

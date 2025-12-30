@@ -17,9 +17,7 @@ function toProductionLogDto(log) {
         id: log.id,
         cuttingPlanId: log.cuttingPlanId,
         planNumber: log.cuttingPlan?.planNumber ?? '',
-        operatorName: log.operator
-            ? `${log.operator.firstName} ${log.operator.lastName}`
-            : '',
+        operatorName: log.operator ? `${log.operator.firstName} ${log.operator.lastName}` : '',
         status: log.status,
         actualWaste: log.actualWaste ?? undefined,
         actualTime: log.actualTime ?? undefined,
@@ -56,9 +54,7 @@ function toQualityCheckDto(qc) {
         failedCount: qc.failedCount,
         defectTypes: Array.isArray(qc.defectTypes) ? qc.defectTypes : undefined,
         inspectorId: qc.inspectorId ?? undefined,
-        inspectorName: qc.inspector
-            ? `${qc.inspector.firstName} ${qc.inspector.lastName}`
-            : undefined,
+        inspectorName: qc.inspector ? `${qc.inspector.firstName} ${qc.inspector.lastName}` : undefined,
         checkedAt: qc.checkedAt,
         notes: qc.notes ?? undefined
     };

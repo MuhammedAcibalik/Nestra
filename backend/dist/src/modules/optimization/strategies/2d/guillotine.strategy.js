@@ -15,8 +15,8 @@ class GuillotineStrategy {
             return this.emptyResult();
         }
         const expandedPieces = this.expandPieces(pieces);
-        expandedPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
-        const sortedStock = [...stock].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        expandedPieces.sort((a, b) => b.width * b.height - a.width * a.height);
+        const sortedStock = [...stock].sort((a, b) => b.width * b.height - a.width * a.height);
         const activeSheets = [];
         const unplacedPieces = [];
         const stockUsage = new Map();
@@ -150,7 +150,8 @@ class GuillotineStrategy {
             stockId: stock.id,
             width: stock.width,
             height: stock.height,
-            placements: [{
+            placements: [
+                {
                     pieceId: piece.id,
                     orderItemId: piece.orderItemId,
                     x: 0,
@@ -158,7 +159,8 @@ class GuillotineStrategy {
                     width: orient.width,
                     height: orient.height,
                     rotated: orient.rotated
-                }],
+                }
+            ],
             freeRects: []
         };
         // Initialize free rectangles after first placement
@@ -181,7 +183,7 @@ class GuillotineStrategy {
         return sheet;
     }
     addUnplacedPiece(unplacedPieces, piece) {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         }
@@ -200,9 +202,9 @@ class GuillotineStrategy {
         let totalWasteArea = 0;
         let totalStockArea = 0;
         let totalUsedArea = 0;
-        const sheetResults = sheets.map(sheet => {
+        const sheetResults = sheets.map((sheet) => {
             const stockArea = sheet.width * sheet.height;
-            const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+            const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
             const wasteArea = stockArea - usedArea;
             const wastePercentage = (wasteArea / stockArea) * 100;
             totalStockArea += stockArea;
@@ -218,9 +220,7 @@ class GuillotineStrategy {
                 usedArea
             };
         });
-        const totalWastePercentage = totalStockArea > 0
-            ? (totalWasteArea / totalStockArea) * 100
-            : 0;
+        const totalWastePercentage = totalStockArea > 0 ? (totalWasteArea / totalStockArea) * 100 : 0;
         return {
             success: unplacedPieces.length === 0,
             sheets: sheetResults,

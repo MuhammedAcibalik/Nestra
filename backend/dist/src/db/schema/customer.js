@@ -16,7 +16,7 @@ exports.customers = (0, pg_core_1.pgTable)('customers', {
     taxId: (0, pg_core_1.text)('tax_id'),
     customFields: (0, pg_core_1.jsonb)('custom_fields'),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 exports.customersRelations = (0, drizzle_orm_1.relations)(exports.customers, ({ many }) => ({
 // orders relation defined in order.ts

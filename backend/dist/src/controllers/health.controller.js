@@ -306,8 +306,8 @@ class HealthController {
                 checkWorkerPool(),
                 Promise.resolve(checkMemory())
             ]);
-            const hasFailure = checks.some(c => c.status === 'fail');
-            const hasWarning = checks.some(c => c.status === 'warn');
+            const hasFailure = checks.some((c) => c.status === 'fail');
+            const hasWarning = checks.some((c) => c.status === 'warn');
             let overallStatus = 'healthy';
             if (hasFailure)
                 overallStatus = 'unhealthy';

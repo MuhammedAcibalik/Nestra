@@ -21,7 +21,7 @@ class ExportRepository {
             },
             orderBy: [(0, drizzle_orm_1.desc)(schema_1.stockItems.createdAt)]
         });
-        return results.map(item => ({
+        return results.map((item) => ({
             id: item.id,
             code: item.code,
             materialTypeName: item.materialType?.name ?? '',
@@ -33,23 +33,27 @@ class ExportRepository {
         }));
     }
     async getMaterialsForExport() {
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             id: schema_1.materialTypes.id,
             name: schema_1.materialTypes.name,
             description: schema_1.materialTypes.description,
             defaultDensity: schema_1.materialTypes.defaultDensity
-        }).from(schema_1.materialTypes);
+        })
+            .from(schema_1.materialTypes);
         return results;
     }
     async getCustomersForExport() {
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             id: schema_1.customers.id,
             code: schema_1.customers.code,
             name: schema_1.customers.name,
             email: schema_1.customers.email,
             phone: schema_1.customers.phone,
             address: schema_1.customers.address
-        }).from(schema_1.customers);
+        })
+            .from(schema_1.customers);
         return results;
     }
     async getOrdersForExport() {
@@ -60,7 +64,7 @@ class ExportRepository {
             },
             orderBy: [(0, drizzle_orm_1.desc)(schema_1.orders.createdAt)]
         });
-        return results.map(order => ({
+        return results.map((order) => ({
             id: order.id,
             orderNumber: order.orderNumber,
             customerName: order.customer?.name ?? null,
@@ -77,7 +81,7 @@ class ExportRepository {
             },
             orderBy: [(0, drizzle_orm_1.desc)(schema_1.cuttingPlans.createdAt)]
         });
-        return results.map(plan => ({
+        return results.map((plan) => ({
             id: plan.id,
             planNumber: plan.planNumber,
             scenarioId: plan.scenarioId,
@@ -88,7 +92,7 @@ class ExportRepository {
             totalWaste: plan.totalWaste,
             wastePercentage: plan.wastePercentage,
             stockUsedCount: plan.stockUsedCount,
-            stockItems: (plan.stockItems ?? []).map(si => ({
+            stockItems: (plan.stockItems ?? []).map((si) => ({
                 stockItemId: si.stockItemId,
                 sequence: si.sequence,
                 waste: si.waste,
@@ -119,7 +123,7 @@ class ExportRepository {
             totalWaste: result.totalWaste,
             wastePercentage: result.wastePercentage,
             stockUsedCount: result.stockUsedCount,
-            stockItems: (result.stockItems ?? []).map(si => ({
+            stockItems: (result.stockItems ?? []).map((si) => ({
                 stockItemId: si.stockItemId,
                 sequence: si.sequence,
                 waste: si.waste,
@@ -130,7 +134,8 @@ class ExportRepository {
         };
     }
     async findMaterialTypeById(materialTypeId) {
-        const result = await this.db.select({
+        const result = await this.db
+            .select({
             id: schema_1.materialTypes.id,
             name: schema_1.materialTypes.name,
             description: schema_1.materialTypes.description

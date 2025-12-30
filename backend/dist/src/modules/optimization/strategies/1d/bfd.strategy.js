@@ -105,19 +105,21 @@ class BFDStrategy {
                 stockId: bestStock.id,
                 stockLength: bestStock.length,
                 remainingLength: bestStock.length - piece.length - kerf,
-                cuts: [{
+                cuts: [
+                    {
                         pieceId: piece.id,
                         orderItemId: piece.orderItemId,
                         position: 0,
                         length: piece.length
-                    }],
+                    }
+                ],
                 currentPosition: piece.length + kerf
             };
         }
         return null;
     }
     addUnplacedPiece(unplacedPieces, piece) {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         }
@@ -135,7 +137,7 @@ class BFDStrategy {
         let totalStockLength = 0;
         let totalUsedLength = 0;
         let totalPieces = 0;
-        const bars = activeBars.map(bar => {
+        const bars = activeBars.map((bar) => {
             const usedLength = bar.cuts.reduce((sum, cut) => sum + cut.length + kerf, 0) - kerf;
             const waste = bar.stockLength - usedLength;
             const wastePercentage = (waste / bar.stockLength) * 100;
@@ -158,9 +160,7 @@ class BFDStrategy {
             }
             return result;
         });
-        const totalWastePercentage = totalStockLength > 0
-            ? (totalWaste / totalStockLength) * 100
-            : 0;
+        const totalWastePercentage = totalStockLength > 0 ? (totalWaste / totalStockLength) * 100 : 0;
         return {
             success: unplacedPieces.length === 0,
             bars,

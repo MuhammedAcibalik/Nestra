@@ -15,9 +15,7 @@ describe('2D Cutting Algorithm', () => {
                 { id: 'p1', width: 500, height: 500, quantity: 1, orderItemId: 'o1', canRotate: false },
                 { id: 'p2', width: 500, height: 500, quantity: 1, orderItemId: 'o2', canRotate: false }
             ];
-            const stock = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
             const result = (0, cutting2d_1.optimize2D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.stockUsedCount).toBe(1);
@@ -36,9 +34,7 @@ describe('2D Cutting Algorithm', () => {
             const pieces = [
                 { id: 'p1', width: 50, height: 100, quantity: 1, orderItemId: 'o1', canRotate: true }
             ];
-            const stock = [
-                { id: 's1', width: 100, height: 50, available: 1 }
-            ];
+            const stock = [{ id: 's1', width: 100, height: 50, available: 1 }];
             const result = (0, cutting2d_1.optimize2D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.sheets[0].placements[0].rotated).toBe(true);
@@ -50,9 +46,7 @@ describe('2D Cutting Algorithm', () => {
             const pieces = [
                 { id: 'p1', width: 50, height: 100, quantity: 1, orderItemId: 'o1', canRotate: false }
             ];
-            const stock = [
-                { id: 's1', width: 100, height: 50, available: 1 }
-            ];
+            const stock = [{ id: 's1', width: 100, height: 50, available: 1 }];
             const result = (0, cutting2d_1.optimize2D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(false);
             expect(result.unplacedPieces).toHaveLength(1);
@@ -62,9 +56,7 @@ describe('2D Cutting Algorithm', () => {
             const pieces = [
                 { id: 'p1', width: 80, height: 80, quantity: 2, orderItemId: 'o1', canRotate: false }
             ];
-            const stock = [
-                { id: 's1', width: 100, height: 100, available: 2 }
-            ];
+            const stock = [{ id: 's1', width: 100, height: 100, available: 2 }];
             const result = (0, cutting2d_1.optimize2D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.stockUsedCount).toBe(2);
@@ -78,9 +70,7 @@ describe('2D Cutting Algorithm', () => {
             const pieces = [
                 { id: 'p1', width: 100, height: 100, quantity: 2, orderItemId: 'o1', canRotate: false }
             ];
-            const stock = [
-                { id: 's1', width: 1000, height: 1000, available: 1 }
-            ];
+            const stock = [{ id: 's1', width: 1000, height: 1000, available: 1 }];
             const result = (0, cutting2d_1.optimize2D)(pieces, stock, { ...defaultOptions, algorithm: 'GUILLOTINE' });
             expect(result.success).toBe(true);
             expect(result.sheets[0].placements).toHaveLength(2);

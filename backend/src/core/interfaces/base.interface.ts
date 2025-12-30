@@ -31,3 +31,22 @@ export interface IPaginationOptions {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
 }
+
+// ==================== EXPRESS REQUEST EXTENSIONS ====================
+
+import { Request } from 'express';
+
+/**
+ * Multi-tenant authenticated request with user context
+ * Use this instead of (req as any).tenantId pattern
+ */
+export interface ITenantRequest extends Request {
+    tenantId: string;
+    userId: string;
+    user?: {
+        id: string;
+        email?: string;
+        role?: string;
+    };
+}
+

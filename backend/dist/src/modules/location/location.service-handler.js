@@ -96,7 +96,7 @@ class LocationServiceHandler {
             const locations = await this.repository.findAll();
             return {
                 success: true,
-                data: locations.map(l => this.toSummary(l))
+                data: locations.map((l) => this.toSummary(l))
             };
         }
         catch (error) {
@@ -114,7 +114,7 @@ class LocationServiceHandler {
             const locations = await this.repository.findAll(filter);
             return {
                 success: true,
-                data: locations.map(l => this.toSummary(l))
+                data: locations.map((l) => this.toSummary(l))
             };
         }
         catch (error) {

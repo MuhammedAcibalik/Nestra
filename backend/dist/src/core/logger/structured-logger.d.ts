@@ -2,6 +2,10 @@
  * Structured Logger
  * JSON logging with correlation ID support
  * Following Microservice Pattern: Observability, Structured Logging
+ *
+ * @deprecated Use `createModuleLogger` from './logger' instead.
+ * This console-based logger is kept for backward compatibility.
+ * Migrate to Pino-based logger for production use.
  */
 import { Request } from 'express';
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';

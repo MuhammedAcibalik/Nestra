@@ -106,6 +106,8 @@ exports.OrderController = void 0;
 exports.createOrderController = createOrderController;
 const express_1 = require("express");
 const multer_1 = __importDefault(require("multer"));
+const middleware_1 = require("../../core/validation/middleware");
+const schemas_1 = require("../../core/validation/schemas");
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
 class OrderController {
     orderService;
@@ -117,11 +119,11 @@ class OrderController {
     }
     initializeRoutes() {
         this.router.get('/', this.getAll.bind(this));
-        this.router.get('/:id', this.getById.bind(this));
-        this.router.post('/', this.create.bind(this));
-        this.router.put('/:id', this.update.bind(this));
-        this.router.delete('/:id', this.delete.bind(this));
-        this.router.post('/:id/items', this.addItem.bind(this));
+        this.router.get('/:id', (0, middleware_1.validateId)(), this.getById.bind(this));
+        this.router.post('/', (0, middleware_1.validate)(schemas_1.createOrderSchema), this.create.bind(this));
+        this.router.put('/:id', (0, middleware_1.validateId)(), (0, middleware_1.validate)(schemas_1.updateOrderSchema), this.update.bind(this));
+        this.router.delete('/:id', (0, middleware_1.validateId)(), this.delete.bind(this));
+        this.router.post('/:id/items', (0, middleware_1.validateId)(), (0, middleware_1.validate)(schemas_1.orderItemSchema), this.addItem.bind(this));
         this.router.post('/import', upload.single('file'), this.importFromFile.bind(this));
     }
     /**

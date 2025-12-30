@@ -9,18 +9,15 @@ const drizzle_orm_1 = require("drizzle-orm");
 /**
  * Abstract base repository for Drizzle ORM
  * Provides common CRUD operations
+ *
+ * @template TEntity - Entity type returned from queries
+ * @template TCreate - Input type for create operations
+ * @template TUpdate - Input type for update operations
  */
 class BaseRepository {
     db;
     constructor(db) {
         this.db = db;
-    }
-    /**
-     * Get ID column reference
-     */
-    getIdColumn() {
-        const table = this.getTable();
-        return table.id;
     }
     async findById(id) {
         const table = this.getTable();
@@ -31,31 +28,24 @@ class BaseRepository {
             .limit(1);
         return results[0] ?? null;
     }
-    async findOne(filter) {
+    async findOne(_filter) {
         const table = this.getTable();
-        const results = await this.db
-            .select()
-            .from(table)
-            .limit(1);
-        // Note: Full filter support requires dynamic where clause building
+        const results = await this.db.select().from(table).limit(1);
         return results[0] ?? null;
     }
-    async findMany(filter, pagination) {
+    async findMany(_filter, pagination) {
         const table = this.getTable();
         const { limit = 100 } = pagination ?? {};
-        const results = await this.db
-            .select()
-            .from(table)
-            .limit(limit);
+        const results = await this.db.select().from(table).limit(limit);
         return results;
     }
-    async findManyPaginated(filter, pagination) {
+    async findManyPaginated(_filter, pagination) {
         const table = this.getTable();
         const { page = 1, limit = 20 } = pagination ?? {};
         const offset = (page - 1) * limit;
         const [data, countResult] = await Promise.all([
             this.db.select().from(table).limit(limit).offset(offset),
-            this.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(table),
+            this.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(table)
         ]);
         const total = Number(countResult[0]?.count ?? 0);
         return {
@@ -63,7 +53,7 @@ class BaseRepository {
             total,
             page,
             limit,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(total / limit)
         };
     }
     async create(data) {
@@ -91,7 +81,7 @@ class BaseRepository {
             .returning();
         return result[0];
     }
-    async updateMany(filter, data) {
+    async updateMany(_filter, data) {
         const table = this.getTable();
         const result = await this.db
             .update(table)
@@ -101,22 +91,16 @@ class BaseRepository {
     }
     async delete(id) {
         const table = this.getTable();
-        await this.db
-            .delete(table)
-            .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
+        await this.db.delete(table).where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
     }
-    async deleteMany(filter) {
+    async deleteMany(_filter) {
         const table = this.getTable();
-        const result = await this.db
-            .delete(table)
-            .returning();
+        const result = await this.db.delete(table).returning();
         return result.length;
     }
-    async count(filter) {
+    async count(_filter) {
         const table = this.getTable();
-        const result = await this.db
-            .select({ count: (0, drizzle_orm_1.sql) `count(*)` })
-            .from(table);
+        const result = await this.db.select({ count: (0, drizzle_orm_1.sql) `count(*)` }).from(table);
         return Number(result[0]?.count ?? 0);
     }
     async exists(filter) {

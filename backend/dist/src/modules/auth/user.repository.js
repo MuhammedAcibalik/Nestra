@@ -32,25 +32,32 @@ class UserRepository {
         });
         // Auto-create OPERATOR role if missing (prevents crash on fresh installation)
         if (!defaultRole) {
-            const [newRole] = await this.db.insert(schema_1.roles).values({
+            const [newRole] = await this.db
+                .insert(schema_1.roles)
+                .values({
                 name: 'OPERATOR',
                 displayName: 'Operator',
                 permissions: ['read', 'production.operate']
-            }).returning();
+            })
+                .returning();
             defaultRole = newRole;
             console.log('✅ Created default OPERATOR role');
         }
-        const [user] = await this.db.insert(schema_1.users).values({
+        const [user] = await this.db
+            .insert(schema_1.users)
+            .values({
             email: data.email,
             password: data.password,
             firstName: data.firstName,
             lastName: data.lastName,
             roleId: defaultRole.id
-        }).returning();
+        })
+            .returning();
         return { ...user, role: defaultRole };
     }
     async update(id, data) {
-        const [result] = await this.db.update(schema_1.users)
+        const [result] = await this.db
+            .update(schema_1.users)
             .set({ ...data, updatedAt: new Date() })
             .where((0, drizzle_orm_1.eq)(schema_1.users.id, id))
             .returning();

@@ -8,7 +8,8 @@ class OptimizationService {
     engine;
     constructor(repository, cuttingJobClient, stockQueryClient) {
         this.repository = repository;
-        this.engine = new optimization_engine_1.OptimizationEngine(cuttingJobClient, stockQueryClient, {
+        // mlClient is undefined - uses NullMLPredictionClient as fallback
+        this.engine = new optimization_engine_1.OptimizationEngine(cuttingJobClient, stockQueryClient, undefined, {
             useWorkerThreads: true
         });
     }
@@ -101,7 +102,7 @@ class OptimizationService {
                 await this.repository.updateScenarioStatus(scenarioId, 'FAILED');
                 return (0, interfaces_1.failure)({
                     code: 'OPTIMIZATION_FAILED',
-                    message: result.error ?? 'Optimizasyon başarısız',
+                    message: result.error ?? 'Optimizasyon başarısız'
                 });
             }
             // 5. Create cutting plan with results
@@ -109,7 +110,7 @@ class OptimizationService {
                 totalWaste: result.planData.totalWaste,
                 wastePercentage: result.planData.wastePercentage,
                 stockUsedCount: result.planData.stockUsedCount,
-                layoutData: result.planData.layouts.map(l => ({
+                layoutData: result.planData.layouts.map((l) => ({
                     stockItemId: l.stockItemId,
                     sequence: l.sequence,
                     waste: l.waste,
@@ -257,7 +258,7 @@ class OptimizationService {
         };
     }
     async toPlanDto(plan) {
-        const stockItems = plan.stockUsed ?? await this.repository.getPlanStockItems(plan.id);
+        const stockItems = plan.stockUsed ?? (await this.repository.getPlanStockItems(plan.id));
         return {
             id: plan.id,
             planNumber: plan.planNumber,

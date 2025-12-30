@@ -16,17 +16,17 @@ function sortPieces(pieces, strategy) {
     return [...pieces].sort((a, b) => {
         switch (strategy) {
             case 'AREA_DESC':
-                return (b.width * b.height) - (a.width * a.height);
+                return b.width * b.height - a.width * a.height;
             case 'SHORT_SIDE':
                 return Math.min(b.width, b.height) - Math.min(a.width, a.height);
             case 'LONG_SIDE':
                 return Math.max(b.width, b.height) - Math.max(a.width, a.height);
             case 'PERIMETER':
-                return (2 * b.width + 2 * b.height) - (2 * a.width + 2 * a.height);
+                return 2 * b.width + 2 * b.height - (2 * a.width + 2 * a.height);
             case 'DIFFERENCE':
                 return Math.abs(b.width - b.height) - Math.abs(a.width - a.height);
             default:
-                return (b.width * b.height) - (a.width * a.height);
+                return b.width * b.height - a.width * a.height;
         }
     });
 }
@@ -52,7 +52,7 @@ class StockManager {
     usage;
     stocks;
     constructor(stocks) {
-        this.stocks = [...stocks].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        this.stocks = [...stocks].sort((a, b) => b.width * b.height - a.width * a.height);
         this.usage = new Map();
         for (const stock of stocks) {
             this.usage.set(stock.id, stock.available);
@@ -124,7 +124,9 @@ function optimizeEnhanced2D(pieces, stock, options) {
                 // Try both orientations
                 const orientations = [
                     { w: piece.width, h: piece.height, rotated: false },
-                    ...(options.allowRotation && piece.canRotate ? [{ w: piece.height, h: piece.width, rotated: true }] : [])
+                    ...(options.allowRotation && piece.canRotate
+                        ? [{ w: piece.height, h: piece.width, rotated: true }]
+                        : [])
                 ];
                 for (const orient of orientations) {
                     if (orient.w <= availableStock.width && orient.h <= availableStock.height) {
@@ -140,7 +142,7 @@ function optimizeEnhanced2D(pieces, stock, options) {
         // Track unplaced
         if (!placed) {
             const originalId = piece.id.split('_')[0];
-            const existing = unplacedPieces.find(p => p.id === originalId);
+            const existing = unplacedPieces.find((p) => p.id === originalId);
             if (existing) {
                 existing.quantity++;
             }

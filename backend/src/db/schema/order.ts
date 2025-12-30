@@ -9,6 +9,7 @@ import { orderStatusEnum, geometryTypeEnum } from './enums';
 import { customers } from './customer';
 import { users } from './auth';
 import { tenants } from './tenant';
+import { materialTypes } from './material';
 
 // ==================== ORDER ====================
 
@@ -25,8 +26,13 @@ export const orders = pgTable('orders', {
     dueDate: timestamp('due_date'),
     notes: text('notes'),
     customFields: jsonb('custom_fields'),
+    // Optimistic Locking
+    version: integer('version').default(1).notNull(),
+    // Timestamps
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull()
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    // Soft Delete
+    deletedAt: timestamp('deleted_at')
 });
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -62,7 +68,9 @@ export const orderItems = pgTable('order_items', {
     polygonData: jsonb('polygon_data'),
 
     // Material
-    materialTypeId: uuid('material_type_id').notNull(),
+    materialTypeId: uuid('material_type_id')
+        .notNull()
+        .references(() => materialTypes.id),
     thickness: real('thickness').notNull(),
 
     // Quantity
@@ -82,5 +90,9 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     order: one(orders, {
         fields: [orderItems.orderId],
         references: [orders.id]
+    }),
+    materialType: one(materialTypes, {
+        fields: [orderItems.materialTypeId],
+        references: [materialTypes.id]
     })
 }));

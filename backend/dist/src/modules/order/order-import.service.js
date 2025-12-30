@@ -59,8 +59,8 @@ class OrderImportService {
             width: mapping.width ? this.parseNumber(row[mapping.width]) : undefined,
             height: mapping.height ? this.parseNumber(row[mapping.height]) : undefined,
             materialTypeId: mapping.materialTypeId ? String(row[mapping.materialTypeId] ?? '') : '',
-            thickness: mapping.thickness ? this.parseNumber(row[mapping.thickness]) ?? 0 : 0,
-            quantity: mapping.quantity ? this.parseInt(row[mapping.quantity]) ?? 1 : 1,
+            thickness: mapping.thickness ? (this.parseNumber(row[mapping.thickness]) ?? 0) : 0,
+            quantity: mapping.quantity ? (this.parseInt(row[mapping.quantity]) ?? 1) : 1,
             canRotate: mapping.canRotate ? row[mapping.canRotate] !== 'false' : true
         };
     }

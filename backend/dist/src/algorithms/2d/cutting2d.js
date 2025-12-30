@@ -139,7 +139,8 @@ function tryCreateNewSheetBL(sortedStock, stockUsage, activeSheets, piece, optio
                         stockId: stock.id,
                         width: stock.width,
                         height: stock.height,
-                        placements: [{
+                        placements: [
+                            {
                                 pieceId: piece.id,
                                 orderItemId: piece.orderItemId,
                                 x: 0,
@@ -147,7 +148,8 @@ function tryCreateNewSheetBL(sortedStock, stockUsage, activeSheets, piece, optio
                                 width: orient.w,
                                 height: orient.h,
                                 rotated: orient.rotated
-                            }]
+                            }
+                        ]
                     };
                     activeSheets.push(newSheet);
                     stockUsage.set(stock.id, remaining - 1);
@@ -163,10 +165,10 @@ function tryCreateNewSheetBL(sortedStock, stockUsage, activeSheets, piece, optio
  */
 function bottomLeftFill(pieces, stockSheets, options) {
     const { kerf, allowRotation } = options;
-    const expandedPieces = expandPieces(pieces).sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    const expandedPieces = expandPieces(pieces).sort((a, b) => b.width * b.height - a.width * a.height);
     const sortedStock = [...stockSheets]
-        .filter(s => s.available > 0)
-        .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        .filter((s) => s.available > 0)
+        .sort((a, b) => b.width * b.height - a.width * a.height);
     const activeSheets = [];
     const unplacedPieces = [];
     const stockUsage = new Map();
@@ -179,7 +181,7 @@ function bottomLeftFill(pieces, stockSheets, options) {
             placed = tryCreateNewSheetBL(sortedStock, stockUsage, activeSheets, piece, { kerf, allowRotation });
         }
         if (!placed) {
-            const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+            const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
             if (existingUnplaced) {
                 existingUnplaced.quantity++;
             }
@@ -269,7 +271,8 @@ function initializeGuillotineSheet(stock, piece, orient, kerf) {
         stockId: stock.id,
         width: stock.width,
         height: stock.height,
-        placements: [{
+        placements: [
+            {
                 pieceId: piece.id,
                 orderItemId: piece.orderItemId,
                 x: 0,
@@ -277,7 +280,8 @@ function initializeGuillotineSheet(stock, piece, orient, kerf) {
                 width: orient.w,
                 height: orient.h,
                 rotated: orient.rotated
-            }],
+            }
+        ],
         freeRects: []
     };
     // Initial splits
@@ -324,10 +328,10 @@ function tryCreateNewSheetGuillotine(sortedStock, stockUsage, activeSheets, piec
  */
 function guillotineCutting(pieces, stockSheets, options) {
     const { kerf, allowRotation } = options;
-    const expandedPieces = expandPieces(pieces).sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    const expandedPieces = expandPieces(pieces).sort((a, b) => b.width * b.height - a.width * a.height);
     const sortedStock = [...stockSheets]
-        .filter(s => s.available > 0)
-        .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        .filter((s) => s.available > 0)
+        .sort((a, b) => b.width * b.height - a.width * a.height);
     const activeSheets = [];
     const unplacedPieces = [];
     const stockUsage = new Map();
@@ -348,7 +352,7 @@ function guillotineCutting(pieces, stockSheets, options) {
             placed = tryCreateNewSheetGuillotine(sortedStock, stockUsage, activeSheets, piece, { kerf, allowRotation });
         }
         if (!placed) {
-            const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+            const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
             if (existingUnplaced) {
                 existingUnplaced.quantity++;
             }
@@ -376,7 +380,7 @@ function buildResults(activeSheets, expandedPieces, unplacedPieces) {
     const results = [];
     for (const sheet of activeSheets) {
         const stockArea = sheet.width * sheet.height;
-        const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+        const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
         const wasteArea = stockArea - usedArea;
         results.push({
             stockId: sheet.stockId,

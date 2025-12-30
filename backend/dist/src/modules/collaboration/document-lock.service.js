@@ -191,7 +191,7 @@ class DocumentLockService {
     // ==================== USER LOCKS ====================
     async getUserLocks(tenantId, userId) {
         const locks = await this.repository.getUserLocks(tenantId, userId);
-        return locks.map(lock => this.toLockStatus(lock));
+        return locks.map((lock) => this.toLockStatus(lock));
     }
     async releaseAllUserLocks(tenantId, userId) {
         const locks = await this.repository.getUserLocks(tenantId, userId);
@@ -262,7 +262,7 @@ class DocumentLockService {
     startCleanupJob() {
         // Run cleanup every minute
         this.cleanupInterval = setInterval(() => {
-            this.cleanupExpiredLocks().catch(error => {
+            this.cleanupExpiredLocks().catch((error) => {
                 logger.error('Lock cleanup failed', { error });
             });
         }, 60 * 1000);

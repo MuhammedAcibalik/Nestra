@@ -82,7 +82,9 @@ class OrderRepository {
     async create(data, userId) {
         // Generate order number if not provided
         const orderNumber = `ORD-${Date.now()}-${this.orderCounter++}`;
-        const [result] = await this.db.insert(schema_1.orders).values({
+        const [result] = await this.db
+            .insert(schema_1.orders)
+            .values({
             orderNumber,
             tenantId: this.getCurrentTenantId(), // Auto-inject tenant ID
             customerId: data.customerId,
@@ -90,14 +92,16 @@ class OrderRepository {
             priority: data.priority ?? 5,
             dueDate: data.dueDate,
             notes: data.notes
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
         // Verify ownership via tenant filter
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.orders.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.orders)
+        const [result] = await this.db
+            .update(schema_1.orders)
             .set({
             status: data.status,
             priority: data.priority,
@@ -112,7 +116,8 @@ class OrderRepository {
     async updateStatus(id, status) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.orders.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.orders)
+        const [result] = await this.db
+            .update(schema_1.orders)
             .set({
             status: status,
             updatedAt: new Date()
@@ -128,7 +133,9 @@ class OrderRepository {
     }
     // ==================== ORDER ITEMS ====================
     async addItem(orderId, data) {
-        const [result] = await this.db.insert(schema_1.orderItems).values({
+        const [result] = await this.db
+            .insert(schema_1.orderItems)
+            .values({
             orderId: orderId,
             itemCode: data.itemCode,
             itemName: data.itemName,
@@ -141,7 +148,8 @@ class OrderRepository {
             thickness: data.thickness,
             quantity: data.quantity,
             canRotate: data.canRotate ?? true
-        }).returning();
+        })
+            .returning();
         return result;
     }
 }

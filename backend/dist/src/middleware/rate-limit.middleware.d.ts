@@ -28,4 +28,14 @@ export declare const optimizationRateLimiter: import("express-rate-limit").RateL
  * 50 requests per hour per IP
  */
 export declare const uploadRateLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
+ * Analytics rate limiter - Forecast/Reports endpoints
+ * 60 requests per 15 minutes per IP (moderate - read operations)
+ */
+export declare const analyticsRateLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
+ * Analytics generation rate limiter - CPU intensive analytics operations
+ * detect/generate endpoints - 10 requests per 15 minutes per IP
+ */
+export declare const analyticsGenerationRateLimiter: import("express-rate-limit").RateLimitRequestHandler;
 //# sourceMappingURL=rate-limit.middleware.d.ts.map

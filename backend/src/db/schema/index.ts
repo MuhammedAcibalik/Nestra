@@ -37,3 +37,16 @@ export * from './audit';
 
 // Domain Events
 export * from './domain_events';
+
+// ML Analytics
+export * from './ml-analytics';
+
+// Indexes
+export * from './indexes';
+
+// Supplier & Purchasing
+export * from './supplier';
+
+// RBAC (Role-Based Access Control)
+export * from './rbac';
+

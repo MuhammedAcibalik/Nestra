@@ -67,7 +67,7 @@ class RabbitMQSubscriber {
             await this.setupQueue(channel, queue);
         }
         this.initialized = true;
-        logger.info('Initialized with queues', { queues: queues.map(q => q.name) });
+        logger.info('Initialized with queues', { queues: queues.map((q) => q.name) });
     }
     /**
      * Subscribe to an event type

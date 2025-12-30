@@ -215,7 +215,7 @@ class RabbitMQConnection extends node_events_1.EventEmitter {
         this.reconnectAttempts++;
         const delay = this.config.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
         logger.info('Reconnecting...', { delay, attempt: this.reconnectAttempts, maxRetries: this.config.maxRetries });
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         this.isReconnecting = false;
         await this.connect();
     }

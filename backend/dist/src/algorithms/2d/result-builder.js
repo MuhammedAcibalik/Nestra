@@ -15,7 +15,7 @@ function buildResult(activeSheets, unplacedPieces, totalExpandedPieces, _options
             stockId: sheet.stockId,
             stockWidth: sheet.width,
             stockHeight: sheet.height,
-            placements: sheet.placements.map(p => ({
+            placements: sheet.placements.map((p) => ({
                 pieceId: p.pieceId,
                 orderItemId: p.orderItemId,
                 x: p.x,

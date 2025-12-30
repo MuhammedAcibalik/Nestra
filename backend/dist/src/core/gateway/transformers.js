@@ -121,10 +121,10 @@ function matchMethod(method, allowedMethods) {
     return allowedMethods.includes(method.toUpperCase());
 }
 function isEnveloped(data) {
-    return typeof data === 'object' &&
+    return (typeof data === 'object' &&
         data !== null &&
         'success' in data &&
-        typeof data.success === 'boolean';
+        typeof data.success === 'boolean');
 }
 function getErrorCode(statusCode) {
     const codes = {

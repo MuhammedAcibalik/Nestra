@@ -20,4 +20,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./service-client.interface"), exports);
 __exportStar(require("./service-registry"), exports);
+__exportStar(require("./ml-prediction-client.interface"), exports);
 //# sourceMappingURL=index.js.map

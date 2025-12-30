@@ -4,7 +4,7 @@
  */
 
 import { Database } from '../../db';
-import { cuttingPlans, orders, customers, machines } from '../../db/schema';
+import { cuttingPlans, orders, customers, machines, orderItems } from '../../db/schema';
 import { sql, gte, lte, and, eq, desc } from 'drizzle-orm';
 
 // ==================== TYPE DEFINITIONS ====================
@@ -79,7 +79,7 @@ export interface IReportRepository {
 // ==================== REPOSITORY ====================
 
 export class ReportRepository implements IReportRepository {
-    constructor(private readonly db: Database) {}
+    constructor(private readonly db: Database) { }
 
     async getProductionStats(filter?: IReportFilter): Promise<IProductionStats> {
         const conditions = [];
@@ -184,15 +184,18 @@ export class ReportRepository implements IReportRepository {
         if (filter?.endDate) conditions.push(lte(orders.createdAt, filter.endDate));
         if (filter?.customerId) conditions.push(eq(orders.customerId, filter.customerId));
 
+
         const results = await this.db
             .select({
                 customerId: customers.id,
                 customerName: customers.name,
                 customerCode: customers.code,
-                orderCount: sql<number>`count(distinct ${orders.id})`
+                orderCount: sql<number>`count(distinct ${orders.id})`,
+                itemCount: sql<number>`count(distinct ${orderItems.id})`
             })
             .from(customers)
             .leftJoin(orders, eq(customers.id, orders.customerId))
+            .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .groupBy(customers.id, customers.name, customers.code);
 
@@ -201,9 +204,9 @@ export class ReportRepository implements IReportRepository {
             customerName: row.customerName,
             customerCode: row.customerCode,
             orderCount: Number(row.orderCount ?? 0),
-            totalItems: 0,
-            itemCount: 0,
-            completedPlans: 0
+            totalItems: Number(row.itemCount ?? 0),
+            itemCount: Number(row.itemCount ?? 0),
+            completedPlans: 0 // Requires cutting plan join - complex query, keeping simple for now
         }));
     }
 

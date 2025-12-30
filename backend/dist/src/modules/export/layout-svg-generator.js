@@ -108,9 +108,7 @@ function generateMultipleLayoutsSvg(layouts, options = {}) {
     for (const layout of layouts) {
         const layoutSvg = generateLayoutSvg(layout, opts);
         // Extract inner content (remove svg tags)
-        const innerContent = layoutSvg
-            .replace(/<svg[^>]*>/, '')
-            .replace(/<\/svg>/, '');
+        const innerContent = layoutSvg.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '');
         // Add layout title
         svg.push(`<text x="10" y="${currentY + 15}" font-family="Arial" font-size="12" fill="#333">Levha ${sequence}</text>`);
         // Wrap in group with translation

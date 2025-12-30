@@ -58,11 +58,7 @@ class EnhancedBaseRepository {
         return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
             const table = this.getTable();
             const where = this.buildWhereWithId(id);
-            const results = await this.db
-                .select()
-                .from(table)
-                .where(where)
-                .limit(1);
+            const results = await this.db.select().from(table).where(where).limit(1);
             return results[0] ?? null;
         });
     }
@@ -73,11 +69,7 @@ class EnhancedBaseRepository {
         return this.withTracing('db.query', { operation: 'SELECT', singleResult: true }, async () => {
             const table = this.getTable();
             const finalWhere = this.applyDefaultFilters(where);
-            const results = await this.db
-                .select()
-                .from(table)
-                .where(finalWhere)
-                .limit(1);
+            const results = await this.db.select().from(table).where(finalWhere).limit(1);
             return results[0] ?? null;
         });
     }
@@ -89,11 +81,7 @@ class EnhancedBaseRepository {
             const table = this.getTable();
             const { limit = 100 } = pagination ?? {};
             const finalWhere = this.applyDefaultFilters(where);
-            const results = await this.db
-                .select()
-                .from(table)
-                .where(finalWhere)
-                .limit(limit);
+            const results = await this.db.select().from(table).where(finalWhere).limit(limit);
             return results;
         });
     }
@@ -106,12 +94,7 @@ class EnhancedBaseRepository {
         const offset = (page - 1) * limit;
         const finalWhere = this.applyDefaultFilters(where);
         const [data, countResult] = await Promise.all([
-            this.db
-                .select()
-                .from(table)
-                .where(finalWhere)
-                .limit(limit)
-                .offset(offset),
+            this.db.select().from(table).where(finalWhere).limit(limit).offset(offset),
             this.db
                 .select({ count: (0, drizzle_orm_1.sql) `count(*)::int` })
                 .from(table)
@@ -176,7 +159,7 @@ class EnhancedBaseRepository {
         if (data.length === 0)
             return [];
         const table = this.getTable();
-        const preparedData = data.map(d => this.prepareCreateData(d));
+        const preparedData = data.map((d) => this.prepareCreateData(d));
         const results = await this.db
             .insert(table)
             .values(preparedData)
@@ -217,9 +200,7 @@ class EnhancedBaseRepository {
     async delete(id) {
         return this.withTracing('db.delete', { operation: 'DELETE' }, async () => {
             const table = this.getTable();
-            await this.db
-                .delete(table)
-                .where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
+            await this.db.delete(table).where((0, drizzle_orm_1.eq)(this.getIdColumn(), id));
         });
     }
     /**
@@ -227,10 +208,7 @@ class EnhancedBaseRepository {
      */
     async deleteMany(where) {
         const table = this.getTable();
-        const results = await this.db
-            .delete(table)
-            .where(where)
-            .returning();
+        const results = await this.db.delete(table).where(where).returning();
         return results.length;
     }
     /**

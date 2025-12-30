@@ -57,7 +57,7 @@ class CuttingJobGeneratorService {
                     const job = await this.repository.create({
                         materialTypeId,
                         thickness,
-                        orderItemIds: items.map(i => i.id)
+                        orderItemIds: items.map((i) => i.id)
                     });
                     const fullJob = await this.repository.findById(job.id);
                     createdJobs.push((0, cutting_job_mapper_1.toCuttingJobDto)(fullJob));

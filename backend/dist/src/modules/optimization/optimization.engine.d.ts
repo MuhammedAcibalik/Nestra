@@ -8,7 +8,7 @@
  * - Data fetching: Main thread (async I/O)
  * - Algorithm execution: Piscina pool (CPU-intensive)
  */
-import { ICuttingJobServiceClient, IStockQueryClient } from '../../core/services';
+import { ICuttingJobServiceClient, IStockQueryClient, IMLPredictionClient } from '../../core/services';
 /**
  * Supported optimization algorithms
  */
@@ -49,6 +49,7 @@ export interface LayoutData {
 export interface IOptimizationEngineConfig {
     useWorkerThreads?: boolean;
     enableTracing?: boolean;
+    enableMLPredictions?: boolean;
 }
 export declare class OptimizationEngine {
     private readonly cuttingJobClient;
@@ -56,7 +57,9 @@ export declare class OptimizationEngine {
     private pool;
     private readonly useWorkerThreads;
     private readonly enableTracing;
-    constructor(cuttingJobClient: ICuttingJobServiceClient, stockQueryClient: IStockQueryClient, config?: IOptimizationEngineConfig);
+    private readonly mlClient;
+    private lastPredictionId;
+    constructor(cuttingJobClient: ICuttingJobServiceClient, stockQueryClient: IStockQueryClient, mlClient?: IMLPredictionClient, config?: IOptimizationEngineConfig);
     /**
      * Initialize Piscina pool (call once at startup)
      */
@@ -87,5 +90,10 @@ export declare class OptimizationEngine {
     private getAvailableStock;
     private is1DJob;
     private emptyPlanData;
+    /**
+     * Enrich optimization parameters with ML predictions
+     * Uses ML to select best algorithm if not specified
+     */
+    private enrichParametersWithML;
 }
 //# sourceMappingURL=optimization.engine.d.ts.map

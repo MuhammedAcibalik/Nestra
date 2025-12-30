@@ -58,7 +58,7 @@ class GcodeGenerator {
      * Generate G-code for multiple sheets
      */
     generateForMultipleSheets(sheets) {
-        return sheets.map(sheet => this.generateForSheet(sheet));
+        return sheets.map((sheet) => this.generateForSheet(sheet));
     }
     addHeader(sheet) {
         if (this.options.includeComments) {
@@ -155,7 +155,7 @@ class GcodeGenerator {
     calculateEstimatedTime() {
         // Rough estimate: cutting distance / feed rate + rapid moves
         const cuttingTime = this.totalDistance / this.options.feedRate;
-        const rapidTime = this.totalDistance * 0.2 / this.options.rapidRate; // Estimate 20% rapid
+        const rapidTime = (this.totalDistance * 0.2) / this.options.rapidRate; // Estimate 20% rapid
         return cuttingTime + rapidTime;
     }
 }

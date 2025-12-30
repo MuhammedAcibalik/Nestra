@@ -67,7 +67,8 @@ describe('ReportController', () => {
     });
     describe('getCustomerReport', () => {
         it('should return customer report data', async () => {
-            const mockCustomerData = [{
+            const mockCustomerData = [
+                {
                     customerId: 'c1',
                     customerName: 'C1',
                     customerCode: 'C01',
@@ -76,7 +77,8 @@ describe('ReportController', () => {
                     planCount: 1,
                     totalWaste: 5,
                     avgWaste: 5
-                }];
+                }
+            ];
             service.getCustomerReport.mockResolvedValue((0, interfaces_1.success)(mockCustomerData));
             await controller.getCustomerReport(req, res, next);
             expect(res.json).toHaveBeenCalledWith({
@@ -87,7 +89,8 @@ describe('ReportController', () => {
     });
     describe('getMachineReport', () => {
         it('should return machine report data', async () => {
-            const mockMachineData = [{
+            const mockMachineData = [
+                {
                     machineId: 'm1',
                     machineName: 'M1',
                     machineCode: 'M01',
@@ -95,7 +98,8 @@ describe('ReportController', () => {
                     planCount: 2,
                     totalProductionTime: 120,
                     avgWastePercentage: 5
-                }];
+                }
+            ];
             service.getMachineReport.mockResolvedValue((0, interfaces_1.success)(mockMachineData));
             await controller.getMachineReport(req, res, next);
             expect(res.json).toHaveBeenCalledWith({

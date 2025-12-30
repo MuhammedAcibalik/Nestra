@@ -33,7 +33,18 @@ describe('CuttingJobRepository', () => {
             db.select.mockReturnValue({
                 from: jest.fn().mockReturnValue({
                     where: jest.fn().mockResolvedValue([
-                        { id: 'order-item-1', quantity: 2, materialTypeId: 'mat-1', thickness: 18, itemCode: 'I1', itemName: 'Item 1', length: 100, width: 50, height: 10, geometryType: 'RECTANGLE' }
+                        {
+                            id: 'order-item-1',
+                            quantity: 2,
+                            materialTypeId: 'mat-1',
+                            thickness: 18,
+                            itemCode: 'I1',
+                            itemName: 'Item 1',
+                            length: 100,
+                            width: 50,
+                            height: 10,
+                            geometryType: 'RECTANGLE'
+                        }
                     ])
                 })
             });
@@ -71,7 +82,9 @@ describe('CuttingJobRepository', () => {
     });
     describe('findByMaterialAndThickness', () => {
         it('should find jobs by material criteria', async () => {
-            const mockJobs = [{ id: 'job-1', materialTypeId: 'mat-1', thickness: 18, items: [], _count: { items: 0, scenarios: 0 } }];
+            const mockJobs = [
+                { id: 'job-1', materialTypeId: 'mat-1', thickness: 18, items: [], _count: { items: 0, scenarios: 0 } }
+            ];
             db.query.cuttingJobs.findMany.mockResolvedValue(mockJobs);
             const result = await repository.findByMaterialAndThickness('mat-1', 18, 'PENDING');
             expect(result).toHaveLength(1);

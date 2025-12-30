@@ -22,7 +22,7 @@ export declare const CollaborationEvents: {
     readonly SYNC_REQUEST: "collab:sync_request";
     readonly SYNC_RESPONSE: "collab:sync_response";
 };
-export type CollaborationEventType = typeof CollaborationEvents[keyof typeof CollaborationEvents];
+export type CollaborationEventType = (typeof CollaborationEvents)[keyof typeof CollaborationEvents];
 export interface IUserPresencePayload {
     readonly tenantId: string;
     readonly userId: string;

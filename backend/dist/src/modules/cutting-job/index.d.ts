@@ -1,10 +1,13 @@
 /**
- * CuttingJob Module - Barrel Export
+ * Cutting Job Module - Barrel Export
+ * Following standard module structure
  */
-export * from './cutting-job.repository';
-export * from './cutting-job.service';
-export * from './cutting-job.controller';
-export * from './cutting-job.mapper';
+export type { ICuttingJobDto, ICuttingJobItemDto, ICuttingJobWithItemsDto, ICuttingJobFilter, ICreateCuttingJobInput, IUpdateCuttingJobInput, ICreateCuttingJobItemInput } from './interfaces/dto';
+export type { CuttingJob, CuttingJobItem, CuttingJobWithRelations, CuttingJobItemWithRelations, OrderItemForJob, ICuttingJobRepository, ICuttingJobService } from './interfaces/types';
+export { CuttingJobRepository } from './cutting-job.repository';
+export { CuttingJobService } from './cutting-job.service';
+export { CuttingJobController } from './cutting-job.controller';
+export { toCuttingJobDto, toCuttingJobItemDto, getErrorMessage } from './cutting-job.mapper';
 export { CuttingJobGeneratorService, ICuttingJobGeneratorService } from './cutting-job-generator.service';
 export { CuttingJobOperationsService, ICuttingJobOperationsService } from './cutting-job-operations.service';
 export { CuttingJobServiceHandler } from './cutting-job.service-handler';

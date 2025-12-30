@@ -68,14 +68,15 @@ class AuditService {
     }
     async getAuditLogs(options) {
         const logs = await this.repository.findMany(options);
-        return logs.map(log => this.toDto(log));
+        return logs.map((log) => this.toDto(log));
     }
     async getEntityHistory(tenantId, entityType, entityId, limit = 20) {
         const logs = await this.repository.getEntityHistory(tenantId, entityType, entityId, limit);
-        return logs.map(log => this.toDto(log));
+        return logs.map((log) => this.toDto(log));
     }
     extractContext(req) {
-        const user = req.user;
+        const user = req
+            .user;
         if (!user?.id || !user?.tenantId) {
             return null;
         }

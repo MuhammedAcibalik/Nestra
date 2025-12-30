@@ -72,7 +72,9 @@ class StockRepository {
     }
     // ==================== WRITE OPERATIONS ====================
     async create(data) {
-        const [result] = await this.db.insert(schema_1.stockItems).values({
+        const [result] = await this.db
+            .insert(schema_1.stockItems)
+            .values({
             tenantId: this.getCurrentTenantId(),
             code: data.code,
             name: data.name,
@@ -86,13 +88,15 @@ class StockRepository {
             quantity: data.quantity,
             unitPrice: data.unitPrice,
             locationId: data.locationId
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
         const conditions = [(0, drizzle_orm_1.eq)(schema_1.stockItems.id, id)];
         const where = this.withTenantFilter(conditions);
-        const [result] = await this.db.update(schema_1.stockItems)
+        const [result] = await this.db
+            .update(schema_1.stockItems)
             .set({
             code: data.code,
             name: data.name,
@@ -122,7 +126,8 @@ class StockRepository {
         });
         if (!current)
             throw new Error('Stock item not found');
-        const [result] = await this.db.update(schema_1.stockItems)
+        const [result] = await this.db
+            .update(schema_1.stockItems)
             .set({
             quantity: current.quantity + quantityDelta,
             reservedQty: current.reservedQty + reservedDelta,
@@ -134,13 +139,16 @@ class StockRepository {
     }
     // ==================== MOVEMENTS ====================
     async createMovement(data) {
-        const [result] = await this.db.insert(schema_1.stockMovements).values({
+        const [result] = await this.db
+            .insert(schema_1.stockMovements)
+            .values({
             stockItemId: data.stockItemId,
             movementType: data.movementType,
             quantity: data.quantity,
             notes: data.notes,
             productionLogId: data.productionLogId
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async getMovements(filter) {
@@ -150,10 +158,7 @@ class StockRepository {
             .gte(schema_1.stockMovements.createdAt, filter?.startDate)
             .lte(schema_1.stockMovements.createdAt, filter?.endDate)
             .build();
-        return this.db.select().from(schema_1.stockMovements)
-            .where(where)
-            .orderBy((0, drizzle_orm_1.desc)(schema_1.stockMovements.createdAt))
-            .limit(100);
+        return this.db.select().from(schema_1.stockMovements).where(where).orderBy((0, drizzle_orm_1.desc)(schema_1.stockMovements.createdAt)).limit(100);
     }
 }
 exports.StockRepository = StockRepository;

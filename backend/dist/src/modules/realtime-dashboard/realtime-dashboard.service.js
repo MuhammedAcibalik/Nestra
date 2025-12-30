@@ -118,14 +118,16 @@ class RealtimeDashboardService {
         }
     }
     broadcastProductionUpdate(payload) {
-        this.eventBus.publish({
+        this.eventBus
+            .publish({
             eventId: `prod_${Date.now()}`,
             eventType: realtime_dashboard_events_1.DashboardEvents.PRODUCTION_PROGRESS,
             timestamp: new Date(),
             aggregateType: 'ProductionLog',
             aggregateId: payload.productionLogId,
             payload: payload
-        }).catch(error => {
+        })
+            .catch((error) => {
             logger.error('Failed to broadcast production update', { error });
         });
     }
@@ -135,38 +137,44 @@ class RealtimeDashboardService {
             : payload.status === 'FAILED'
                 ? realtime_dashboard_events_1.DashboardEvents.OPTIMIZATION_FAILED
                 : realtime_dashboard_events_1.DashboardEvents.OPTIMIZATION_RUNNING;
-        this.eventBus.publish({
+        this.eventBus
+            .publish({
             eventId: `opt_${Date.now()}`,
             eventType,
             timestamp: new Date(),
             aggregateType: 'OptimizationScenario',
             aggregateId: payload.scenarioId,
             payload: payload
-        }).catch(error => {
+        })
+            .catch((error) => {
             logger.error('Failed to broadcast optimization update', { error });
         });
     }
     broadcastStockAlert(payload) {
-        this.eventBus.publish({
+        this.eventBus
+            .publish({
             eventId: `stock_${Date.now()}`,
             eventType: realtime_dashboard_events_1.DashboardEvents.STOCK_ALERT,
             timestamp: new Date(),
             aggregateType: 'StockItem',
             aggregateId: payload.stockItemId,
             payload: payload
-        }).catch(error => {
+        })
+            .catch((error) => {
             logger.error('Failed to broadcast stock alert', { error });
         });
     }
     broadcastActivity(payload) {
-        this.eventBus.publish({
+        this.eventBus
+            .publish({
             eventId: `activity_${Date.now()}`,
             eventType: realtime_dashboard_events_1.DashboardEvents.ACTIVITY_NEW,
             timestamp: new Date(),
             aggregateType: 'Activity',
             aggregateId: payload.activityId,
             payload: payload
-        }).catch(error => {
+        })
+            .catch((error) => {
             logger.error('Failed to broadcast activity', { error });
         });
     }
@@ -176,7 +184,7 @@ class RealtimeDashboardService {
         this.stopKPIPolling(tenantId);
         // Start new polling interval
         const interval = setInterval(() => {
-            this.broadcastKPIUpdate(tenantId).catch(error => {
+            this.broadcastKPIUpdate(tenantId).catch((error) => {
                 logger.error('KPI polling failed', { error, tenantId });
             });
         }, intervalMs);

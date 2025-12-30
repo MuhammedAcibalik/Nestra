@@ -18,7 +18,7 @@ class OrderTemplateService {
     templates = new Map();
     async getTemplates() {
         try {
-            const templates = Array.from(this.templates.values()).map(t => ({
+            const templates = Array.from(this.templates.values()).map((t) => ({
                 ...t,
                 itemCount: t.items.length
             }));
@@ -64,7 +64,7 @@ class OrderTemplateService {
                 description: data.description,
                 defaultCustomerId: data.defaultCustomerId,
                 defaultPriority: data.defaultPriority ?? 1,
-                items: data.items.map(item => ({
+                items: data.items.map((item) => ({
                     id: crypto.randomUUID(),
                     itemCode: item.itemCode,
                     itemName: item.itemName,
@@ -111,19 +111,21 @@ class OrderTemplateService {
                 description: data.description ?? template.description,
                 defaultCustomerId: data.defaultCustomerId ?? template.defaultCustomerId,
                 defaultPriority: data.defaultPriority ?? template.defaultPriority,
-                items: data.items ? data.items.map(item => ({
-                    id: crypto.randomUUID(),
-                    itemCode: item.itemCode,
-                    itemName: item.itemName,
-                    geometryType: item.geometryType,
-                    length: item.length,
-                    width: item.width,
-                    height: item.height,
-                    materialTypeId: item.materialTypeId,
-                    thickness: item.thickness,
-                    quantity: item.quantity,
-                    canRotate: item.canRotate ?? true
-                })) : template.items,
+                items: data.items
+                    ? data.items.map((item) => ({
+                        id: crypto.randomUUID(),
+                        itemCode: item.itemCode,
+                        itemName: item.itemName,
+                        geometryType: item.geometryType,
+                        length: item.length,
+                        width: item.width,
+                        height: item.height,
+                        materialTypeId: item.materialTypeId,
+                        thickness: item.thickness,
+                        quantity: item.quantity,
+                        canRotate: item.canRotate ?? true
+                    }))
+                    : template.items,
                 updatedAt: new Date()
             };
             this.templates.set(id, updated);
@@ -171,7 +173,7 @@ class OrderTemplateService {
                 });
             }
             // Convert template items to order items
-            const orderItems = template.items.map(item => ({
+            const orderItems = template.items.map((item) => ({
                 itemCode: item.itemCode,
                 itemName: item.itemName,
                 geometryType: item.geometryType,

@@ -26,7 +26,7 @@ export declare const DashboardEvents: {
     readonly QUALITY_ALERT: "dashboard:quality_alert";
     readonly ACTIVITY_NEW: "dashboard:activity_new";
 };
-export type DashboardEventType = typeof DashboardEvents[keyof typeof DashboardEvents];
+export type DashboardEventType = (typeof DashboardEvents)[keyof typeof DashboardEvents];
 export interface IKPIUpdatePayload {
     readonly tenantId: string;
     readonly timestamp: string;

@@ -5,33 +5,39 @@
 import { Database } from '../../db';
 import { IBaseRepository } from '../interfaces/repository.interface';
 import { IEntity, IPaginatedResult, IPaginationOptions } from '../interfaces';
-import { PgTableWithColumns } from 'drizzle-orm/pg-core';
+import type { AnyPgTable, AnyPgColumn } from '../database/drizzle.types';
 /**
  * Abstract base repository for Drizzle ORM
  * Provides common CRUD operations
+ *
+ * @template TEntity - Entity type returned from queries
+ * @template TCreate - Input type for create operations
+ * @template TUpdate - Input type for update operations
  */
-export declare abstract class BaseRepository<T extends IEntity, CreateInput, UpdateInput> implements IBaseRepository<T, CreateInput, UpdateInput> {
-    protected db: Database;
+export declare abstract class BaseRepository<TEntity extends IEntity, TCreate, TUpdate> implements IBaseRepository<TEntity, TCreate, TUpdate> {
+    protected readonly db: Database;
     constructor(db: Database);
     /**
      * Abstract method to get the Drizzle table
+     * Must be implemented by subclass
      */
-    protected abstract getTable(): PgTableWithColumns<any>;
+    protected abstract getTable(): AnyPgTable;
     /**
-     * Get ID column reference
+     * Abstract method to get the ID column
+     * Must be implemented by subclass
      */
-    protected getIdColumn(): any;
-    findById(id: string): Promise<T | null>;
-    findOne(filter: Partial<T>): Promise<T | null>;
-    findMany(filter?: Partial<T>, pagination?: IPaginationOptions): Promise<T[]>;
-    findManyPaginated(filter?: Partial<T>, pagination?: IPaginationOptions): Promise<IPaginatedResult<T>>;
-    create(data: CreateInput): Promise<T>;
-    createMany(data: CreateInput[]): Promise<T[]>;
-    update(id: string, data: UpdateInput): Promise<T>;
-    updateMany(filter: Partial<T>, data: UpdateInput): Promise<number>;
+    protected abstract getIdColumn(): AnyPgColumn;
+    findById(id: string): Promise<TEntity | null>;
+    findOne(_filter: Partial<TEntity>): Promise<TEntity | null>;
+    findMany(_filter?: Partial<TEntity>, pagination?: IPaginationOptions): Promise<TEntity[]>;
+    findManyPaginated(_filter?: Partial<TEntity>, pagination?: IPaginationOptions): Promise<IPaginatedResult<TEntity>>;
+    create(data: TCreate): Promise<TEntity>;
+    createMany(data: TCreate[]): Promise<TEntity[]>;
+    update(id: string, data: TUpdate): Promise<TEntity>;
+    updateMany(_filter: Partial<TEntity>, data: TUpdate): Promise<number>;
     delete(id: string): Promise<void>;
-    deleteMany(filter: Partial<T>): Promise<number>;
-    count(filter?: Partial<T>): Promise<number>;
-    exists(filter: Partial<T>): Promise<boolean>;
+    deleteMany(_filter: Partial<TEntity>): Promise<number>;
+    count(_filter?: Partial<TEntity>): Promise<number>;
+    exists(filter: Partial<TEntity>): Promise<boolean>;
 }
 //# sourceMappingURL=base.repository.d.ts.map

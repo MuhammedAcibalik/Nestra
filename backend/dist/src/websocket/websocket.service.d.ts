@@ -26,6 +26,10 @@ declare class WebSocketService implements IWebSocketService {
     private readonly jwtSecret;
     constructor();
     initialize(httpServer: HttpServer): void;
+    /**
+     * Internal emit method - checks for tenantId for security
+     * All business events should be tenant-scoped to prevent data leakage
+     */
     private emit;
     emitOptimizationStarted(payload: IOptimizationStartedPayload): void;
     emitOptimizationProgress(payload: IOptimizationProgressPayload): void;

@@ -10,7 +10,8 @@
  */
 
 import { SQL, eq, sql, and, isNull } from 'drizzle-orm';
-import { PgTableWithColumns, PgColumn } from 'drizzle-orm/pg-core';
+import type { PgColumn } from 'drizzle-orm/pg-core';
+import type { AnyPgTable, AnyPgColumn } from './drizzle.types';
 import { trace, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
 import { ATTR_ERROR_TYPE } from '@opentelemetry/semantic-conventions';
 import { Database } from '../../db';
@@ -69,13 +70,13 @@ export abstract class EnhancedBaseRepository<
     }
 
     /** Get the Drizzle table reference - must be implemented by subclass */
-    protected abstract getTable(): PgTableWithColumns<any>;
+    protected abstract getTable(): AnyPgTable;
 
     /** Get the ID column - must be implemented by subclass */
-    protected abstract getIdColumn(): PgColumn;
+    protected abstract getIdColumn(): AnyPgColumn;
 
     /** Optional: Get the deletedAt column for soft delete */
-    protected getDeletedAtColumn(): PgColumn | null {
+    protected getDeletedAtColumn(): AnyPgColumn | null {
         return null;
     }
 

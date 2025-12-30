@@ -26,7 +26,9 @@ class CustomerRepository {
     }
     async findAll(filter) {
         if (filter?.search) {
-            return this.db.select().from(schema_1.customers)
+            return this.db
+                .select()
+                .from(schema_1.customers)
                 .where((0, drizzle_orm_1.or)((0, drizzle_orm_1.ilike)(schema_1.customers.name, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.customers.code, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.customers.email, `%${filter.search}%`)))
                 .orderBy((0, drizzle_orm_1.asc)(schema_1.customers.name));
         }
@@ -35,18 +37,22 @@ class CustomerRepository {
         });
     }
     async create(data) {
-        const [result] = await this.db.insert(schema_1.customers).values({
+        const [result] = await this.db
+            .insert(schema_1.customers)
+            .values({
             code: data.code,
             name: data.name,
             email: data.email,
             phone: data.phone,
             address: data.address,
             taxId: data.taxId
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
-        const [result] = await this.db.update(schema_1.customers)
+        const [result] = await this.db
+            .update(schema_1.customers)
             .set({
             name: data.name,
             email: data.email,

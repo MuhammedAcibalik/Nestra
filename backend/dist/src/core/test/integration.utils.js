@@ -52,9 +52,7 @@ const schema = __importStar(require("../../db/schema"));
  * Uses TEST_DATABASE_URL or creates isolated schema
  */
 async function createTestDatabase() {
-    const connectionString = process.env.TEST_DATABASE_URL ??
-        process.env.DATABASE_URL ??
-        'postgresql://localhost:5432/nestra_test';
+    const connectionString = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? 'postgresql://localhost:5432/nestra_test';
     const pool = new pg_1.Pool({ connectionString });
     const db = (0, node_postgres_1.drizzle)(pool, { schema });
     // Cleanup function
@@ -121,7 +119,7 @@ async function waitFor(condition, timeout = 5000, interval = 100) {
     while (Date.now() - start < timeout) {
         if (await condition())
             return;
-        await new Promise(resolve => setTimeout(resolve, interval));
+        await new Promise((resolve) => setTimeout(resolve, interval));
     }
     throw new Error('Timeout waiting for condition');
 }
@@ -138,9 +136,7 @@ async function expectToThrow(fn, errorMatch) {
             throw error;
         }
         if (errorMatch && error instanceof Error) {
-            const matches = typeof errorMatch === 'string'
-                ? error.message.includes(errorMatch)
-                : errorMatch.test(error.message);
+            const matches = typeof errorMatch === 'string' ? error.message.includes(errorMatch) : errorMatch.test(error.message);
             if (!matches) {
                 throw new Error(`Expected error to match ${errorMatch}, got: ${error.message}`);
             }

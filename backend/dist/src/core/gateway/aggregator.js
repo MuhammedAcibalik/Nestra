@@ -41,7 +41,7 @@ class RequestAggregator {
             const sortedRequests = this.topologicalSort(requests);
             for (const req of sortedRequests) {
                 // Check dependencies
-                if (req.dependsOn?.some(dep => !results[dep]?.success)) {
+                if (req.dependsOn?.some((dep) => !results[dep]?.success)) {
                     results[req.key] = {
                         success: false,
                         status: 424, // Failed Dependency
@@ -109,7 +109,7 @@ class RequestAggregator {
     topologicalSort(requests) {
         const sorted = [];
         const visited = new Set();
-        const requestMap = new Map(requests.map(r => [r.key, r]));
+        const requestMap = new Map(requests.map((r) => [r.key, r]));
         const visit = (key) => {
             if (visited.has(key))
                 return;

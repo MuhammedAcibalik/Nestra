@@ -59,6 +59,11 @@ export interface IImportRepository {
         id: string;
         orderNumber: string;
     }>;
+    findMaterialByCode(code: string): Promise<{
+        id: string;
+        name: string;
+    } | null>;
+    generateOrderNumber(): Promise<string>;
 }
 export declare class ImportRepository implements IImportRepository {
     private readonly db;
@@ -67,6 +72,18 @@ export declare class ImportRepository implements IImportRepository {
     importMaterials(data: IMaterialImport[]): Promise<number>;
     importCustomers(data: ICustomerImport[]): Promise<number>;
     getOrderCount(): Promise<number>;
+    /**
+     * Find material type by code for import mapping
+     */
+    findMaterialByCode(code: string): Promise<{
+        id: string;
+        name: string;
+    } | null>;
+    /**
+     * Generate atomic order number using database sequence
+     * Race-condition safe - uses MAX with lock
+     */
+    generateOrderNumber(): Promise<string>;
     createOrderWithItems(data: IOrderWithItemsInput): Promise<{
         id: string;
         orderNumber: string;

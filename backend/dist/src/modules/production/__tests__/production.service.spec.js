@@ -81,7 +81,10 @@ describe('ProductionService', () => {
             expect(result.error?.code).toBe('INVALID_STATUS');
         });
         it('should fail if plan not found', async () => {
-            optimizationClient.getPlanById.mockResolvedValue({ success: false, error: { code: 'NOT_FOUND', message: 'Not found' } });
+            optimizationClient.getPlanById.mockResolvedValue({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Not found' }
+            });
             const result = await service.startProduction('plan-1', 'op-1');
             expect(result.success).toBe(false);
             expect(result.error?.code).toBe('PLAN_NOT_FOUND');
@@ -95,7 +98,10 @@ describe('ProductionService', () => {
             repository.findById.mockResolvedValue(log);
             optimizationClient.getPlanStockItems.mockResolvedValue({ success: true, data: stockItems });
             optimizationClient.updatePlanStatus.mockResolvedValue({ success: true });
-            stockClient.getStockById.mockResolvedValue({ success: true, data: { id: 'stock-1', code: 'STK-1', name: 'Stock', quantity: 10, reservedQty: 0 } });
+            stockClient.getStockById.mockResolvedValue({
+                success: true,
+                data: { id: 'stock-1', code: 'STK-1', name: 'Stock', quantity: 10, reservedQty: 0 }
+            });
             stockClient.createMovement.mockResolvedValue({ success: true, data: { id: 'mov-1' } });
             stockClient.updateQuantity.mockResolvedValue({ success: true });
             const completedLog = createMockLog({
@@ -115,7 +121,7 @@ describe('ProductionService', () => {
             expect(stockClient.createMovement).toHaveBeenCalled();
             expect(stockClient.updateQuantity).toHaveBeenCalledWith('stock-1', -1);
             // Event check
-            const completedEvent = eventBusPublishSpy.mock.calls.find(call => call[0].eventType === 'production.completed');
+            const completedEvent = eventBusPublishSpy.mock.calls.find((call) => call[0].eventType === 'production.completed');
             expect(completedEvent).toBeDefined();
         });
         it('should fail if log is not in STARTED status', async () => {
@@ -134,9 +140,7 @@ describe('ProductionService', () => {
                 notes: 'Machine breakdown',
                 issues: [{ description: 'Motor failure', severity: 'HIGH' }]
             };
-            repository.findById
-                .mockResolvedValueOnce(log)
-                .mockResolvedValueOnce(updatedLog);
+            repository.findById.mockResolvedValueOnce(log).mockResolvedValueOnce(updatedLog);
             repository.update.mockResolvedValue(undefined);
             const result = await service.updateProductionLog('log-1', input);
             expect(result.success).toBe(true);

@@ -6,40 +6,17 @@
 import { Database } from '../../db';
 import { locations } from '../../db/schema';
 import { eq, asc, ilike, or } from 'drizzle-orm';
-
-// Type definitions
-export type Location = typeof locations.$inferSelect;
-export type LocationWithRelations = Location & {
-    _count?: { stockItems: number; machines: number };
-};
-
-export interface ILocationFilter {
-    search?: string;
-}
-
-export interface ICreateLocationInput {
-    name: string;
-    description?: string;
-    address?: string;
-}
-
-export interface IUpdateLocationInput {
-    name?: string;
-    description?: string;
-    address?: string;
-}
-
-export interface ILocationRepository {
-    findById(id: string): Promise<LocationWithRelations | null>;
-    findByName(name: string): Promise<Location | null>;
-    findAll(filter?: ILocationFilter): Promise<LocationWithRelations[]>;
-    create(data: ICreateLocationInput): Promise<Location>;
-    update(id: string, data: IUpdateLocationInput): Promise<Location>;
-    delete(id: string): Promise<void>;
-}
+import {
+    Location,
+    LocationWithRelations,
+    ILocationRepository,
+    ILocationFilter,
+    ICreateLocationInput,
+    IUpdateLocationInput
+} from './interfaces';
 
 export class LocationRepository implements ILocationRepository {
-    constructor(private readonly db: Database) {}
+    constructor(private readonly db: Database) { }
 
     async findById(id: string): Promise<LocationWithRelations | null> {
         const result = await this.db.query.locations.findFirst({
@@ -55,7 +32,7 @@ export class LocationRepository implements ILocationRepository {
         return result ?? null;
     }
 
-    async findAll(filter?: ILocationFilter): Promise<LocationWithRelations[]> {
+    async findAll(filter?: ILocationFilter): Promise<Location[]> {
         if (filter?.search) {
             return this.db
                 .select()
@@ -63,8 +40,7 @@ export class LocationRepository implements ILocationRepository {
                 .where(
                     or(
                         ilike(locations.name, `%${filter.search}%`),
-                        ilike(locations.description, `%${filter.search}%`),
-                        ilike(locations.address, `%${filter.search}%`)
+                        ilike(locations.description, `%${filter.search}%`)
                     )
                 )
                 .orderBy(asc(locations.name));
@@ -105,3 +81,6 @@ export class LocationRepository implements ILocationRepository {
         await this.db.delete(locations).where(eq(locations.id, id));
     }
 }
+
+// Re-export types for backward compatibility
+export type { Location, LocationWithRelations, ILocationRepository, ILocationFilter, ICreateLocationInput, IUpdateLocationInput } from './interfaces';

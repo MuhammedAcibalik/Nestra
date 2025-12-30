@@ -30,9 +30,7 @@ function calculateWasteSummary(data) {
     const actualWasteData = data.filter((d) => d.actualWaste !== null);
     const totalActualWaste = actualWasteData.reduce((sum, d) => sum + (d.actualWaste ?? 0), 0);
     const avgWastePercentage = data.reduce((sum, d) => sum + d.wastePercentage, 0) / data.length;
-    const wasteVariance = actualWasteData.length > 0
-        ? ((totalActualWaste - totalPlannedWaste) / totalPlannedWaste) * 100
-        : 0;
+    const wasteVariance = actualWasteData.length > 0 ? ((totalActualWaste - totalPlannedWaste) / totalPlannedWaste) * 100 : 0;
     return {
         totalPlans: data.length,
         totalPlannedWaste,
@@ -151,7 +149,7 @@ function groupDataByPeriod(data, groupBy, metric) {
                 count = items.length;
                 break;
             case 'EFFICIENCY':
-                value = 100 - (items.reduce((sum, d) => sum + d.wastePercentage, 0) / items.length);
+                value = 100 - items.reduce((sum, d) => sum + d.wastePercentage, 0) / items.length;
                 count = items.length;
                 break;
             case 'PLAN_COUNT':

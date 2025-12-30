@@ -108,7 +108,7 @@ class MetricsService {
             if (metric.type === 'histogram') {
                 // Output histogram format
                 for (const [labelKey, value] of metric.values.entries()) {
-                    const suffix = labelKey.includes('_sum') ? '' : (labelKey.includes('_count') ? '' : '');
+                    const suffix = labelKey.includes('_sum') ? '' : labelKey.includes('_count') ? '' : '';
                     const cleanKey = labelKey.replace('_sum', '').replace('_count', '');
                     const labelsPart = cleanKey ? `{${cleanKey}}` : '';
                     if (labelKey.includes('_sum')) {

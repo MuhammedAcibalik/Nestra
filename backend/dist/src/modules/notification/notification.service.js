@@ -76,7 +76,7 @@ class NotificationService {
         };
     }
     async sendMany(payload, recipients) {
-        return Promise.all(recipients.map(recipient => this.send(payload, recipient)));
+        return Promise.all(recipients.map((recipient) => this.send(payload, recipient)));
     }
     isChannelAvailable(channel) {
         return this.channels.get(channel)?.isAvailable() ?? false;
@@ -90,23 +90,28 @@ class NotificationService {
     determineChannels(payload, preferences) {
         // If channels explicitly specified in payload, use those
         if (payload.channels && payload.channels.length > 0) {
-            return payload.channels.filter(ch => this.isChannelEnabled(ch, preferences));
+            return payload.channels.filter((ch) => this.isChannelEnabled(ch, preferences));
         }
         // Otherwise, use preferences for this event type
         const eventChannels = preferences.events[payload.eventType];
         if (eventChannels) {
-            return eventChannels.filter(ch => this.isChannelEnabled(ch, preferences));
+            return eventChannels.filter((ch) => this.isChannelEnabled(ch, preferences));
         }
         // Default to in-app
         return ['in_app'];
     }
     isChannelEnabled(channel, preferences) {
         switch (channel) {
-            case 'email': return preferences.emailEnabled;
-            case 'sms': return preferences.smsEnabled;
-            case 'push': return preferences.pushEnabled;
-            case 'in_app': return preferences.inAppEnabled;
-            default: return false;
+            case 'email':
+                return preferences.emailEnabled;
+            case 'sms':
+                return preferences.smsEnabled;
+            case 'push':
+                return preferences.pushEnabled;
+            case 'in_app':
+                return preferences.inAppEnabled;
+            default:
+                return false;
         }
     }
     async emitNotificationEvent(payload, recipient, results) {
@@ -120,8 +125,8 @@ class NotificationService {
                 tenantId: payload.tenantId,
                 userId: recipient.userId,
                 eventType: payload.eventType,
-                channels: results.map(r => r.channel),
-                success: results.every(r => r.status !== 'failed')
+                channels: results.map((r) => r.channel),
+                success: results.every((r) => r.status !== 'failed')
             }
         });
     }

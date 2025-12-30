@@ -71,7 +71,7 @@ class CustomerServiceHandler {
             const customers = await this.repository.findAll();
             return {
                 success: true,
-                data: customers.map(c => ({
+                data: customers.map((c) => ({
                     id: c.id,
                     name: c.name,
                     code: c.code,

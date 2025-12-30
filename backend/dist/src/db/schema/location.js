@@ -12,7 +12,7 @@ exports.locations = (0, pg_core_1.pgTable)('locations', {
     description: (0, pg_core_1.text)('description'),
     address: (0, pg_core_1.text)('address'),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 exports.locationsRelations = (0, drizzle_orm_1.relations)(exports.locations, ({ many }) => ({
 // Relations will be defined in respective files to avoid circular imports

@@ -1,17 +1,19 @@
 /**
  * Customer Module - Barrel Export
+ * Following standard module structure
  */
 
-export {
-    CustomerRepository,
-    ICustomerRepository,
-    CustomerWithRelations,
-    ICustomerFilter,
-    ICreateCustomerInput,
-    IUpdateCustomerInput
-} from './customer.repository';
-export { CustomerService, ICustomerService, ICustomerDto } from './customer.service';
+// ==================== INTERFACES ====================
+export * from './interfaces';
+
+// ==================== REPOSITORY ====================
+export { CustomerRepository } from './customer.repository';
+
+// ==================== SERVICE ====================
+export { CustomerService } from './customer.service';
+
+// ==================== CONTROLLER ====================
 export { CustomerController } from './customer.controller';
 
-// Microservice
+// ==================== MICROSERVICE ====================
 export { CustomerServiceHandler } from './customer.service-handler';

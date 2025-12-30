@@ -31,7 +31,9 @@ import {
     ICuttingJobServiceClient,
     IStockQueryClient,
     ICuttingJobWithItems,
-    IStockItemForOptimization
+    IStockItemForOptimization,
+    IMLPredictionClient,
+    NullMLPredictionClient
 } from '../../core/services';
 import { OptimizationPool, getOptimizationPool, IOptimization1DPayload, IOptimization2DPayload } from '../../workers';
 import { trace, SpanStatusCode, context as otelContext } from '@opentelemetry/api';
@@ -91,6 +93,7 @@ export interface LayoutData {
 export interface IOptimizationEngineConfig {
     useWorkerThreads?: boolean;
     enableTracing?: boolean;
+    enableMLPredictions?: boolean;
 }
 
 // ==================== ENGINE CLASS ====================
@@ -99,14 +102,18 @@ export class OptimizationEngine {
     private pool: OptimizationPool | null = null;
     private readonly useWorkerThreads: boolean;
     private readonly enableTracing: boolean;
+    private readonly mlClient: IMLPredictionClient;
+    private lastPredictionId: string | null = null;
 
     constructor(
         private readonly cuttingJobClient: ICuttingJobServiceClient,
         private readonly stockQueryClient: IStockQueryClient,
+        mlClient?: IMLPredictionClient,
         config?: IOptimizationEngineConfig
     ) {
         this.useWorkerThreads = config?.useWorkerThreads ?? true;
         this.enableTracing = config?.enableTracing ?? true;
+        this.mlClient = mlClient ?? new NullMLPredictionClient();
     }
 
     /**
@@ -205,12 +212,33 @@ export class OptimizationEngine {
                 return { success: false, planData: this.emptyPlanData(), error: 'No available stock found' };
             }
 
-            // 4. Run appropriate algorithm (PISCINA POOL or FALLBACK)
+            // 4. ML-based algorithm selection (if enabled and no algorithm specified)
+            const params = await this.enrichParametersWithML(
+                input.parameters,
+                cuttingJob,
+                stock,
+                is1D
+            );
+
+            // 5. Run appropriate algorithm (PISCINA POOL or FALLBACK)
+            let result: OptimizationOutput;
             if (is1D) {
-                return this.run1DOptimization(cuttingJob, stock, input.parameters);
+                result = await this.run1DOptimization(cuttingJob, stock, params);
             } else {
-                return this.run2DOptimization(cuttingJob, stock, input.parameters);
+                result = await this.run2DOptimization(cuttingJob, stock, params);
             }
+
+            // 6. Record outcome for ML learning
+            if (result.success && this.lastPredictionId) {
+                // Fire and forget - don't block optimization result
+                this.mlClient.recordOutcome(
+                    this.lastPredictionId,
+                    result.planData.wastePercentage,
+                    0 // Time will be filled by production tracking
+                ).catch(err => logger.warn('Failed to record ML outcome', { err }));
+            }
+
+            return result;
         } catch (error) {
             return {
                 success: false,
@@ -248,12 +276,12 @@ export class OptimizationEngine {
         // Try Piscina first, fallback to main thread
         const algoSpan = this.enableTracing
             ? tracer.startSpan('optimization.algorithm.1d', {
-                  attributes: {
-                      'algorithm.type': options.algorithm,
-                      'algorithm.pieces_count': pieces.length,
-                      'algorithm.stock_count': bars.length
-                  }
-              })
+                attributes: {
+                    'algorithm.type': options.algorithm,
+                    'algorithm.pieces_count': pieces.length,
+                    'algorithm.stock_count': bars.length
+                }
+            })
             : null;
 
         if (this.pool?.isReady() && this.useWorkerThreads) {
@@ -466,6 +494,82 @@ export class OptimizationEngine {
             efficiency: 0,
             layouts: [],
             unplacedCount: 0
+        };
+    }
+
+    // ==================== ML INTEGRATION ====================
+
+    /**
+     * Enrich optimization parameters with ML predictions
+     * Uses ML to select best algorithm if not specified
+     */
+    private async enrichParametersWithML(
+        params: OptimizationParameters,
+        job: ICuttingJobWithItems,
+        stock: IStockItemForOptimization[],
+        is1D: boolean
+    ): Promise<OptimizationParameters> {
+        // If algorithm is already specified, return as-is
+        if (params.algorithm) {
+            return params;
+        }
+
+        try {
+            // Build ML input from job and stock data
+            const totalPieceCount = job.items.reduce((sum, item) => sum + item.quantity, 0);
+            const uniquePieceCount = job.items.length;
+
+            // Calculate piece area variance
+            const pieceAreas = job.items.map(item => {
+                const width = item.orderItem?.width ?? 1;
+                const height = item.orderItem?.length ?? 1;
+                return width * height;
+            });
+            const avgArea = pieceAreas.reduce((a, b) => a + b, 0) / pieceAreas.length;
+            const variance = pieceAreas.reduce((sum, area) => sum + Math.pow(area - avgArea, 2), 0) / pieceAreas.length;
+            const normalizedVariance = variance / (avgArea * avgArea || 1);
+
+            // Calculate aspect ratio mean
+            const aspectRatios = job.items.map(item => {
+                const width = item.orderItem?.width ?? 1;
+                const height = item.orderItem?.length ?? 1;
+                return width > height ? width / height : height / width;
+            });
+            const aspectRatioMean = aspectRatios.reduce((a, b) => a + b, 0) / aspectRatios.length;
+
+            // Call ML algorithm selector
+            const mlResult = await this.mlClient.selectAlgorithm({
+                is1D,
+                totalPieceCount,
+                uniquePieceCount,
+                pieceAreaVariance: normalizedVariance,
+                pieceAspectRatioMean: aspectRatioMean,
+                stockCount: stock.length
+            });
+
+            if (mlResult.success && mlResult.data) {
+                this.lastPredictionId = `algo-${Date.now()}`;
+
+                logger.info('ML algorithm selection', {
+                    recommended: mlResult.data.recommendedAlgorithm,
+                    confidence: mlResult.data.confidence,
+                    is1D,
+                    totalPieceCount
+                });
+
+                return {
+                    ...params,
+                    algorithm: mlResult.data.recommendedAlgorithm
+                };
+            }
+        } catch (error) {
+            logger.warn('ML algorithm selection failed, using default', { error });
+        }
+
+        // Fallback to sensible defaults
+        return {
+            ...params,
+            algorithm: is1D ? '1D_FFD' : '2D_GUILLOTINE'
         };
     }
 }

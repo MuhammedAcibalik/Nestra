@@ -1,5 +1,5 @@
 # ==================== BUILD STAGE ====================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -18,11 +18,11 @@ RUN npm run build
 RUN npm prune --production
 
 # ==================== PRODUCTION STAGE ====================
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 # Security: Run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /app
 
@@ -45,5 +45,5 @@ EXPOSE 3000
 # Switch to non-root user
 USER nodejs
 
-# Start application
-CMD ["node", "dist/index.js"]
+# Start application with tracing bootstrap (OpenTelemetry)
+CMD ["node", "-r", "./dist/src/tracing.bootstrap.js", "dist/src/index.js"]

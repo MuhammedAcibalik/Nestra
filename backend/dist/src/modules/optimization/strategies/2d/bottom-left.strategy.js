@@ -15,8 +15,8 @@ class BottomLeftStrategy {
             return this.emptyResult();
         }
         const expandedPieces = this.expandPieces(pieces);
-        expandedPieces.sort((a, b) => (b.width * b.height) - (a.width * a.height));
-        const sortedStock = [...stock].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+        expandedPieces.sort((a, b) => b.width * b.height - a.width * a.height);
+        const sortedStock = [...stock].sort((a, b) => b.width * b.height - a.width * a.height);
         const activeSheets = [];
         const unplacedPieces = [];
         const stockUsage = new Map();
@@ -112,8 +112,10 @@ class BottomLeftStrategy {
         return true;
     }
     rectanglesOverlap(r1, r2) {
-        return !(r1.x + r1.width <= r2.x || r2.x + r2.width <= r1.x ||
-            r1.y + r1.height <= r2.y || r2.y + r2.height <= r1.y);
+        return !(r1.x + r1.width <= r2.x ||
+            r2.x + r2.width <= r1.x ||
+            r1.y + r1.height <= r2.y ||
+            r2.y + r2.height <= r1.y);
     }
     tryCreateNewSheet(stock, stockUsage, piece, kerf, allowRotation) {
         const orientations = this.getOrientations(piece, allowRotation);
@@ -128,7 +130,8 @@ class BottomLeftStrategy {
                         stockId: s.id,
                         width: s.width,
                         height: s.height,
-                        placements: [{
+                        placements: [
+                            {
                                 pieceId: piece.id,
                                 orderItemId: piece.orderItemId,
                                 x: 0,
@@ -136,7 +139,8 @@ class BottomLeftStrategy {
                                 width: orient.width,
                                 height: orient.height,
                                 rotated: orient.rotated
-                            }]
+                            }
+                        ]
                     };
                 }
             }
@@ -144,7 +148,7 @@ class BottomLeftStrategy {
         return null;
     }
     addUnplacedPiece(unplacedPieces, piece) {
-        const existing = unplacedPieces.find(p => p.id === piece.originalId);
+        const existing = unplacedPieces.find((p) => p.id === piece.originalId);
         if (existing) {
             existing.quantity++;
         }
@@ -163,9 +167,9 @@ class BottomLeftStrategy {
         let totalWasteArea = 0;
         let totalStockArea = 0;
         let totalUsedArea = 0;
-        const sheetResults = sheets.map(sheet => {
+        const sheetResults = sheets.map((sheet) => {
             const stockArea = sheet.width * sheet.height;
-            const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+            const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
             const wasteArea = stockArea - usedArea;
             const wastePercentage = (wasteArea / stockArea) * 100;
             totalStockArea += stockArea;
@@ -181,9 +185,7 @@ class BottomLeftStrategy {
                 usedArea
             };
         });
-        const totalWastePercentage = totalStockArea > 0
-            ? (totalWasteArea / totalStockArea) * 100
-            : 0;
+        const totalWastePercentage = totalStockArea > 0 ? (totalWasteArea / totalStockArea) * 100 : 0;
         return {
             success: unplacedPieces.length === 0,
             sheets: sheetResults,

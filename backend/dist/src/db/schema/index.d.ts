@@ -19,4 +19,8 @@ export * from './document_locks';
 export * from './settings';
 export * from './audit';
 export * from './domain_events';
+export * from './ml-analytics';
+export * from './indexes';
+export * from './supplier';
+export * from './rbac';
 //# sourceMappingURL=index.d.ts.map

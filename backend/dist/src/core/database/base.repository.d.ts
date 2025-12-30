@@ -9,7 +9,7 @@
  * - Designed to work with existing repository pattern
  */
 import { SQL } from 'drizzle-orm';
-import { PgTableWithColumns, PgColumn } from 'drizzle-orm/pg-core';
+import type { AnyPgTable, AnyPgColumn } from './drizzle.types';
 import { Database } from '../../db';
 import { PaginationOptions, PaginatedResult } from './types';
 export interface RepositoryConfig {
@@ -44,11 +44,11 @@ export declare abstract class EnhancedBaseRepository<TEntity extends Record<stri
     protected readonly config: RepositoryConfig;
     constructor(db: Database, config?: RepositoryConfig);
     /** Get the Drizzle table reference - must be implemented by subclass */
-    protected abstract getTable(): PgTableWithColumns<any>;
+    protected abstract getTable(): AnyPgTable;
     /** Get the ID column - must be implemented by subclass */
-    protected abstract getIdColumn(): PgColumn;
+    protected abstract getIdColumn(): AnyPgColumn;
     /** Optional: Get the deletedAt column for soft delete */
-    protected getDeletedAtColumn(): PgColumn | null;
+    protected getDeletedAtColumn(): AnyPgColumn | null;
     /**
      * Find entity by ID
      */

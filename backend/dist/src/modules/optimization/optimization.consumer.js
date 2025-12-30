@@ -79,11 +79,16 @@ class OptimizationConsumer {
      */
     mapAlgorithm(algo) {
         switch (algo?.toUpperCase()) {
-            case '1D_FFD': return '1D_FFD';
-            case '1D_BFD': return '1D_BFD';
-            case '2D_BOTTOM_LEFT': return '2D_BOTTOM_LEFT';
-            case '2D_GUILLOTINE': return '2D_GUILLOTINE';
-            default: return undefined;
+            case '1D_FFD':
+                return '1D_FFD';
+            case '1D_BFD':
+                return '1D_BFD';
+            case '2D_BOTTOM_LEFT':
+                return '2D_BOTTOM_LEFT';
+            case '2D_GUILLOTINE':
+                return '2D_GUILLOTINE';
+            default:
+                return undefined;
         }
     }
 }

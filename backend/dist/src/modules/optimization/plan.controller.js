@@ -7,6 +7,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlanController = void 0;
 exports.createPlanController = createPlanController;
 const express_1 = require("express");
+const middleware_1 = require("../../core/validation/middleware");
+const schemas_1 = require("../../core/validation/schemas");
 class PlanController {
     optimizationService;
     router;
@@ -17,8 +19,8 @@ class PlanController {
     }
     initializeRoutes() {
         this.router.get('/', this.getPlans.bind(this));
-        this.router.get('/:id', this.getPlanById.bind(this));
-        this.router.post('/:id/approve', this.approvePlan.bind(this));
+        this.router.get('/:id', (0, middleware_1.validateId)(), this.getPlanById.bind(this));
+        this.router.post('/:id/approve', (0, middleware_1.validateId)(), (0, middleware_1.validate)(schemas_1.approvePlanSchema), this.approvePlan.bind(this));
         this.router.post('/compare', this.comparePlans.bind(this));
     }
     /**

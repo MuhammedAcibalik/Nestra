@@ -33,10 +33,7 @@ class RealtimeDashboardRepository {
         return result[0]?.count ?? 0;
     }
     async getPendingOrderCount(tenantId) {
-        const result = await this.db
-            .select({ count: (0, drizzle_orm_1.count)() })
-            .from(schema_1.orders)
-            .where((0, drizzle_orm_1.eq)(schema_1.orders.status, 'DRAFT'));
+        const result = await this.db.select({ count: (0, drizzle_orm_1.count)() }).from(schema_1.orders).where((0, drizzle_orm_1.eq)(schema_1.orders.status, 'DRAFT'));
         return result[0]?.count ?? 0;
     }
     async getLowStockCount(tenantId) {
@@ -77,7 +74,7 @@ class RealtimeDashboardRepository {
                 cuttingPlan: true
             }
         });
-        return result.map(p => ({
+        return result.map((p) => ({
             id: p.id,
             planNumber: p.cuttingPlan?.planNumber ?? 'Unknown',
             status: p.status,
@@ -91,7 +88,7 @@ class RealtimeDashboardRepository {
             where: (0, drizzle_orm_1.eq)(schema_1.optimizationScenarios.status, 'RUNNING'),
             orderBy: (0, drizzle_orm_1.desc)(schema_1.optimizationScenarios.createdAt)
         });
-        return result.map(s => ({
+        return result.map((s) => ({
             id: s.id,
             name: s.name,
             status: s.status,
@@ -105,7 +102,7 @@ class RealtimeDashboardRepository {
             .where((0, drizzle_orm_1.sql) `${schema_1.stockItems.quantity} < 20`)
             .orderBy(schema_1.stockItems.quantity)
             .limit(limit);
-        return result.map(item => ({
+        return result.map((item) => ({
             id: item.id,
             code: item.code,
             name: item.name,
@@ -119,7 +116,7 @@ class RealtimeDashboardRepository {
             orderBy: (0, drizzle_orm_1.desc)(schema_1.activities.createdAt),
             limit
         });
-        return result.map(a => ({
+        return result.map((a) => ({
             id: a.id,
             activityType: a.activityType,
             actorId: a.actorId,

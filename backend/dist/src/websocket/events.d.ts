@@ -24,17 +24,20 @@ export declare enum WebSocketEvents {
     CUTTING_JOB_STATUS_CHANGED = "cutting-job:status-changed"
 }
 export interface IOptimizationStartedPayload {
+    tenantId?: string;
     scenarioId: string;
     scenarioName: string;
     cuttingJobId: string;
     startedAt: Date;
 }
 export interface IOptimizationProgressPayload {
+    tenantId?: string;
     scenarioId: string;
     progress: number;
     message: string;
 }
 export interface IOptimizationCompletedPayload {
+    tenantId?: string;
     scenarioId: string;
     planId: string;
     planNumber: string;
@@ -44,11 +47,13 @@ export interface IOptimizationCompletedPayload {
     completedAt: Date;
 }
 export interface IOptimizationFailedPayload {
+    tenantId?: string;
     scenarioId: string;
     error: string;
     failedAt: Date;
 }
 export interface IProductionStartedPayload {
+    tenantId?: string;
     productionLogId: string;
     planNumber: string;
     operatorName: string;
@@ -57,6 +62,7 @@ export interface IProductionStartedPayload {
     startedAt: string;
 }
 export interface IProductionUpdatedPayload {
+    tenantId?: string;
     productionLogId: string;
     status: string;
     progress?: number;
@@ -67,6 +73,7 @@ export interface IProductionUpdatedPayload {
     qualityAlert?: Record<string, unknown>;
 }
 export interface IProductionCompletedPayload {
+    tenantId?: string;
     productionLogId: string;
     planNumber: string;
     actualWaste: number;
@@ -74,6 +81,7 @@ export interface IProductionCompletedPayload {
     completedAt: string;
 }
 export interface IStockLowPayload {
+    tenantId?: string;
     stockItemId: string;
     stockCode: string;
     materialTypeName: string;
@@ -83,6 +91,7 @@ export interface IStockLowPayload {
     locationName?: string;
 }
 export interface IStockUpdatedPayload {
+    tenantId?: string;
     stockItemId: string;
     stockCode: string;
     newQuantity: number;
@@ -90,6 +99,7 @@ export interface IStockUpdatedPayload {
     changeType: 'PURCHASE' | 'CONSUMPTION' | 'ADJUSTMENT' | 'REPLENISHED';
 }
 export interface ICuttingJobCreatedPayload {
+    tenantId?: string;
     jobId: string;
     jobNumber: string;
     materialType: string;
@@ -97,6 +107,7 @@ export interface ICuttingJobCreatedPayload {
     itemCount: number;
 }
 export interface ICuttingJobStatusChangedPayload {
+    tenantId?: string;
     jobId: string;
     jobNumber: string;
     previousStatus: string;

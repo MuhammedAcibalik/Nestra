@@ -152,7 +152,13 @@ class ExportService {
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Özet');
         // Layouts sheet
         if (options.includeLayouts && plan.layouts.length > 0) {
-            const layoutHeaders = [labels.sequence, labels.stockCode, labels.dimensions, labels.waste, labels.wastePercentage];
+            const layoutHeaders = [
+                labels.sequence,
+                labels.stockCode,
+                labels.dimensions,
+                labels.waste,
+                labels.wastePercentage
+            ];
             const layoutData = [layoutHeaders];
             for (const layout of plan.layouts) {
                 layoutData.push([
@@ -288,7 +294,7 @@ class ExportService {
      */
     generatePieceLabels(pieces, options) {
         const generator = new barcode_generator_1.BarcodeGenerator();
-        return pieces.map(piece => generator.generateLabel(piece, options));
+        return pieces.map((piece) => generator.generateLabel(piece, options));
     }
     /**
      * Generate a single barcode

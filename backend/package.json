@@ -11,10 +11,15 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "migrate": "ts-node src/db/migrate.ts run",
+    "migrate:status": "ts-node src/db/migrate.ts status",
     "docker:up": "docker-compose -f ../docker-compose.yml up -d",
     "docker:down": "docker-compose -f ../docker-compose.yml down",
     "setup": "npm install && npm run db:push",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "jest --config jest.e2e.config.js",
     "test:integration": "jest --config jest.integration.config.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
@@ -50,6 +55,7 @@
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+    "onnxruntime-node": "^1.23.2",
     "opossum": "^9.0.0",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
@@ -77,6 +83,7 @@
     "@types/opossum": "^8.1.9",
     "@types/pdfkit": "^0.17.4",
     "@types/pg": "^8.16.0",
+    "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "drizzle-kit": "^0.31.8",
@@ -85,12 +92,13 @@
     "jest-mock-extended": "^4.0.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.4.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.50.0"
   },
   "engines": {
-    "node": ">=24.11.1"
+    "node": ">=20.0.0"
   }
 }

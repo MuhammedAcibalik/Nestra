@@ -27,7 +27,7 @@ class ReportAnalyticsService {
             };
             const wasteData = await this.repository.getWasteData(reportFilter);
             const dataByPeriod = (0, report_mapper_1.groupDataByPeriod)(wasteData, filter.groupBy, filter.metric);
-            const values = dataByPeriod.map(d => d.value);
+            const values = dataByPeriod.map((d) => d.value);
             const movingAvg = (0, report_mapper_1.calculateMovingAverage)(values, 3);
             const trend = (0, report_mapper_1.calculateTrendDirection)(dataByPeriod);
             // Create period label
@@ -62,7 +62,7 @@ class ReportAnalyticsService {
                     items = data.map((d) => ({
                         id: d.materialTypeId,
                         name: d.materialName,
-                        value: filter.metric === 'EFFICIENCY' ? d.avgEfficiency : (100 - d.avgEfficiency),
+                        value: filter.metric === 'EFFICIENCY' ? d.avgEfficiency : 100 - d.avgEfficiency,
                         count: d.planCount,
                         rank: 0,
                         deviationFromAvg: 0
@@ -94,9 +94,7 @@ class ReportAnalyticsService {
                 }
             }
             // Calculate average and deviations
-            const average = items.length > 0
-                ? items.reduce((sum, i) => sum + i.value, 0) / items.length
-                : 0;
+            const average = items.length > 0 ? items.reduce((sum, i) => sum + i.value, 0) / items.length : 0;
             // Sort and rank
             items.sort((a, b) => b.value - a.value);
             items.forEach((item, index) => {
@@ -107,7 +105,11 @@ class ReportAnalyticsService {
                 ? { id: items[0].id, name: items[0].name, value: items[0].value }
                 : { id: '', name: '', value: 0 };
             const worst = items.length > 0
-                ? { id: items[items.length - 1].id, name: items[items.length - 1].name, value: items[items.length - 1].value }
+                ? {
+                    id: items[items.length - 1].id,
+                    name: items[items.length - 1].name,
+                    value: items[items.length - 1].value
+                }
                 : { id: '', name: '', value: 0 };
             return (0, interfaces_1.success)({
                 metric: filter.metric,

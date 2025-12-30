@@ -1,8 +1,10 @@
 /**
  * Machine Module - Barrel Export
+ * Following standard module structure
  */
-export { MachineRepository, IMachineRepository, MachineWithRelations, IMachineFilter, ICreateMachineInput, IUpdateMachineInput, IAddCompatibilityInput } from './machine.repository';
-export { MachineService, IMachineService, IMachineDto, ICompatibilityDto } from './machine.service';
+export * from './interfaces';
+export { MachineRepository } from './machine.repository';
+export { MachineService } from './machine.service';
 export { MachineController } from './machine.controller';
 export { MachineServiceHandler } from './machine.service-handler';
 export { MachineEventHandler } from './machine.event-handler';

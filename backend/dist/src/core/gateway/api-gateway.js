@@ -34,7 +34,7 @@ class RateLimiter {
     }
     isRateLimited(key, path) {
         // Skip certain paths
-        if (this.config.skipPaths?.some(p => path.startsWith(p))) {
+        if (this.config.skipPaths?.some((p) => path.startsWith(p))) {
             return { limited: false, remaining: this.config.maxRequests, resetTime: 0 };
         }
         const now = Date.now();
@@ -177,9 +177,7 @@ class ApiGateway {
             console.error('[API Gateway] Error:', err.message);
             res.status(500).json({
                 error: 'Internal Server Error',
-                message: process.env.NODE_ENV === 'production'
-                    ? 'An unexpected error occurred'
-                    : err.message
+                message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
             });
         };
     }

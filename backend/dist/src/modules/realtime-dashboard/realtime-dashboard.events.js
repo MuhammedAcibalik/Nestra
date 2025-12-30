@@ -35,6 +35,6 @@ exports.DashboardEvents = {
     MACHINE_ALERT: 'dashboard:machine_alert',
     QUALITY_ALERT: 'dashboard:quality_alert',
     // Activity
-    ACTIVITY_NEW: 'dashboard:activity_new',
+    ACTIVITY_NEW: 'dashboard:activity_new'
 };
 //# sourceMappingURL=realtime-dashboard.events.js.map

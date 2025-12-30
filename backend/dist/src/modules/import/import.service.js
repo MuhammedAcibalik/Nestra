@@ -101,7 +101,7 @@ class ImportService {
     }
     suggestMapping(headers) {
         const mapping = {};
-        const lowerHeaders = headers.map(h => h.toLowerCase());
+        const lowerHeaders = headers.map((h) => h.toLowerCase());
         const patterns = {
             itemCode: ['kod', 'code', 'parça kodu', 'part code', 'item code', 'itemcode'],
             itemName: ['ad', 'name', 'parça adı', 'part name', 'item name', 'itemname', 'açıklama', 'description'],
@@ -118,7 +118,7 @@ class ImportService {
         };
         for (const [field, keywords] of Object.entries(patterns)) {
             for (let i = 0; i < lowerHeaders.length; i++) {
-                if (keywords.some(k => lowerHeaders[i].includes(k))) {
+                if (keywords.some((k) => lowerHeaders[i].includes(k))) {
                     mapping[field] = headers[i];
                     break;
                 }
@@ -159,10 +159,8 @@ class ImportService {
                 notes: options.notes ?? `İçe aktarım: ${validItems.length} satır`,
                 items: validItems
             };
-            // Generate order number using repository
-            const orderCount = await this.repository.getOrderCount();
-            const date = new Date();
-            const orderNumber = `ORD-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}-${String(orderCount + 1).padStart(5, '0')}`;
+            // Generate order number atomically to avoid race conditions
+            const orderNumber = await this.repository.generateOrderNumber();
             const order = await this.repository.createOrderWithItems({
                 orderNumber,
                 createdById: userId,
@@ -196,13 +194,9 @@ class ImportService {
         // Get material type ID
         const materialTypeId = this.extractMaterialTypeId(row, mapping);
         // Get thickness
-        const thickness = mapping.thickness
-            ? this.parseNumber(row[mapping.thickness])
-            : undefined;
+        const thickness = mapping.thickness ? this.parseNumber(row[mapping.thickness]) : undefined;
         // Get quantity
-        const quantity = mapping.quantity
-            ? this.parseInt(row[mapping.quantity])
-            : 1;
+        const quantity = mapping.quantity ? this.parseInt(row[mapping.quantity]) : 1;
         // Validation
         if (!materialTypeId) {
             return { success: false, error: 'Malzeme türü belirtilmemiş' };
@@ -227,9 +221,7 @@ class ImportService {
             materialTypeId,
             thickness,
             quantity,
-            canRotate: mapping.canRotate
-                ? String(row[mapping.canRotate]).toLowerCase() !== 'false'
-                : true
+            canRotate: mapping.canRotate ? String(row[mapping.canRotate]).toLowerCase() !== 'false' : true
         };
         return { success: true, item };
     }
@@ -267,9 +259,7 @@ class ImportService {
         return Number.isNaN(num) ? undefined : num;
     }
     extractMaterialTypeId(row, mapping) {
-        let materialTypeId = mapping.materialTypeId
-            ? String(row[mapping.materialTypeId] ?? '')
-            : '';
+        let materialTypeId = mapping.materialTypeId ? String(row[mapping.materialTypeId] ?? '') : '';
         if (!materialTypeId && mapping.materialCode) {
             // If we have material code, we'd need to look it up
             // For now, just use the code as-is (would need DB lookup in production)

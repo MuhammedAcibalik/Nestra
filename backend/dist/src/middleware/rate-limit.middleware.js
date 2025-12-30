@@ -8,7 +8,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadRateLimiter = exports.optimizationRateLimiter = exports.apiRateLimiter = exports.authRateLimiter = exports.defaultRateLimiter = void 0;
+exports.analyticsGenerationRateLimiter = exports.analyticsRateLimiter = exports.uploadRateLimiter = exports.optimizationRateLimiter = exports.apiRateLimiter = exports.authRateLimiter = exports.defaultRateLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 // ==================== RATE LIMIT CONFIGS ====================
 /**
@@ -92,6 +92,36 @@ exports.uploadRateLimiter = (0, express_rate_limit_1.default)({
         error: 'Upload rate limit exceeded',
         message: 'Too many file uploads. Please try again later.',
         retryAfter: 60 * 60
+    }
+});
+/**
+ * Analytics rate limiter - Forecast/Reports endpoints
+ * 60 requests per 15 minutes per IP (moderate - read operations)
+ */
+exports.analyticsRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 60, // 60 analytics requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Analytics rate limit exceeded',
+        message: 'Too many analytics requests. Results are cached, please wait.',
+        retryAfter: 15 * 60
+    }
+});
+/**
+ * Analytics generation rate limiter - CPU intensive analytics operations
+ * detect/generate endpoints - 10 requests per 15 minutes per IP
+ */
+exports.analyticsGenerationRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 generation requests per window (CPU intensive)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Analytics generation rate limit exceeded',
+        message: 'Too many analytics generation requests. Please wait before running detection again.',
+        retryAfter: 15 * 60
     }
 });
 //# sourceMappingURL=rate-limit.middleware.js.map

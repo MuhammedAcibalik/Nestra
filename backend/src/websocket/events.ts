@@ -39,6 +39,7 @@ export enum WebSocketEvents {
 }
 
 export interface IOptimizationStartedPayload {
+    tenantId?: string;
     scenarioId: string;
     scenarioName: string;
     cuttingJobId: string;
@@ -46,12 +47,14 @@ export interface IOptimizationStartedPayload {
 }
 
 export interface IOptimizationProgressPayload {
+    tenantId?: string;
     scenarioId: string;
     progress: number; // 0-100
     message: string;
 }
 
 export interface IOptimizationCompletedPayload {
+    tenantId?: string;
     scenarioId: string;
     planId: string;
     planNumber: string;
@@ -62,6 +65,7 @@ export interface IOptimizationCompletedPayload {
 }
 
 export interface IOptimizationFailedPayload {
+    tenantId?: string;
     scenarioId: string;
     error: string;
     failedAt: Date;
@@ -70,6 +74,7 @@ export interface IOptimizationFailedPayload {
 // ==================== PRODUCTION PAYLOADS ====================
 
 export interface IProductionStartedPayload {
+    tenantId?: string;
     productionLogId: string;
     planNumber: string;
     operatorName: string;
@@ -79,6 +84,7 @@ export interface IProductionStartedPayload {
 }
 
 export interface IProductionUpdatedPayload {
+    tenantId?: string;
     productionLogId: string;
     status: string;
     progress?: number;
@@ -90,6 +96,7 @@ export interface IProductionUpdatedPayload {
 }
 
 export interface IProductionCompletedPayload {
+    tenantId?: string;
     productionLogId: string;
     planNumber: string;
     actualWaste: number;
@@ -100,6 +107,7 @@ export interface IProductionCompletedPayload {
 // ==================== STOCK PAYLOADS ====================
 
 export interface IStockLowPayload {
+    tenantId?: string;
     stockItemId: string;
     stockCode: string;
     materialTypeName: string;
@@ -110,6 +118,7 @@ export interface IStockLowPayload {
 }
 
 export interface IStockUpdatedPayload {
+    tenantId?: string;
     stockItemId: string;
     stockCode: string;
     newQuantity: number;
@@ -120,6 +129,7 @@ export interface IStockUpdatedPayload {
 // ==================== JOB PAYLOADS ====================
 
 export interface ICuttingJobCreatedPayload {
+    tenantId?: string;
     jobId: string;
     jobNumber: string;
     materialType: string;
@@ -128,6 +138,7 @@ export interface ICuttingJobCreatedPayload {
 }
 
 export interface ICuttingJobStatusChangedPayload {
+    tenantId?: string;
     jobId: string;
     jobNumber: string;
     previousStatus: string;

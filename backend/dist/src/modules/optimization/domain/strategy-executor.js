@@ -111,11 +111,11 @@ class StrategyExecutor {
      */
     getAvailable1DAlgorithms() {
         this.initialize();
-        return this.registry.getAll1D().map(a => a.name);
+        return this.registry.getAll1D().map((a) => a.name);
     }
     getAvailable2DAlgorithms() {
         this.initialize();
-        return this.registry.getAll2D().map(a => a.name);
+        return this.registry.getAll2D().map((a) => a.name);
     }
 }
 exports.StrategyExecutor = StrategyExecutor;

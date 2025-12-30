@@ -46,7 +46,9 @@ class MachineRepository {
         return result ?? null;
     }
     async create(data) {
-        const [result] = await this.db.insert(schema_1.machines).values({
+        const [result] = await this.db
+            .insert(schema_1.machines)
+            .values({
             code: data.code,
             name: data.name,
             description: data.description,
@@ -58,11 +60,13 @@ class MachineRepository {
             kerf: data.kerf,
             onlyGuillotine: data.onlyGuillotine ?? false,
             locationId: data.locationId
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
-        const [result] = await this.db.update(schema_1.machines)
+        const [result] = await this.db
+            .update(schema_1.machines)
             .set({
             name: data.name,
             description: data.description,
@@ -81,13 +85,16 @@ class MachineRepository {
         await this.db.delete(schema_1.machines).where((0, drizzle_orm_1.eq)(schema_1.machines.id, id));
     }
     async addCompatibility(machineId, data) {
-        const [result] = await this.db.insert(schema_1.machineCompatibilities).values({
+        const [result] = await this.db
+            .insert(schema_1.machineCompatibilities)
+            .values({
             machineId,
             materialTypeId: data.materialTypeId,
             thicknessRangeId: data.thicknessRangeId,
             cuttingSpeed: data.cuttingSpeed,
             costPerUnit: data.costPerUnit
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async getCompatibilities(machineId) {
@@ -104,14 +111,15 @@ class MachineRepository {
     }
     async findCompatibleMachines(materialTypeId, thickness) {
         // Find machines that have compatible material types
-        const compatibleMachineIds = await this.db.select({ machineId: schema_1.machineCompatibilities.machineId })
+        const compatibleMachineIds = await this.db
+            .select({ machineId: schema_1.machineCompatibilities.machineId })
             .from(schema_1.machineCompatibilities)
             .where((0, drizzle_orm_1.eq)(schema_1.machineCompatibilities.materialTypeId, materialTypeId));
         if (compatibleMachineIds.length === 0)
             return [];
-        const ids = compatibleMachineIds.map(c => c.machineId);
+        const ids = compatibleMachineIds.map((c) => c.machineId);
         return this.db.query.machines.findMany({
-            where: (0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.machines.isActive, true), (0, drizzle_orm_1.or)(...ids.map(id => (0, drizzle_orm_1.eq)(schema_1.machines.id, id)))),
+            where: (0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.machines.isActive, true), (0, drizzle_orm_1.or)(...ids.map((id) => (0, drizzle_orm_1.eq)(schema_1.machines.id, id)))),
             with: {
                 compatibilities: true,
                 location: true

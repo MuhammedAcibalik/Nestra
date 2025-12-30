@@ -89,12 +89,28 @@ class WebSocketService {
         });
         logger.info('Service initialized with JWT authentication');
     }
+    /**
+     * Internal emit method - checks for tenantId for security
+     * All business events should be tenant-scoped to prevent data leakage
+     */
     emit(event, payload) {
         if (!this.io) {
             logger.warn('Attempted to emit before initialization');
             return;
         }
-        this.io.emit(event, payload);
+        // SECURITY: Check for tenant isolation
+        const tenantId = 'tenantId' in payload ? payload.tenantId : undefined;
+        if (tenantId) {
+            // Emit only to the specific tenant's room
+            this.io.to(`tenant:${tenantId}`).emit(event, payload);
+            logger.debug('Event emitted to tenant', { event, tenantId });
+        }
+        else {
+            // Log warning for missing tenant - helps identify security gaps
+            logger.warn('WebSocket broadcast without tenantId', { event });
+            // Still emit for backward compatibility, but this should be fixed
+            this.io.emit(event, payload);
+        }
     }
     // Optimization events
     emitOptimizationStarted(payload) {

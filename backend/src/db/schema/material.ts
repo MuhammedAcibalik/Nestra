@@ -14,6 +14,8 @@ export const materialTypes = pgTable('material_types', {
     description: text('description'),
     isRotatable: boolean('is_rotatable').default(true).notNull(),
     defaultDensity: real('default_density'),
+    unitPrice: real('unit_price').default(0), // Price per unit for cost calculations
+    wasteCostMultiplier: real('waste_cost_multiplier').default(0.5), // Waste cost as percentage of unit price
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull()
 });

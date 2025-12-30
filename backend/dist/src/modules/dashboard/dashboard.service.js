@@ -88,7 +88,7 @@ class DashboardService {
             this.repository.getCompletedJobsWithMaterials(),
             this.repository.getAllMaterialTypes()
         ]);
-        const materialNameMap = new Map(materialTypes.map(m => [m.id, m.name]));
+        const materialNameMap = new Map(materialTypes.map((m) => [m.id, m.name]));
         const materialStats = new Map();
         for (const job of jobs) {
             for (const scenario of job.scenarios) {

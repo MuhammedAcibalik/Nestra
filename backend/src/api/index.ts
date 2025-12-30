@@ -14,3 +14,10 @@ export {
     DEFAULT_API_VERSION,
     SUPPORTED_VERSIONS
 } from './version.middleware';
+
+export {
+    createVersionedRouter,
+    VersionedRouter,
+    versionDispatch,
+    mountVersionedRoutes
+} from './versioned-router';

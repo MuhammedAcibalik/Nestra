@@ -69,7 +69,7 @@ function validateAll(options) {
         }
         catch (error) {
             if (error instanceof zod_1.ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
+                errors.push(...formatZodErrors(error).map((e) => ({
                     ...e,
                     field: `body.${e.field}`
                 })));
@@ -83,7 +83,7 @@ function validateAll(options) {
         }
         catch (error) {
             if (error instanceof zod_1.ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
+                errors.push(...formatZodErrors(error).map((e) => ({
                     ...e,
                     field: `query.${e.field}`
                 })));
@@ -97,7 +97,7 @@ function validateAll(options) {
         }
         catch (error) {
             if (error instanceof zod_1.ZodError) {
-                errors.push(...formatZodErrors(error).map(e => ({
+                errors.push(...formatZodErrors(error).map((e) => ({
                     ...e,
                     field: `params.${e.field}`
                 })));

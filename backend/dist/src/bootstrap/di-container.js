@@ -46,6 +46,14 @@ const collaboration_1 = require("../modules/collaboration");
 const audit_1 = require("../modules/audit");
 // Notification Module
 const notification_1 = require("../modules/notification");
+// Analytics Module
+const analytics_1 = require("../modules/analytics");
+// ML Analytics Module
+const ml_analytics_1 = require("../modules/ml-analytics");
+// Supplier Module
+const supplier_1 = require("../modules/supplier");
+// RBAC Module
+const rbac_1 = require("../modules/rbac");
 /**
  * Initialize all dependencies - Composition Root
  */
@@ -74,6 +82,9 @@ function initializeDependencies(db) {
     const dashboardRepository = new realtime_dashboard_1.RealtimeDashboardRepository(db);
     const collaborationRepository = new collaboration_1.CollaborationRepository(db);
     const auditRepository = new audit_1.AuditRepository(db);
+    const analyticsRepository = new analytics_1.AnalyticsRepository(db);
+    const supplierRepository = new supplier_1.SupplierRepository(db);
+    const rbacRepository = new rbac_1.RbacRepository(db);
     // ==================== MICROSERVICE INFRASTRUCTURE ====================
     const serviceRegistry = services_1.ServiceRegistry.getInstance();
     // Register service handlers
@@ -113,10 +124,24 @@ function initializeDependencies(db) {
         activityFeedService: new collaboration_1.ActivityFeedService(collaborationRepository),
         // Advanced Features
         auditService: new audit_1.AuditService(auditRepository),
-        notificationService: new notification_1.NotificationService()
+        notificationService: new notification_1.NotificationService(),
+        // Analytics
+        forecastingService: new analytics_1.ForecastingService(analyticsRepository),
+        anomalyService: new analytics_1.AnomalyService(analyticsRepository),
+        recommendationService: new analytics_1.RecommendationService(analyticsRepository),
+        // ML Analytics - initialized with registry and logger
+        modelRegistryService: new ml_analytics_1.ModelRegistryService(db),
+        predictionLoggerService: new ml_analytics_1.PredictionLoggerService(db),
+        mlPredictionService: null, // Will be set below
+        // Supplier & Purchasing
+        supplierService: new supplier_1.SupplierService(supplierRepository),
+        // RBAC
+        rbacService: new rbac_1.RbacService(rbacRepository)
     };
     // Initialize global audit service accessor
     (0, audit_1.initializeAuditService)(services.auditService);
+    // Initialize ML Prediction Service with registry and logger
+    services.mlPredictionService = new ml_analytics_1.EnhancedPredictionService(db, services.modelRegistryService, services.predictionLoggerService);
     // ==================== EVENT HANDLERS ====================
     // Store references for lifecycle management
     const eventHandlers = [
@@ -126,9 +151,10 @@ function initializeDependencies(db) {
         new production_1.ProductionEventHandler(productionRepository),
         new material_1.MaterialEventHandler(materialRepository),
         new machine_1.MachineEventHandler(machineRepository),
-        new cutting_job_1.CuttingJobEventHandler(cuttingJobRepository)
+        new cutting_job_1.CuttingJobEventHandler(cuttingJobRepository),
+        new analytics_1.AnalyticsEventHandler(services.forecastingService, services.anomalyService, services.recommendationService)
     ];
-    eventHandlers.forEach(handler => handler.register());
+    eventHandlers.forEach((handler) => handler.register());
     logger.info('Event handlers registered', { count: eventHandlers.length });
     // ==================== RABBITMQ CONSUMERS ====================
     const engine = services.optimizationService.getEngine();

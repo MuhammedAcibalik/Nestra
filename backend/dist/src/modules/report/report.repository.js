@@ -19,7 +19,8 @@ class ReportRepository {
             conditions.push((0, drizzle_orm_1.gte)(schema_1.cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate)
             conditions.push((0, drizzle_orm_1.lte)(schema_1.cuttingPlans.createdAt, filter.endDate));
-        const result = await this.db.select({
+        const result = await this.db
+            .select({
             totalProduction: (0, drizzle_orm_1.sql) `count(*)`,
             completedCount: (0, drizzle_orm_1.sql) `sum(case when ${schema_1.cuttingPlans.status} = 'COMPLETED' then 1 else 0 end)`,
             averageWaste: (0, drizzle_orm_1.sql) `avg(${schema_1.cuttingPlans.wastePercentage})`
@@ -38,7 +39,8 @@ class ReportRepository {
             conditions.push((0, drizzle_orm_1.gte)(schema_1.cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate)
             conditions.push((0, drizzle_orm_1.lte)(schema_1.cuttingPlans.createdAt, filter.endDate));
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             createdAt: schema_1.cuttingPlans.createdAt,
             totalWaste: schema_1.cuttingPlans.totalWaste,
             wastePercentage: schema_1.cuttingPlans.wastePercentage
@@ -46,7 +48,7 @@ class ReportRepository {
             .from(schema_1.cuttingPlans)
             .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined)
             .orderBy((0, drizzle_orm_1.desc)(schema_1.cuttingPlans.createdAt));
-        return results.map(row => ({
+        return results.map((row) => ({
             date: row.createdAt,
             createdAt: row.createdAt,
             materialTypeName: 'All Materials',
@@ -64,7 +66,8 @@ class ReportRepository {
         if (filter?.endDate)
             conditions.push((0, drizzle_orm_1.lte)(schema_1.cuttingPlans.createdAt, filter.endDate));
         // Get plan stats
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             planCount: (0, drizzle_orm_1.sql) `count(*)`,
             avgWaste: (0, drizzle_orm_1.sql) `avg(${schema_1.cuttingPlans.wastePercentage})`,
             totalWaste: (0, drizzle_orm_1.sql) `sum(${schema_1.cuttingPlans.totalWaste})`,
@@ -72,7 +75,8 @@ class ReportRepository {
         })
             .from(schema_1.cuttingPlans)
             .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined);
-        return [{
+        return [
+            {
                 materialTypeId: 'all',
                 materialTypeName: 'All Materials',
                 materialName: 'All Materials',
@@ -80,7 +84,8 @@ class ReportRepository {
                 planCount: Number(results[0]?.planCount ?? 0),
                 totalWaste: Number(results[0]?.totalWaste ?? 0),
                 totalStockUsed: Number(results[0]?.stockUsed ?? 0)
-            }];
+            }
+        ];
     }
     async getTotalPlanCount(filter) {
         const conditions = [];
@@ -88,7 +93,8 @@ class ReportRepository {
             conditions.push((0, drizzle_orm_1.gte)(schema_1.cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate)
             conditions.push((0, drizzle_orm_1.lte)(schema_1.cuttingPlans.createdAt, filter.endDate));
-        const result = await this.db.select({
+        const result = await this.db
+            .select({
             count: (0, drizzle_orm_1.sql) `count(*)`
         })
             .from(schema_1.cuttingPlans)
@@ -103,24 +109,27 @@ class ReportRepository {
             conditions.push((0, drizzle_orm_1.lte)(schema_1.orders.createdAt, filter.endDate));
         if (filter?.customerId)
             conditions.push((0, drizzle_orm_1.eq)(schema_1.orders.customerId, filter.customerId));
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             customerId: schema_1.customers.id,
             customerName: schema_1.customers.name,
             customerCode: schema_1.customers.code,
-            orderCount: (0, drizzle_orm_1.sql) `count(distinct ${schema_1.orders.id})`
+            orderCount: (0, drizzle_orm_1.sql) `count(distinct ${schema_1.orders.id})`,
+            itemCount: (0, drizzle_orm_1.sql) `count(distinct ${schema_1.orderItems.id})`
         })
             .from(schema_1.customers)
             .leftJoin(schema_1.orders, (0, drizzle_orm_1.eq)(schema_1.customers.id, schema_1.orders.customerId))
+            .leftJoin(schema_1.orderItems, (0, drizzle_orm_1.eq)(schema_1.orders.id, schema_1.orderItems.orderId))
             .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined)
             .groupBy(schema_1.customers.id, schema_1.customers.name, schema_1.customers.code);
-        return results.map(row => ({
+        return results.map((row) => ({
             customerId: row.customerId,
             customerName: row.customerName,
             customerCode: row.customerCode,
             orderCount: Number(row.orderCount ?? 0),
-            totalItems: 0,
-            itemCount: 0,
-            completedPlans: 0
+            totalItems: Number(row.itemCount ?? 0),
+            itemCount: Number(row.itemCount ?? 0),
+            completedPlans: 0 // Requires cutting plan join - complex query, keeping simple for now
         }));
     }
     async getMachineData(filter) {
@@ -129,7 +138,8 @@ class ReportRepository {
             conditions.push((0, drizzle_orm_1.gte)(schema_1.cuttingPlans.createdAt, filter.startDate));
         if (filter?.endDate)
             conditions.push((0, drizzle_orm_1.lte)(schema_1.cuttingPlans.createdAt, filter.endDate));
-        const results = await this.db.select({
+        const results = await this.db
+            .select({
             machineId: schema_1.machines.id,
             machineName: schema_1.machines.name,
             machineCode: schema_1.machines.code,
@@ -141,7 +151,7 @@ class ReportRepository {
             .leftJoin(schema_1.cuttingPlans, (0, drizzle_orm_1.eq)(schema_1.machines.id, schema_1.cuttingPlans.machineId))
             .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined)
             .groupBy(schema_1.machines.id, schema_1.machines.name, schema_1.machines.code, schema_1.machines.machineType);
-        return results.map(row => ({
+        return results.map((row) => ({
             machineId: row.machineId,
             machineName: row.machineName,
             machineCode: row.machineCode,

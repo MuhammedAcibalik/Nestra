@@ -25,9 +25,13 @@ exports.AuditAction = {
 // ==================== AUDIT LOGS TABLE ====================
 exports.auditLogs = (0, pg_core_1.pgTable)('audit_logs', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
-    tenantId: (0, pg_core_1.uuid)('tenant_id').notNull().references(() => tenant_1.tenants.id),
+    tenantId: (0, pg_core_1.uuid)('tenant_id')
+        .notNull()
+        .references(() => tenant_1.tenants.id),
     // Who
-    userId: (0, pg_core_1.uuid)('user_id').notNull().references(() => auth_1.users.id),
+    userId: (0, pg_core_1.uuid)('user_id')
+        .notNull()
+        .references(() => auth_1.users.id),
     userEmail: (0, pg_core_1.varchar)('user_email', { length: 255 }),
     userRole: (0, pg_core_1.varchar)('user_role', { length: 50 }),
     ipAddress: (0, pg_core_1.varchar)('ip_address', { length: 45 }),

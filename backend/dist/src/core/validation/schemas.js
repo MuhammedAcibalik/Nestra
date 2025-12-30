@@ -8,15 +8,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.completeProductionSchema = exports.updateProductionSchema = exports.startProductionSchema = exports.approvePlanSchema = exports.createScenarioSchema = exports.optimizationConstraintsSchema = exports.optimizationObjectivesSchema = exports.addJobItemSchema = exports.updateCuttingJobStatusSchema = exports.createCuttingJobSchema = exports.createMovementSchema = exports.movementTypeSchema = exports.updateStockSchema = exports.createStockSchema = exports.stockTypeSchema = exports.updateOrderSchema = exports.createOrderSchema = exports.orderItemSchema = exports.geometryTypeSchema = exports.registerSchema = exports.loginSchema = exports.dateRangeSchema = exports.paginationSchema = exports.uuidSchema = void 0;
 const zod_1 = require("zod");
 // ==================== COMMON SCHEMAS ====================
-exports.uuidSchema = zod_1.z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: 'Geçersiz UUID formatı' });
+exports.uuidSchema = zod_1.z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: 'Geçersiz UUID formatı' });
 exports.paginationSchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().positive().default(1),
     limit: zod_1.z.coerce.number().int().positive().max(100).default(20)
 });
-exports.dateRangeSchema = zod_1.z.object({
+exports.dateRangeSchema = zod_1.z
+    .object({
     startDate: zod_1.z.coerce.date().optional(),
     endDate: zod_1.z.coerce.date().optional()
-}).refine((data) => !data.startDate || !data.endDate || data.startDate <= data.endDate, { message: 'Başlangıç tarihi bitiş tarihinden önce olmalıdır' });
+})
+    .refine((data) => !data.startDate || !data.endDate || data.startDate <= data.endDate, {
+    message: 'Başlangıç tarihi bitiş tarihinden önce olmalıdır'
+});
 // ==================== AUTH SCHEMAS ====================
 exports.loginSchema = zod_1.z.object({
     email: zod_1.z.string().regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: 'Geçersiz email formatı' }),
@@ -30,10 +36,9 @@ exports.registerSchema = zod_1.z.object({
     roleId: exports.uuidSchema.optional()
 });
 // ==================== ORDER SCHEMAS ====================
-exports.geometryTypeSchema = zod_1.z.enum([
-    'BAR_1D', 'RECTANGLE', 'CIRCLE', 'SQUARE', 'POLYGON', 'FREEFORM'
-]);
-exports.orderItemSchema = zod_1.z.object({
+exports.geometryTypeSchema = zod_1.z.enum(['BAR_1D', 'RECTANGLE', 'CIRCLE', 'SQUARE', 'POLYGON', 'FREEFORM']);
+exports.orderItemSchema = zod_1.z
+    .object({
     itemCode: zod_1.z.string().optional(),
     itemName: zod_1.z.string().optional(),
     geometryType: exports.geometryTypeSchema,
@@ -45,7 +50,8 @@ exports.orderItemSchema = zod_1.z.object({
     thickness: zod_1.z.number().positive({ message: 'Kalınlık pozitif olmalıdır' }),
     quantity: zod_1.z.number().int().positive({ message: 'Miktar pozitif tam sayı olmalıdır' }),
     canRotate: zod_1.z.boolean().default(true)
-}).refine((data) => {
+})
+    .refine((data) => {
     // 1D items require length
     if (data.geometryType === 'BAR_1D' && !data.length) {
         return false;
@@ -76,7 +82,8 @@ exports.updateOrderSchema = zod_1.z.object({
 });
 // ==================== STOCK SCHEMAS ====================
 exports.stockTypeSchema = zod_1.z.enum(['BAR_1D', 'SHEET_2D']);
-exports.createStockSchema = zod_1.z.object({
+exports.createStockSchema = zod_1.z
+    .object({
     code: zod_1.z.string().min(1, { message: 'Stok kodu gereklidir' }),
     name: zod_1.z.string().min(1, { message: 'Stok adı gereklidir' }),
     materialTypeId: exports.uuidSchema,
@@ -89,7 +96,8 @@ exports.createStockSchema = zod_1.z.object({
     quantity: zod_1.z.number().int().nonnegative({ message: 'Miktar negatif olamaz' }).default(0),
     unitPrice: zod_1.z.number().nonnegative().optional(),
     locationId: exports.uuidSchema.optional()
-}).refine((data) => {
+})
+    .refine((data) => {
     if (data.stockType === 'BAR_1D' && !data.length) {
         return false;
     }
@@ -99,9 +107,7 @@ exports.createStockSchema = zod_1.z.object({
     return true;
 }, { message: 'Stok tipine uygun boyutlar belirtilmelidir' });
 exports.updateStockSchema = exports.createStockSchema.partial();
-exports.movementTypeSchema = zod_1.z.enum([
-    'PURCHASE', 'CONSUMPTION', 'WASTE_REUSE', 'SCRAP', 'ADJUSTMENT', 'TRANSFER'
-]);
+exports.movementTypeSchema = zod_1.z.enum(['PURCHASE', 'CONSUMPTION', 'WASTE_REUSE', 'SCRAP', 'ADJUSTMENT', 'TRANSFER']);
 exports.createMovementSchema = zod_1.z.object({
     stockItemId: exports.uuidSchema,
     movementType: exports.movementTypeSchema,
@@ -140,10 +146,12 @@ exports.optimizationConstraintsSchema = zod_1.z.object({
 exports.createScenarioSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, { message: 'Senaryo adı gereklidir' }),
     cuttingJobId: exports.uuidSchema,
-    parameters: zod_1.z.object({
+    parameters: zod_1.z
+        .object({
         objectives: exports.optimizationObjectivesSchema.optional(),
         constraints: exports.optimizationConstraintsSchema.optional()
-    }).optional(),
+    })
+        .optional(),
     useWarehouseStock: zod_1.z.boolean().default(true),
     useStandardSizes: zod_1.z.boolean().default(false),
     selectedStockIds: zod_1.z.array(exports.uuidSchema).optional()
@@ -157,10 +165,12 @@ exports.startProductionSchema = zod_1.z.object({
 });
 exports.updateProductionSchema = zod_1.z.object({
     notes: zod_1.z.string().optional(),
-    issues: zod_1.z.array(zod_1.z.object({
+    issues: zod_1.z
+        .array(zod_1.z.object({
         description: zod_1.z.string(),
         severity: zod_1.z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
-    })).optional()
+    }))
+        .optional()
 });
 exports.completeProductionSchema = zod_1.z.object({
     actualWaste: zod_1.z.number().nonnegative({ message: 'Gerçek fire negatif olamaz' }),

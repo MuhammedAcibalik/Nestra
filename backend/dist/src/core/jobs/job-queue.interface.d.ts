@@ -111,7 +111,7 @@ export declare const JobType: {
     readonly NOTIFICATION_SEND: "notification:send";
     readonly CLEANUP_OLD_DATA: "cleanup:old-data";
 };
-export type JobTypeName = typeof JobType[keyof typeof JobType];
+export type JobTypeName = (typeof JobType)[keyof typeof JobType];
 /**
  * Job Data Types
  */

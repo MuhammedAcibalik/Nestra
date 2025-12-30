@@ -42,7 +42,7 @@ function getEnvArray(key, defaultValue) {
     const value = process.env[key];
     if (value === undefined)
         return defaultValue;
-    return value.split(',').map(s => s.trim());
+    return value.split(',').map((s) => s.trim());
 }
 function getNodeEnv() {
     const env = process.env.NODE_ENV;

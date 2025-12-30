@@ -22,4 +22,6 @@ __exportStar(require("./domain-events"), exports);
 __exportStar(require("./event-subscriptions"), exports);
 __exportStar(require("./event-adapter"), exports);
 __exportStar(require("./event-store.repository"), exports);
+__exportStar(require("./outbox.processor"), exports);
+__exportStar(require("./event-bridge"), exports);
 //# sourceMappingURL=index.js.map

@@ -16,10 +16,11 @@ class Stock1DManager {
     usage;
     constructor(stock, sortStrategy = 'DESC') {
         // Filter available stock and sort
-        const filtered = stock.filter(s => s.available > 0);
-        this.sortedStock = sortStrategy === 'DESC'
-            ? [...filtered].sort((a, b) => b.length - a.length)
-            : [...filtered].sort((a, b) => a.length - b.length);
+        const filtered = stock.filter((s) => s.available > 0);
+        this.sortedStock =
+            sortStrategy === 'DESC'
+                ? [...filtered].sort((a, b) => b.length - a.length)
+                : [...filtered].sort((a, b) => a.length - b.length);
         // Initialize usage tracking
         this.usage = new Map();
         for (const s of this.sortedStock) {
@@ -66,8 +67,8 @@ class Stock2DManager {
     constructor(stock) {
         // Filter and sort by area (descending)
         this.sortedStock = [...stock]
-            .filter(s => s.available > 0)
-            .sort((a, b) => (b.width * b.height) - (a.width * a.height));
+            .filter((s) => s.available > 0)
+            .sort((a, b) => b.width * b.height - a.width * a.height);
         // Initialize usage tracking
         this.usage = new Map();
         for (const s of this.sortedStock) {
@@ -103,7 +104,7 @@ class Stock2DManager {
      * Get all available stock
      */
     getAvailableStock() {
-        return this.sortedStock.filter(s => {
+        return this.sortedStock.filter((s) => {
             const entry = this.usage.get(s.id);
             return entry && entry.remaining > 0;
         });

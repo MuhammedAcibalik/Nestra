@@ -48,7 +48,7 @@ export declare const EventTypes: {
     readonly CUSTOMER_CREATED: "customer.created";
     readonly CUSTOMER_UPDATED: "customer.updated";
 };
-export type EventType = typeof EventTypes[keyof typeof EventTypes];
+export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
 export interface OrderCreatedPayload {
     orderId: string;
     orderNumber: string;

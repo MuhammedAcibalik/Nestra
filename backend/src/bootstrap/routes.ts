@@ -24,12 +24,17 @@ import { ExportRepository, ExportController } from '../modules/export';
 import { DashboardRepository, DashboardService, DashboardController } from '../modules/dashboard';
 import { createAuditRouter } from '../modules/audit';
 import { getHealthController } from '../controllers/health.controller';
+import { AnalyticsController } from '../modules/analytics';
+import { MLAdminController, createMLAnalyticsController } from '../modules/ml-analytics';
+import { SupplierController } from '../modules/supplier';
+import { createPermissionMiddleware, PERMISSIONS } from '../modules/rbac';
 
 // Middleware
 import { createAuthMiddleware } from '../middleware/authMiddleware';
-import { authRateLimiter, optimizationRateLimiter } from '../middleware/rate-limit.middleware';
+import { authRateLimiter, optimizationRateLimiter, analyticsRateLimiter } from '../middleware/rate-limit.middleware';
 import { optimizationTimeout } from '../middleware/timeout.middleware';
 import { errorHandler } from '../middleware/errorHandler';
+import { tenantMiddleware } from '../middleware/tenant.middleware';
 
 // Interfaces
 import { IAuthService } from '../core/interfaces';
@@ -67,6 +72,13 @@ export function initializeRoutes(app: Express, services: IAppServices, db: Datab
     // Create auth middleware with proper type
     const authMiddleware = createAuthMiddleware(services.authService as IAuthService);
 
+    // Tenant context middleware (must be after auth)
+    const tenantContext = tenantMiddleware();
+
+    // Permission middleware (RBAC)
+    const { requirePermission, requireAnyPermission, requireAdmin } =
+        createPermissionMiddleware(services.rbacService);
+
     // Health check endpoints (public)
     const healthController = getHealthController();
     app.use(healthController.router);
@@ -74,30 +86,51 @@ export function initializeRoutes(app: Express, services: IAppServices, db: Datab
     // Public routes (with stricter rate limiting)
     app.use('/api/auth', authRateLimiter, authController.router);
 
-    // Protected routes
-    app.use('/api/materials', authMiddleware, materialController.router);
-    app.use('/api/stock', authMiddleware, stockController.router);
-    app.use('/api/orders', authMiddleware, orderController.router);
+    // Protected routes (with tenant context)
+    app.use('/api/materials', authMiddleware, tenantContext, materialController.router);
+    app.use('/api/stock', authMiddleware, tenantContext, stockController.router);
+    app.use('/api/orders', authMiddleware, tenantContext, orderController.router);
     app.use(
         '/api/optimization',
         authMiddleware,
+        tenantContext,
         optimizationRateLimiter,
         optimizationTimeout,
         optimizationController.router
     );
-    app.use('/api/production', authMiddleware, productionController.router);
-    app.use('/api/reports', authMiddleware, reportController.router);
-    app.use('/api/cutting-jobs', authMiddleware, cuttingJobController.router);
-    app.use('/api/import', authMiddleware, importController.router);
-    app.use('/api/machines', authMiddleware, machineController.router);
-    app.use('/api/customers', authMiddleware, customerController.router);
-    app.use('/api/locations', authMiddleware, locationController.router);
-    app.use('/api/export', authMiddleware, exportController.router);
-    app.use('/api/dashboard', authMiddleware, dashboardController.router);
+    app.use('/api/production', authMiddleware, tenantContext, productionController.router);
+    app.use('/api/reports', authMiddleware, tenantContext, reportController.router);
+    app.use('/api/cutting-jobs', authMiddleware, tenantContext, cuttingJobController.router);
+    app.use('/api/import', authMiddleware, tenantContext, importController.router);
+    app.use('/api/machines', authMiddleware, tenantContext, machineController.router);
+    app.use('/api/customers', authMiddleware, tenantContext, customerController.router);
+    app.use('/api/locations', authMiddleware, tenantContext, locationController.router);
+    app.use('/api/export', authMiddleware, tenantContext, exportController.router);
+    app.use('/api/dashboard', authMiddleware, tenantContext, dashboardController.router);
 
     // Advanced Features
     const auditRouter = createAuditRouter(services.auditService, authMiddleware);
     app.use('/api/audit', auditRouter);
+
+    // Analytics Module (with tiered rate limiting)
+    const analyticsController = new AnalyticsController(
+        services.forecastingService,
+        services.anomalyService,
+        services.recommendationService
+    );
+    app.use('/api/analytics', authMiddleware, analyticsRateLimiter, requirePermission(PERMISSIONS.REPORTS_READ), analyticsController.router);
+
+    // ML Admin Module (model registry, monitoring, drift detection) - Admin only
+    const mlAdminController = new MLAdminController(db);
+    app.use('/api/ml/admin', authMiddleware, requireAdmin(), mlAdminController.router);
+
+    // ML Inference & Monitoring Endpoints (Authenticated)
+    const mlAnalyticsController = createMLAnalyticsController(db);
+    app.use('/api/ml', authMiddleware, mlAnalyticsController.router);
+
+    // Supplier & Purchasing Module
+    const supplierController = new SupplierController(services.supplierService);
+    app.use('/api/suppliers', authMiddleware, tenantContext, requirePermission(PERMISSIONS.SUPPLIERS_READ), supplierController.router);
 }
 
 /**

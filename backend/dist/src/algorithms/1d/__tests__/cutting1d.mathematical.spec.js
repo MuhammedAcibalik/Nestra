@@ -19,9 +19,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p2', length: 250, quantity: 2, orderItemId: 'o2' },
                 { id: 'p3', length: 150, quantity: 4, orderItemId: 'o3' }
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 5 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 5 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             // Calculate total placed length (excluding kerf, as waste includes it)
             let totalPlacedLength = 0;
@@ -38,16 +36,11 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             for (const bar of result.bars) {
                 totalKerfUsed += Math.max(0, bar.cuts.length - 1) * defaultOptions.kerf;
             }
-            expect(totalPlacedLength + totalKerfUsed + result.totalWaste)
-                .toBeCloseTo(totalStockUsed, 5);
+            expect(totalPlacedLength + totalKerfUsed + result.totalWaste).toBeCloseTo(totalStockUsed, 5);
         });
         it('should correctly account for kerf in position calculations', () => {
-            const pieces = [
-                { id: 'p1', length: 200, quantity: 3, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 200, quantity: 3, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const kerf = 5;
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, { ...defaultOptions, kerf });
             // Verify positions: 0, 200+5=205, 205+200+5=410
@@ -60,9 +53,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p1', length: 100, quantity: 5, orderItemId: 'o1' },
                 { id: 'p2', length: 200, quantity: 3, orderItemId: 'o2' }
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 2 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 2 }];
             const kerf = 3;
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, { ...defaultOptions, kerf });
             for (const bar of result.bars) {
@@ -106,9 +97,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'large', length: 500, quantity: 1, orderItemId: 'o2' },
                 { id: 'medium', length: 300, quantity: 1, orderItemId: 'o3' }
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             // First bar should have largest piece first (at position 0)
             const firstCut = result.bars[0].cuts[0];
@@ -122,9 +111,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p2', length: 700, quantity: 1, orderItemId: 'o2' },
                 { id: 'p3', length: 200, quantity: 1, orderItemId: 'o3' } // Should go to tighter fit
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 2 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 2 }];
             const result = (0, cutting1d_1.bestFitDecreasing)(pieces, stock, { ...defaultOptions, algorithm: 'BFD' });
             // After placing 700 and 600, remaining spaces are 300 and 400
             // BFD should place 200 in bar with 300 remaining (tighter fit)
@@ -144,9 +131,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
                 { id: 'p2', length: 350, quantity: 3, orderItemId: 'o2' },
                 { id: 'p3', length: 250, quantity: 5, orderItemId: 'o3' }
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 10 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 10 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             // Calculate optimal (lower bound): total piece length / stock length
             const totalPieceLength = 450 * 4 + 350 * 3 + 250 * 5; // 4100mm
@@ -165,9 +150,7 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
         };
         it('should handle empty pieces array', () => {
             const pieces = [];
-            const stock = [
-                { id: 's1', length: 1000, available: 5 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 5 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.bars).toHaveLength(0);
@@ -175,12 +158,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.totalWaste).toBe(0);
         });
         it('should handle single piece exactly matching stock', () => {
-            const pieces = [
-                { id: 'p1', length: 1000, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 1000, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.stockUsedCount).toBe(1);
@@ -188,24 +167,16 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.statistics.efficiency).toBe(100);
         });
         it('should mark piece as unplaced when larger than all stock', () => {
-            const pieces = [
-                { id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 5 }
-            ];
+            const pieces = [{ id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 5 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             expect(result.success).toBe(false);
             expect(result.unplacedPieces).toHaveLength(1);
             expect(result.unplacedPieces[0].id).toBe('p1');
         });
         it('should handle zero kerf correctly', () => {
-            const pieces = [
-                { id: 'p1', length: 500, quantity: 2, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 500, quantity: 2, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, { ...defaultOptions, kerf: 0 });
             expect(result.success).toBe(true);
             expect(result.totalWaste).toBe(0);
@@ -216,12 +187,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             // 3 pieces of 300mm with 50mm kerf
             // Total needed: 300 + 50 + 300 + 50 + 300 = 1000mm
             // Should barely fit in 1000mm bar
-            const pieces = [
-                { id: 'p1', length: 300, quantity: 3, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 2 }
-            ];
+            const pieces = [{ id: 'p1', length: 300, quantity: 3, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 2 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, { ...defaultOptions, kerf: 50 });
             expect(result.success).toBe(true);
             // Verify kerf is accounted for: positions should be 0, 350, 700
@@ -230,12 +197,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.bars[0].cuts[2].position).toBe(700);
         });
         it('should handle maximum quantity expansion correctly', () => {
-            const pieces = [
-                { id: 'p1', length: 50, quantity: 100, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 10 }
-            ];
+            const pieces = [{ id: 'p1', length: 50, quantity: 100, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 10 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.statistics.totalPieces).toBe(100);
@@ -252,12 +215,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             minUsableWaste: 100
         };
         it('should calculate efficiency correctly: (used / total) * 100', () => {
-            const pieces = [
-                { id: 'p1', length: 400, quantity: 2, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 400, quantity: 2, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, defaultOptions);
             // Used: 400 + 5 (kerf) + 400 = 805mm
             // Total: 1000mm
@@ -267,12 +226,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.statistics.efficiency).toBeCloseTo(expectedEfficiency, 1);
         });
         it('should calculate waste percentage correctly per bar', () => {
-            const pieces = [
-                { id: 'p1', length: 700, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 700, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, { ...defaultOptions, kerf: 0 });
             const bar = result.bars[0];
             const expectedWastePercentage = (300 / 1000) * 100; // 30%
@@ -280,12 +235,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(bar.wastePercentage).toBeCloseTo(expectedWastePercentage, 5);
         });
         it('should detect usable waste above threshold', () => {
-            const pieces = [
-                { id: 'p1', length: 800, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 800, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const minUsableWaste = 150;
             const kerf = 10;
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, {
@@ -300,12 +251,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(bar.usableWaste.length).toBe(200 - kerf); // Usable = waste - kerf
         });
         it('should NOT mark waste as usable below threshold', () => {
-            const pieces = [
-                { id: 'p1', length: 950, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 950, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.firstFitDecreasing)(pieces, stock, {
                 ...defaultOptions,
                 kerf: 0,
@@ -320,12 +267,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
     // ==================== ALGORITHM SELECTION TESTS ====================
     describe('Algorithm Selection', () => {
         it('should use FFD when algorithm option is FFD', () => {
-            const pieces = [
-                { id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const options = {
                 algorithm: 'FFD',
                 kerf: 0,
@@ -335,12 +278,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.success).toBe(true);
         });
         it('should use BFD when algorithm option is BFD', () => {
-            const pieces = [
-                { id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const options = {
                 algorithm: 'BFD',
                 kerf: 0,
@@ -350,12 +289,8 @@ describe('1D Cutting Algorithm - Mathematical Tests', () => {
             expect(result.success).toBe(true);
         });
         it('should fallback to BFD for BRANCH_BOUND algorithm', () => {
-            const pieces = [
-                { id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const options = {
                 algorithm: 'BRANCH_BOUND',
                 kerf: 0,

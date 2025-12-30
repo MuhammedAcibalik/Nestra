@@ -66,7 +66,7 @@ export interface IImportService {
 // ==================== SERVICE ====================
 
 export class ImportService implements IImportService {
-    constructor(private readonly repository: IImportRepository) {}
+    constructor(private readonly repository: IImportRepository) { }
 
     async importFromExcel(buffer: Buffer, options: IImportOptions, userId: string): Promise<IResult<IImportResult>> {
         try {
@@ -226,10 +226,8 @@ export class ImportService implements IImportService {
                 items: validItems
             };
 
-            // Generate order number using repository
-            const orderCount = await this.repository.getOrderCount();
-            const date = new Date();
-            const orderNumber = `ORD-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}-${String(orderCount + 1).padStart(5, '0')}`;
+            // Generate order number atomically to avoid race conditions
+            const orderNumber = await this.repository.generateOrderNumber();
 
             const order = await this.repository.createOrderWithItems({
                 orderNumber,

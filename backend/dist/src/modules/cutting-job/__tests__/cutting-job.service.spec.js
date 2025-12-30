@@ -174,7 +174,14 @@ describe('CuttingJobService', () => {
         it('should add item successfully if job is PENDING', async () => {
             const mockJob = createMockJob({ status: 'PENDING' });
             repository.findById.mockResolvedValueOnce(mockJob).mockResolvedValueOnce(mockJob);
-            repository.addItem.mockResolvedValue({ id: 'item-1', cuttingJobId: 'job-1', orderItemId: 'order-item-1', quantity: 5, createdAt: new Date(), updatedAt: new Date() });
+            repository.addItem.mockResolvedValue({
+                id: 'item-1',
+                cuttingJobId: 'job-1',
+                orderItemId: 'order-item-1',
+                quantity: 5,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
             const result = await service.addItemToJob('job-1', 'order-item-1', 5);
             expect(result.success).toBe(true);
             expect(repository.addItem).toHaveBeenCalled();

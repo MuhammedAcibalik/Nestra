@@ -77,7 +77,7 @@ class OrderServiceHandler {
             }
             return {
                 success: true,
-                data: order.items.map(item => ({
+                data: order.items.map((item) => ({
                     id: item.id,
                     itemCode: item.itemCode,
                     itemName: item.itemName,
@@ -103,7 +103,7 @@ class OrderServiceHandler {
             const orders = await this.repository.findAll({ status: 'CONFIRMED' });
             return {
                 success: true,
-                data: orders.map(order => ({
+                data: orders.map((order) => ({
                     id: order.id,
                     orderNumber: order.orderNumber,
                     status: order.status,

@@ -48,9 +48,9 @@ class StockServiceHandler {
                 stockType: params.stockType
             });
             // Filter by thickness and optionally by selected IDs
-            let filtered = allStock.filter(s => s.thickness === params.thickness);
+            let filtered = allStock.filter((s) => s.thickness === params.thickness);
             if (params.selectedStockIds && params.selectedStockIds.length > 0) {
-                filtered = filtered.filter(s => params.selectedStockIds.includes(s.id));
+                filtered = filtered.filter((s) => params.selectedStockIds.includes(s.id));
             }
             // Sort by price (asc), then quantity (desc)
             filtered.sort((a, b) => {
@@ -62,7 +62,7 @@ class StockServiceHandler {
             });
             return {
                 success: true,
-                data: filtered.map(s => ({
+                data: filtered.map((s) => ({
                     id: s.id,
                     code: s.code,
                     name: s.name,

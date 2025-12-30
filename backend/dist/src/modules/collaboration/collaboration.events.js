@@ -29,6 +29,6 @@ exports.CollaborationEvents = {
     // Sync
     DOCUMENT_UPDATED: 'collab:document_updated',
     SYNC_REQUEST: 'collab:sync_request',
-    SYNC_RESPONSE: 'collab:sync_response',
+    SYNC_RESPONSE: 'collab:sync_response'
 };
 //# sourceMappingURL=collaboration.events.js.map

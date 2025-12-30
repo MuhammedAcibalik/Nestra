@@ -36,7 +36,11 @@ class EventBus {
     async publish(event) {
         // Log event
         this.logEvent(event);
-        logger.debug('Event published', { eventType: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId });
+        logger.debug('Event published', {
+            eventType: event.eventType,
+            aggregateType: event.aggregateType,
+            aggregateId: event.aggregateId
+        });
         // Get handlers for this event type
         const handlers = this.handlers.get(event.eventType);
         if (!handlers || handlers.size === 0) {

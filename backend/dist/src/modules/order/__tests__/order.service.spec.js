@@ -4,7 +4,7 @@ const order_service_1 = require("../order.service");
 const events_1 = require("../../../core/events");
 const jest_mock_extended_1 = require("jest-mock-extended");
 // Don't mock the whole module, just spy on what we need
-// jest.mock('../../../core/events'); 
+// jest.mock('../../../core/events');
 describe('OrderService', () => {
     let service;
     let repository;
@@ -76,7 +76,8 @@ describe('OrderService', () => {
         it('should update order status and publish event', async () => {
             const existingOrder = createMockOrder({ status: 'PENDING' });
             const updatedOrder = createMockOrder({ status: 'CONFIRMED' });
-            repository.findById.mockResolvedValueOnce(existingOrder) // Check existing
+            repository.findById
+                .mockResolvedValueOnce(existingOrder) // Check existing
                 .mockResolvedValueOnce(updatedOrder); // Return updated
             repository.update.mockResolvedValue(updatedOrder);
             const result = await service.updateOrder('order-1', { status: 'CONFIRMED' });

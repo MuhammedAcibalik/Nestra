@@ -14,7 +14,7 @@ export declare const AuditAction: {
     readonly APPROVE: "APPROVE";
     readonly REJECT: "REJECT";
 };
-export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
+export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export declare const auditLogs: import("drizzle-orm/pg-core").PgTableWithColumns<{
     name: "audit_logs";
     schema: undefined;

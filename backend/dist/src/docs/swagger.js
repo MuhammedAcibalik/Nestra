@@ -47,7 +47,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                    description: 'JWT token ile kimlik doğrulama. Login endpoint\'inden alınır.'
+                    description: "JWT token ile kimlik doğrulama. Login endpoint'inden alınır."
                 }
             },
             schemas: {
@@ -93,6 +93,71 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
                     type: 'string',
                     format: 'date-time',
                     example: '2024-01-15T10:30:00Z'
+                },
+                // Entity Schemas
+                Order: {
+                    type: 'object',
+                    properties: {
+                        id: { $ref: '#/components/schemas/UUID' },
+                        orderNumber: { type: 'string', example: 'ORD-2024-001' },
+                        customerId: { $ref: '#/components/schemas/UUID' },
+                        status: { type: 'string', enum: ['DRAFT', 'CONFIRMED', 'IN_PRODUCTION', 'COMPLETED', 'CANCELLED'] },
+                        priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] },
+                        dueDate: { $ref: '#/components/schemas/Timestamp' },
+                        createdAt: { $ref: '#/components/schemas/Timestamp' },
+                        updatedAt: { $ref: '#/components/schemas/Timestamp' }
+                    }
+                },
+                StockItem: {
+                    type: 'object',
+                    properties: {
+                        id: { $ref: '#/components/schemas/UUID' },
+                        code: { type: 'string', example: 'STK-001' },
+                        materialId: { $ref: '#/components/schemas/UUID' },
+                        quantity: { type: 'number', example: 100 },
+                        length: { type: 'number', example: 2440 },
+                        width: { type: 'number', example: 1220 },
+                        thickness: { type: 'number', example: 18 },
+                        locationId: { $ref: '#/components/schemas/UUID' }
+                    }
+                },
+                Material: {
+                    type: 'object',
+                    properties: {
+                        id: { $ref: '#/components/schemas/UUID' },
+                        name: { type: 'string', example: 'MDF 18mm' },
+                        type: { type: 'string', example: 'SHEET' },
+                        thickness: { type: 'number', example: 18 },
+                        density: { type: 'number', example: 750 }
+                    }
+                },
+                OptimizationScenario: {
+                    type: 'object',
+                    properties: {
+                        id: { $ref: '#/components/schemas/UUID' },
+                        name: { type: 'string', example: 'Batch-2024-01' },
+                        status: { type: 'string', enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'] },
+                        algorithm: { type: 'string', enum: ['FFD', 'BFD', 'GUILLOTINE', 'BOTTOM_LEFT'] },
+                        createdAt: { $ref: '#/components/schemas/Timestamp' }
+                    }
+                },
+                HealthStatus: {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', enum: ['healthy', 'degraded', 'unhealthy'] },
+                        timestamp: { $ref: '#/components/schemas/Timestamp' },
+                        checks: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    name: { type: 'string' },
+                                    status: { type: 'string' },
+                                    responseTime: { type: 'number' }
+                                }
+                            }
+                        }
+                    }
                 }
             },
             parameters: {
@@ -101,7 +166,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
                     in: 'path',
                     required: true,
                     schema: { type: 'string', format: 'uuid' },
-                    description: 'Kayıt ID\'si'
+                    description: "Kayıt ID'si"
                 },
                 PageQuery: {
                     name: 'page',
@@ -185,10 +250,7 @@ Tüm korumalı endpoint'ler JWT token gerektirir.
             { name: 'Dashboard', description: 'Dashboard verileri' }
         ]
     },
-    apis: [
-        './src/modules/*/*.controller.ts',
-        './src/controllers/*.controller.ts'
-    ]
+    apis: ['./src/modules/*/*.controller.ts', './src/controllers/*.controller.ts']
 };
 exports.swaggerSpec = (0, swagger_jsdoc_1.default)(options);
 //# sourceMappingURL=swagger.js.map

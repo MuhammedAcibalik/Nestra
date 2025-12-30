@@ -22,7 +22,9 @@ class EventStoreRepository {
      * Store a domain event
      */
     async store(event, options) {
-        const [stored] = await this.db.insert(schema_1.domainEvents).values({
+        const [stored] = await this.db
+            .insert(schema_1.domainEvents)
+            .values({
             eventId: event.eventId,
             eventType: event.eventType,
             aggregateType: event.aggregateType,
@@ -34,7 +36,8 @@ class EventStoreRepository {
             tenantId: options?.tenantId,
             occurredAt: event.timestamp,
             status: 'pending'
-        }).returning();
+        })
+            .returning();
         logger.debug('Event stored', { eventId: event.eventId, eventType: event.eventType });
         return stored;
     }
@@ -44,7 +47,7 @@ class EventStoreRepository {
     async storeMany(events, options) {
         if (events.length === 0)
             return [];
-        const values = events.map(event => ({
+        const values = events.map((event) => ({
             eventId: event.eventId,
             eventType: event.eventType,
             aggregateType: event.aggregateType,
@@ -64,7 +67,8 @@ class EventStoreRepository {
      * Mark event as processed
      */
     async markProcessed(eventId) {
-        await this.db.update(schema_1.domainEvents)
+        await this.db
+            .update(schema_1.domainEvents)
             .set({
             status: 'processed',
             processedAt: new Date()
@@ -75,7 +79,8 @@ class EventStoreRepository {
      * Mark event as failed
      */
     async markFailed(eventId, error) {
-        await this.db.update(schema_1.domainEvents)
+        await this.db
+            .update(schema_1.domainEvents)
             .set({
             status: 'failed',
             error,
@@ -87,7 +92,8 @@ class EventStoreRepository {
      * Move to dead letter queue
      */
     async moveToDeadLetter(eventId, error) {
-        await this.db.update(schema_1.domainEvents)
+        await this.db
+            .update(schema_1.domainEvents)
             .set({
             status: 'dead_letter',
             error
@@ -98,10 +104,7 @@ class EventStoreRepository {
      * Find event by ID
      */
     async findByEventId(eventId) {
-        const [event] = await this.db.select()
-            .from(schema_1.domainEvents)
-            .where((0, drizzle_orm_1.eq)(schema_1.domainEvents.eventId, eventId))
-            .limit(1);
+        const [event] = await this.db.select().from(schema_1.domainEvents).where((0, drizzle_orm_1.eq)(schema_1.domainEvents.eventId, eventId)).limit(1);
         return event ?? null;
     }
     /**
@@ -133,7 +136,8 @@ class EventStoreRepository {
         if (options.toDate) {
             conditions.push((0, drizzle_orm_1.lte)(schema_1.domainEvents.occurredAt, options.toDate));
         }
-        const query = this.db.select()
+        const query = this.db
+            .select()
             .from(schema_1.domainEvents)
             .where(conditions.length > 0 ? (0, drizzle_orm_1.and)(...conditions) : undefined)
             .orderBy((0, drizzle_orm_1.desc)(schema_1.domainEvents.occurredAt))
@@ -145,7 +149,8 @@ class EventStoreRepository {
      * Get events for an aggregate (event sourcing replay)
      */
     async getAggregateEvents(aggregateType, aggregateId) {
-        return this.db.select()
+        return this.db
+            .select()
             .from(schema_1.domainEvents)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.domainEvents.aggregateType, aggregateType), (0, drizzle_orm_1.eq)(schema_1.domainEvents.aggregateId, aggregateId)))
             .orderBy(schema_1.domainEvents.occurredAt);
@@ -154,7 +159,8 @@ class EventStoreRepository {
      * Get pending events for processing
      */
     async getPendingEvents(limit = 100) {
-        return this.db.select()
+        return this.db
+            .select()
             .from(schema_1.domainEvents)
             .where((0, drizzle_orm_1.eq)(schema_1.domainEvents.status, 'pending'))
             .orderBy(schema_1.domainEvents.occurredAt)
@@ -164,7 +170,8 @@ class EventStoreRepository {
      * Get failed events for retry
      */
     async getFailedEvents(maxRetries = 3, limit = 100) {
-        return this.db.select()
+        return this.db
+            .select()
             .from(schema_1.domainEvents)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.domainEvents.status, 'failed'), (0, drizzle_orm_1.sql) `CAST(${schema_1.domainEvents.retryCount} AS INT) < ${maxRetries}`))
             .orderBy(schema_1.domainEvents.occurredAt)
@@ -175,7 +182,8 @@ class EventStoreRepository {
      */
     async getStats(tenantId) {
         const baseCondition = tenantId ? (0, drizzle_orm_1.eq)(schema_1.domainEvents.tenantId, tenantId) : undefined;
-        const [stats] = await this.db.select({
+        const [stats] = await this.db
+            .select({
             total: (0, drizzle_orm_1.sql) `count(*)::int`,
             pending: (0, drizzle_orm_1.sql) `count(*) filter (where ${schema_1.domainEvents.status} = 'pending')::int`,
             processed: (0, drizzle_orm_1.sql) `count(*) filter (where ${schema_1.domainEvents.status} = 'processed')::int`,
@@ -192,7 +200,8 @@ class EventStoreRepository {
     async cleanOldEvents(olderThanDays) {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - olderThanDays);
-        const deleted = await this.db.delete(schema_1.domainEvents)
+        const deleted = await this.db
+            .delete(schema_1.domainEvents)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.domainEvents.status, 'processed'), (0, drizzle_orm_1.lte)(schema_1.domainEvents.occurredAt, cutoff)))
             .returning();
         logger.info('Old events cleaned', { count: deleted.length, olderThanDays });

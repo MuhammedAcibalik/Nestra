@@ -26,7 +26,7 @@ class StockModuleAdapter {
             stockType: stockType,
             minQuantity: 1
         });
-        return items.map(item => this.toContract(item));
+        return items.map((item) => this.toContract(item));
     }
     async consumeStock(stockId, quantity, reason) {
         const eventBus = events_1.EventBus.getInstance();

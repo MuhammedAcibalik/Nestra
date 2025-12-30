@@ -102,6 +102,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { IOrderService } from '../../core/interfaces';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { validate, validateId } from '../../core/validation/middleware';
+import { createOrderSchema, updateOrderSchema, orderItemSchema } from '../../core/validation/schemas';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -115,11 +117,11 @@ export class OrderController {
 
     private initializeRoutes(): void {
         this.router.get('/', this.getAll.bind(this));
-        this.router.get('/:id', this.getById.bind(this));
-        this.router.post('/', this.create.bind(this));
-        this.router.put('/:id', this.update.bind(this));
-        this.router.delete('/:id', this.delete.bind(this));
-        this.router.post('/:id/items', this.addItem.bind(this));
+        this.router.get('/:id', validateId(), this.getById.bind(this));
+        this.router.post('/', validate(createOrderSchema), this.create.bind(this));
+        this.router.put('/:id', validateId(), validate(updateOrderSchema), this.update.bind(this));
+        this.router.delete('/:id', validateId(), this.delete.bind(this));
+        this.router.post('/:id/items', validateId(), validate(orderItemSchema), this.addItem.bind(this));
         this.router.post('/import', upload.single('file'), this.importFromFile.bind(this));
     }
 

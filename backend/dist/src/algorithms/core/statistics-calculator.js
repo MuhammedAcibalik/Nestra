@@ -21,12 +21,8 @@ function calculate1DStatistics(activeBars, totalPiecesPlaced) {
         totalWaste += bar.remainingLength;
     }
     const totalUsedLength = totalStockLength - totalWaste;
-    const efficiency = totalStockLength > 0
-        ? (totalUsedLength / totalStockLength) * 100
-        : 0;
-    const wastePercentage = totalStockLength > 0
-        ? (totalWaste / totalStockLength) * 100
-        : 0;
+    const efficiency = totalStockLength > 0 ? (totalUsedLength / totalStockLength) * 100 : 0;
+    const wastePercentage = totalStockLength > 0 ? (totalWaste / totalStockLength) * 100 : 0;
     return {
         totalPieces: totalPiecesPlaced,
         totalStockLength,
@@ -45,17 +41,13 @@ function calculate2DStatistics(activeSheets, totalPiecesPlaced) {
     let totalUsedArea = 0;
     for (const sheet of activeSheets) {
         const stockArea = sheet.width * sheet.height;
-        const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+        const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
         totalStockArea += stockArea;
         totalUsedArea += usedArea;
     }
     const totalWasteArea = totalStockArea - totalUsedArea;
-    const efficiency = totalStockArea > 0
-        ? (totalUsedArea / totalStockArea) * 100
-        : 0;
-    const wastePercentage = totalStockArea > 0
-        ? (totalWasteArea / totalStockArea) * 100
-        : 0;
+    const efficiency = totalStockArea > 0 ? (totalUsedArea / totalStockArea) * 100 : 0;
+    const wastePercentage = totalStockArea > 0 ? (totalWasteArea / totalStockArea) * 100 : 0;
     return {
         totalPieces: totalPiecesPlaced,
         totalStockArea,
@@ -71,9 +63,7 @@ function calculate2DStatistics(activeSheets, totalPiecesPlaced) {
  */
 function calculateBarWaste(bar) {
     const waste = bar.remainingLength;
-    const wastePercentage = bar.stockLength > 0
-        ? (waste / bar.stockLength) * 100
-        : 0;
+    const wastePercentage = bar.stockLength > 0 ? (waste / bar.stockLength) * 100 : 0;
     return { waste, wastePercentage };
 }
 /**
@@ -81,11 +71,9 @@ function calculateBarWaste(bar) {
  */
 function calculateSheetWaste(sheet) {
     const stockArea = sheet.width * sheet.height;
-    const usedArea = sheet.placements.reduce((sum, p) => sum + (p.width * p.height), 0);
+    const usedArea = sheet.placements.reduce((sum, p) => sum + p.width * p.height, 0);
     const wasteArea = stockArea - usedArea;
-    const wastePercentage = stockArea > 0
-        ? (wasteArea / stockArea) * 100
-        : 0;
+    const wastePercentage = stockArea > 0 ? (wasteArea / stockArea) * 100 : 0;
     return { wasteArea, wastePercentage, usedArea };
 }
 //# sourceMappingURL=statistics-calculator.js.map

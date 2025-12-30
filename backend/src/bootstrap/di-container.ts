@@ -87,6 +87,28 @@ import { AuditRepository, AuditService, initializeAuditService } from '../module
 // Notification Module
 import { NotificationService } from '../modules/notification';
 
+// Analytics Module
+import {
+    AnalyticsRepository,
+    ForecastingService,
+    AnomalyService,
+    RecommendationService,
+    AnalyticsEventHandler
+} from '../modules/analytics';
+
+// ML Analytics Module
+import {
+    EnhancedPredictionService,
+    ModelRegistryService,
+    PredictionLoggerService
+} from '../modules/ml-analytics';
+
+// Supplier Module
+import { SupplierRepository, SupplierService, SupplierController } from '../modules/supplier';
+
+// RBAC Module
+import { RbacRepository, RbacService } from '../modules/rbac';
+
 /**
  * Application Services Container
  */
@@ -112,6 +134,18 @@ export interface IAppServices {
     // Advanced Features
     auditService: AuditService;
     notificationService: NotificationService;
+    // Analytics
+    forecastingService: ForecastingService;
+    anomalyService: AnomalyService;
+    recommendationService: RecommendationService;
+    // ML Analytics
+    mlPredictionService: EnhancedPredictionService;
+    modelRegistryService: ModelRegistryService;
+    predictionLoggerService: PredictionLoggerService;
+    // Supplier & Purchasing
+    supplierService: SupplierService;
+    // RBAC
+    rbacService: RbacService;
 }
 
 /**
@@ -143,6 +177,9 @@ export function initializeDependencies(db: Database): IAppServices {
     const dashboardRepository = new RealtimeDashboardRepository(db);
     const collaborationRepository = new CollaborationRepository(db);
     const auditRepository = new AuditRepository(db);
+    const analyticsRepository = new AnalyticsRepository(db);
+    const supplierRepository = new SupplierRepository(db);
+    const rbacRepository = new RbacRepository(db);
 
     // ==================== MICROSERVICE INFRASTRUCTURE ====================
     const serviceRegistry = ServiceRegistry.getInstance();
@@ -186,11 +223,30 @@ export function initializeDependencies(db: Database): IAppServices {
         activityFeedService: new ActivityFeedService(collaborationRepository),
         // Advanced Features
         auditService: new AuditService(auditRepository),
-        notificationService: new NotificationService()
+        notificationService: new NotificationService(),
+        // Analytics
+        forecastingService: new ForecastingService(analyticsRepository),
+        anomalyService: new AnomalyService(analyticsRepository),
+        recommendationService: new RecommendationService(analyticsRepository),
+        // ML Analytics - initialized with registry and logger
+        modelRegistryService: new ModelRegistryService(db as Database),
+        predictionLoggerService: new PredictionLoggerService(db as Database),
+        mlPredictionService: null as unknown as EnhancedPredictionService, // Will be set below
+        // Supplier & Purchasing
+        supplierService: new SupplierService(supplierRepository),
+        // RBAC
+        rbacService: new RbacService(rbacRepository)
     };
 
     // Initialize global audit service accessor
     initializeAuditService(services.auditService);
+
+    // Initialize ML Prediction Service with registry and logger
+    services.mlPredictionService = new EnhancedPredictionService(
+        db,
+        services.modelRegistryService,
+        services.predictionLoggerService
+    );
 
     // ==================== EVENT HANDLERS ====================
     // Store references for lifecycle management
@@ -201,7 +257,12 @@ export function initializeDependencies(db: Database): IAppServices {
         new ProductionEventHandler(productionRepository),
         new MaterialEventHandler(materialRepository),
         new MachineEventHandler(machineRepository),
-        new CuttingJobEventHandler(cuttingJobRepository)
+        new CuttingJobEventHandler(cuttingJobRepository),
+        new AnalyticsEventHandler(
+            services.forecastingService,
+            services.anomalyService,
+            services.recommendationService
+        )
     ];
     eventHandlers.forEach((handler) => handler.register());
     logger.info('Event handlers registered', { count: eventHandlers.length });

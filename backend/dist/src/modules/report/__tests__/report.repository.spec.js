@@ -11,11 +11,13 @@ describe('ReportRepository', () => {
     });
     describe('getWasteData', () => {
         it('should get waste data reports', async () => {
-            const mockResults = [{
+            const mockResults = [
+                {
                     createdAt: new Date(),
                     totalWaste: 10,
                     wastePercentage: 5
-                }];
+                }
+            ];
             db.select.mockReturnValue({
                 from: jest.fn().mockReturnValue({
                     where: jest.fn().mockReturnValue({
@@ -31,12 +33,14 @@ describe('ReportRepository', () => {
     });
     describe('getEfficiencyData', () => {
         it('should calculate efficiency aggregation', async () => {
-            const mockResults = [{
+            const mockResults = [
+                {
                     planCount: 5,
                     avgWaste: 10,
                     totalWaste: 50,
                     stockUsed: 20
-                }];
+                }
+            ];
             db.select.mockReturnValue({
                 from: jest.fn().mockReturnValue({
                     where: jest.fn().mockResolvedValue(mockResults),
@@ -50,17 +54,21 @@ describe('ReportRepository', () => {
     });
     describe('getCustomerData', () => {
         it('should aggregate customer order stats', async () => {
-            const mockResults = [{
+            const mockResults = [
+                {
                     customerId: 'c1',
                     customerName: 'ACME',
                     customerCode: 'C001',
                     orderCount: 2
-                }];
+                }
+            ];
             db.select.mockReturnValue({
                 from: jest.fn().mockReturnValue({
                     leftJoin: jest.fn().mockReturnValue({
-                        where: jest.fn().mockReturnValue({
-                            groupBy: jest.fn().mockResolvedValue(mockResults)
+                        leftJoin: jest.fn().mockReturnValue({
+                            where: jest.fn().mockReturnValue({
+                                groupBy: jest.fn().mockResolvedValue(mockResults)
+                            })
                         })
                     })
                 })

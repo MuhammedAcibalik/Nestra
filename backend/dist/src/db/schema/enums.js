@@ -10,32 +10,52 @@ const pg_core_1 = require("drizzle-orm/pg-core");
 exports.stockTypeEnum = (0, pg_core_1.pgEnum)('stock_type', ['BAR_1D', 'SHEET_2D']);
 // Machine
 exports.machineTypeEnum = (0, pg_core_1.pgEnum)('machine_type', [
-    'CNC_1D', 'CNC_2D', 'GUILLOTINE', 'LASER', 'PLASMA', 'WATERJET', 'SAW', 'OTHER'
+    'CNC_1D',
+    'CNC_2D',
+    'GUILLOTINE',
+    'LASER',
+    'PLASMA',
+    'WATERJET',
+    'SAW',
+    'OTHER'
 ]);
 // Order
 exports.orderStatusEnum = (0, pg_core_1.pgEnum)('order_status', [
-    'DRAFT', 'CONFIRMED', 'IN_PLANNING', 'IN_PRODUCTION', 'COMPLETED', 'CANCELLED'
+    'DRAFT',
+    'CONFIRMED',
+    'IN_PLANNING',
+    'IN_PRODUCTION',
+    'COMPLETED',
+    'CANCELLED'
 ]);
 exports.geometryTypeEnum = (0, pg_core_1.pgEnum)('geometry_type', [
-    'BAR_1D', 'RECTANGLE', 'CIRCLE', 'SQUARE', 'POLYGON', 'FREEFORM'
+    'BAR_1D',
+    'RECTANGLE',
+    'CIRCLE',
+    'SQUARE',
+    'POLYGON',
+    'FREEFORM'
 ]);
 // Cutting Job
 exports.cuttingJobStatusEnum = (0, pg_core_1.pgEnum)('cutting_job_status', [
-    'PENDING', 'OPTIMIZING', 'OPTIMIZED', 'IN_PRODUCTION', 'COMPLETED'
+    'PENDING',
+    'OPTIMIZING',
+    'OPTIMIZED',
+    'IN_PRODUCTION',
+    'COMPLETED'
 ]);
 // Optimization
-exports.scenarioStatusEnum = (0, pg_core_1.pgEnum)('scenario_status', [
-    'PENDING', 'RUNNING', 'COMPLETED', 'FAILED'
-]);
-exports.planStatusEnum = (0, pg_core_1.pgEnum)('plan_status', [
-    'DRAFT', 'APPROVED', 'IN_PRODUCTION', 'COMPLETED', 'CANCELLED'
-]);
+exports.scenarioStatusEnum = (0, pg_core_1.pgEnum)('scenario_status', ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']);
+exports.planStatusEnum = (0, pg_core_1.pgEnum)('plan_status', ['DRAFT', 'APPROVED', 'IN_PRODUCTION', 'COMPLETED', 'CANCELLED']);
 // Production
-exports.productionStatusEnum = (0, pg_core_1.pgEnum)('production_status', [
-    'STARTED', 'PAUSED', 'COMPLETED', 'CANCELLED'
-]);
+exports.productionStatusEnum = (0, pg_core_1.pgEnum)('production_status', ['STARTED', 'PAUSED', 'COMPLETED', 'CANCELLED']);
 exports.movementTypeEnum = (0, pg_core_1.pgEnum)('movement_type', [
-    'PURCHASE', 'CONSUMPTION', 'WASTE_REUSE', 'SCRAP', 'ADJUSTMENT', 'TRANSFER'
+    'PURCHASE',
+    'CONSUMPTION',
+    'WASTE_REUSE',
+    'SCRAP',
+    'ADJUSTMENT',
+    'TRANSFER'
 ]);
 // Downtime - Duruş sebep kodları
 exports.downtimeReasonEnum = (0, pg_core_1.pgEnum)('downtime_reason', [

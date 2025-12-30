@@ -4,14 +4,13 @@
  * Factory function for cache client creation
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MemoryCache = exports.RedisCache = exports.CacheTTL = exports.CachePrefix = void 0;
+exports.RedisCache = exports.CacheTTL = exports.CachePrefix = void 0;
 exports.createCacheClient = createCacheClient;
 exports.getCacheClient = getCacheClient;
 exports.initializeCache = initializeCache;
 exports.shutdownCache = shutdownCache;
 exports.getCache = getCache;
 const redis_cache_1 = require("./redis.cache");
-const memory_cache_1 = require("./memory.cache");
 const logger_1 = require("../logger");
 const logger = (0, logger_1.createModuleLogger)('CacheFactory');
 var cache_interface_1 = require("./cache.interface");
@@ -19,8 +18,6 @@ Object.defineProperty(exports, "CachePrefix", { enumerable: true, get: function 
 Object.defineProperty(exports, "CacheTTL", { enumerable: true, get: function () { return cache_interface_1.CacheTTL; } });
 var redis_cache_2 = require("./redis.cache");
 Object.defineProperty(exports, "RedisCache", { enumerable: true, get: function () { return redis_cache_2.RedisCache; } });
-var memory_cache_2 = require("./memory.cache");
-Object.defineProperty(exports, "MemoryCache", { enumerable: true, get: function () { return memory_cache_2.MemoryCache; } });
 // Singleton cache instance
 let cacheInstance = null;
 /**
@@ -57,22 +54,20 @@ function getDefaultConfig() {
 }
 /**
  * Create cache client based on configuration
+ * Redis is REQUIRED - no in-memory fallback
  */
 async function createCacheClient(config) {
     const finalConfig = config ?? getDefaultConfig();
-    if (finalConfig.useRedis && finalConfig.redis) {
-        try {
-            const redisCache = new redis_cache_1.RedisCache(finalConfig.redis);
-            await redisCache.connect();
-            logger.info('Using Redis cache');
-            return redisCache;
-        }
-        catch (error) {
-            logger.warn('Redis connection failed, falling back to in-memory cache', { error });
-        }
+    if (!finalConfig.useRedis || !finalConfig.redis) {
+        throw new Error('Redis configuration is required. Set USE_REDIS=true and provide REDIS_HOST/REDIS_PORT or REDIS_URL');
     }
-    logger.info('Using in-memory cache');
-    return new memory_cache_1.MemoryCache();
+    const redisCache = new redis_cache_1.RedisCache(finalConfig.redis);
+    await redisCache.connect();
+    logger.info('Redis cache connected', {
+        host: finalConfig.redis.host,
+        port: finalConfig.redis.port
+    });
+    return redisCache;
 }
 /**
  * Get or create singleton cache instance

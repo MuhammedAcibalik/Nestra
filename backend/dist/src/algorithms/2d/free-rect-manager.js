@@ -18,18 +18,14 @@ exports.sortByPosition = sortByPosition;
  * (Same y, same height, adjacent x)
  */
 function canMergeHorizontal(r1, r2) {
-    return r1.y === r2.y &&
-        r1.height === r2.height &&
-        (r1.x + r1.width === r2.x || r2.x + r2.width === r1.x);
+    return r1.y === r2.y && r1.height === r2.height && (r1.x + r1.width === r2.x || r2.x + r2.width === r1.x);
 }
 /**
  * Check if two rectangles can be merged vertically
  * (Same x, same width, adjacent y)
  */
 function canMergeVertical(r1, r2) {
-    return r1.x === r2.x &&
-        r1.width === r2.width &&
-        (r1.y + r1.height === r2.y || r2.y + r2.height === r1.y);
+    return r1.x === r2.x && r1.width === r2.width && (r1.y + r1.height === r2.y || r2.y + r2.height === r1.y);
 }
 /**
  * Merge two horizontally adjacent rectangles
@@ -93,10 +89,7 @@ function mergeFreeRectangles(rects) {
  * Check if r1 is completely contained within r2
  */
 function isContained(r1, r2) {
-    return r1.x >= r2.x &&
-        r1.y >= r2.y &&
-        r1.x + r1.width <= r2.x + r2.width &&
-        r1.y + r1.height <= r2.y + r2.height;
+    return r1.x >= r2.x && r1.y >= r2.y && r1.x + r1.width <= r2.x + r2.width && r1.y + r1.height <= r2.y + r2.height;
 }
 /**
  * Remove redundant rectangles (those contained by others)
@@ -165,7 +158,7 @@ function splitRectMaximal(rect, placedX, placedY, placedWidth, placedHeight, ker
         }
     }
     // Filter out invalid rectangles (too small)
-    return splits.filter(r => r.width > 10 && r.height > 10);
+    return splits.filter((r) => r.width > 10 && r.height > 10);
 }
 /**
  * Guillotine split - only creates non-overlapping rectangles
@@ -212,7 +205,7 @@ function splitRectGuillotine(rect, placedWidth, placedHeight, kerf, splitHorizon
             });
         }
     }
-    return splits.filter(r => r.width > 0 && r.height > 0);
+    return splits.filter((r) => r.width > 0 && r.height > 0);
 }
 // ==================== UTILITIES ====================
 /**
@@ -225,7 +218,7 @@ function getTotalFreeArea(rects) {
  * Sort rectangles by area (descending)
  */
 function sortByAreaDesc(rects) {
-    return [...rects].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    return [...rects].sort((a, b) => b.width * b.height - a.width * a.height);
 }
 /**
  * Sort rectangles by position (bottom-left first)

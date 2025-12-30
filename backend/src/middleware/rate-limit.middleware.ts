@@ -96,3 +96,35 @@ export const uploadRateLimiter = rateLimit({
         retryAfter: 60 * 60
     }
 });
+
+/**
+ * Analytics rate limiter - Forecast/Reports endpoints
+ * 60 requests per 15 minutes per IP (moderate - read operations)
+ */
+export const analyticsRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 60, // 60 analytics requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Analytics rate limit exceeded',
+        message: 'Too many analytics requests. Results are cached, please wait.',
+        retryAfter: 15 * 60
+    }
+});
+
+/**
+ * Analytics generation rate limiter - CPU intensive analytics operations
+ * detect/generate endpoints - 10 requests per 15 minutes per IP
+ */
+export const analyticsGenerationRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 generation requests per window (CPU intensive)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Analytics generation rate limit exceeded',
+        message: 'Too many analytics generation requests. Please wait before running detection again.',
+        retryAfter: 15 * 60
+    }
+});

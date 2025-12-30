@@ -20,9 +20,7 @@ class StatusMachine {
     }
     initializeTransitions(transitions) {
         for (const transition of transitions) {
-            const fromStates = Array.isArray(transition.from)
-                ? transition.from
-                : [transition.from];
+            const fromStates = Array.isArray(transition.from) ? transition.from : [transition.from];
             for (const from of fromStates) {
                 const existing = this.transitions.get(from) ?? new Set();
                 existing.add(transition.to);
@@ -85,11 +83,8 @@ class InvalidStatusTransitionError extends Error {
     to;
     validTransitions;
     constructor(from, to, validTransitions) {
-        const validStr = validTransitions.length > 0
-            ? validTransitions.join(', ')
-            : 'none (terminal state)';
-        super(`Invalid status transition: ${from} -> ${to}. ` +
-            `Valid transitions from ${from}: ${validStr}`);
+        const validStr = validTransitions.length > 0 ? validTransitions.join(', ') : 'none (terminal state)';
+        super(`Invalid status transition: ${from} -> ${to}. ` + `Valid transitions from ${from}: ${validStr}`);
         this.name = 'InvalidStatusTransitionError';
         this.from = from;
         this.to = to;
@@ -142,14 +137,14 @@ function createPlanMachine(initialStatus = 'DRAFT') {
  * Validate a status transition without creating a full machine
  */
 function isValidScenarioTransition(from, to) {
-    const allowed = exports.SCENARIO_TRANSITIONS.filter(t => {
+    const allowed = exports.SCENARIO_TRANSITIONS.filter((t) => {
         const fromStates = Array.isArray(t.from) ? t.from : [t.from];
         return fromStates.includes(from) && t.to === to;
     });
     return allowed.length > 0;
 }
 function isValidPlanTransition(from, to) {
-    const allowed = exports.PLAN_TRANSITIONS.filter(t => {
+    const allowed = exports.PLAN_TRANSITIONS.filter((t) => {
         const fromStates = Array.isArray(t.from) ? t.from : [t.from];
         return fromStates.includes(from) && t.to === to;
     });

@@ -59,8 +59,8 @@ class StockAlertService {
     async getLowStockItems(threshold = 5) {
         try {
             const items = await this.stockRepository.findAll({ minQuantity: threshold });
-            const lowItems = items.filter(item => item.quantity <= threshold);
-            return (0, interfaces_1.success)(lowItems.map(item => (0, stock_mapper_1.toStockItemDto)(item)));
+            const lowItems = items.filter((item) => item.quantity <= threshold);
+            return (0, interfaces_1.success)(lowItems.map((item) => (0, stock_mapper_1.toStockItemDto)(item)));
         }
         catch (error) {
             return (0, interfaces_1.failure)({

@@ -101,9 +101,9 @@ function isRetryableError(error) {
         'lock timeout'
     ];
     const message = error.message.toLowerCase();
-    return retryablePatterns.some(pattern => message.includes(pattern));
+    return retryablePatterns.some((pattern) => message.includes(pattern));
 }
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 //# sourceMappingURL=transaction.js.map

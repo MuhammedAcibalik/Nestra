@@ -28,7 +28,7 @@ function expandPieces(pieces) {
  * Helper: Find the first bar that fits the piece
  */
 function findFirstFitBar(activeBars, pieceLength, kerf) {
-    return activeBars.find(bar => {
+    return activeBars.find((bar) => {
         const required = pieceLength + (bar.cuts.length > 0 ? kerf : 0);
         return bar.remainingLength >= required;
     });
@@ -86,12 +86,14 @@ function createActiveBar(stock, piece) {
         stockId: stock.id,
         stockLength: stock.length,
         remainingLength: stock.length - piece.length,
-        cuts: [{
+        cuts: [
+            {
                 pieceId: piece.id,
                 orderItemId: piece.orderItemId,
                 position: 0,
                 length: piece.length
-            }],
+            }
+        ],
         currentPosition: piece.length
     };
 }
@@ -99,7 +101,7 @@ function createActiveBar(stock, piece) {
  * Helper: Add to unplaced pieces
  */
 function addUnplacedPiece(unplacedPieces, piece) {
-    const existingUnplaced = unplacedPieces.find(p => p.id === piece.originalId);
+    const existingUnplaced = unplacedPieces.find((p) => p.id === piece.originalId);
     if (existingUnplaced) {
         existingUnplaced.quantity++;
     }
@@ -150,7 +152,7 @@ function buildResults(activeBars, minUsableWaste, kerf) {
 function firstFitDecreasing(pieces, stockBars, options) {
     const { kerf, minUsableWaste } = options;
     const expandedPieces = expandPieces(pieces).sort((a, b) => b.length - a.length);
-    const sortedStock = [...stockBars].filter(s => s.available > 0).sort((a, b) => b.length - a.length);
+    const sortedStock = [...stockBars].filter((s) => s.available > 0).sort((a, b) => b.length - a.length);
     const stockUsage = new Map();
     for (const stock of sortedStock) {
         stockUsage.set(stock.id, { remaining: stock.available });
@@ -204,7 +206,7 @@ function firstFitDecreasing(pieces, stockBars, options) {
 function bestFitDecreasing(pieces, stockBars, options) {
     const { kerf, minUsableWaste } = options;
     const expandedPieces = expandPieces(pieces).sort((a, b) => b.length - a.length);
-    const sortedStock = [...stockBars].filter(s => s.available > 0).sort((a, b) => a.length - b.length);
+    const sortedStock = [...stockBars].filter((s) => s.available > 0).sort((a, b) => a.length - b.length);
     const stockUsage = new Map();
     for (const stock of sortedStock) {
         stockUsage.set(stock.id, { remaining: stock.available });

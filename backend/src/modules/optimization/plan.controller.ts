@@ -6,6 +6,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { IOptimizationService } from '../../core/interfaces';
 import { AuthenticatedRequest } from '../../middleware/authMiddleware';
+import { validate, validateId } from '../../core/validation/middleware';
+import { approvePlanSchema } from '../../core/validation/schemas';
 
 export class PlanController {
     public router: Router;
@@ -17,8 +19,8 @@ export class PlanController {
 
     private initializeRoutes(): void {
         this.router.get('/', this.getPlans.bind(this));
-        this.router.get('/:id', this.getPlanById.bind(this));
-        this.router.post('/:id/approve', this.approvePlan.bind(this));
+        this.router.get('/:id', validateId(), this.getPlanById.bind(this));
+        this.router.post('/:id/approve', validateId(), validate(approvePlanSchema), this.approvePlan.bind(this));
         this.router.post('/compare', this.comparePlans.bind(this));
     }
 

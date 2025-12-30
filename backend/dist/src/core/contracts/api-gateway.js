@@ -48,10 +48,10 @@ class ApiGateway {
         this.router.get('/health', async (_req, res) => {
             const health = await this.aggregateHealth();
             let overallStatus = 'healthy';
-            if (health.some(h => h.status === 'unhealthy')) {
+            if (health.some((h) => h.status === 'unhealthy')) {
                 overallStatus = 'unhealthy';
             }
-            else if (health.some(h => h.status === 'degraded')) {
+            else if (health.some((h) => h.status === 'degraded')) {
                 overallStatus = 'degraded';
             }
             res.json({
@@ -62,7 +62,7 @@ class ApiGateway {
         });
         // Module info endpoint
         this.router.get('/modules', (_req, res) => {
-            const modules = Array.from(this.modules.values()).map(m => ({
+            const modules = Array.from(this.modules.values()).map((m) => ({
                 name: m.name,
                 version: m.version,
                 dependencies: []

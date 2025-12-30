@@ -116,13 +116,11 @@ class MemoryCache {
         return remaining > 0 ? remaining : -2;
     }
     async incr(key) {
-        const current = await this.get(key) ?? 0;
+        const current = (await this.get(key)) ?? 0;
         const newValue = current + 1;
         // Preserve TTL
         const entry = this.cache.get(key);
-        const ttl = entry?.expiresAt
-            ? Math.ceil((entry.expiresAt - Date.now()) / 1000)
-            : undefined;
+        const ttl = entry?.expiresAt ? Math.ceil((entry.expiresAt - Date.now()) / 1000) : undefined;
         await this.set(key, newValue, ttl);
         return newValue;
     }

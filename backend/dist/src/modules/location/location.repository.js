@@ -26,8 +26,10 @@ class LocationRepository {
     }
     async findAll(filter) {
         if (filter?.search) {
-            return this.db.select().from(schema_1.locations)
-                .where((0, drizzle_orm_1.or)((0, drizzle_orm_1.ilike)(schema_1.locations.name, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.locations.description, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.locations.address, `%${filter.search}%`)))
+            return this.db
+                .select()
+                .from(schema_1.locations)
+                .where((0, drizzle_orm_1.or)((0, drizzle_orm_1.ilike)(schema_1.locations.name, `%${filter.search}%`), (0, drizzle_orm_1.ilike)(schema_1.locations.description, `%${filter.search}%`)))
                 .orderBy((0, drizzle_orm_1.asc)(schema_1.locations.name));
         }
         return this.db.query.locations.findMany({
@@ -35,15 +37,19 @@ class LocationRepository {
         });
     }
     async create(data) {
-        const [result] = await this.db.insert(schema_1.locations).values({
+        const [result] = await this.db
+            .insert(schema_1.locations)
+            .values({
             name: data.name,
             description: data.description,
             address: data.address
-        }).returning();
+        })
+            .returning();
         return result;
     }
     async update(id, data) {
-        const [result] = await this.db.update(schema_1.locations)
+        const [result] = await this.db
+            .update(schema_1.locations)
             .set({
             name: data.name,
             description: data.description,

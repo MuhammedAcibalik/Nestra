@@ -76,8 +76,10 @@ describe('ReportRepository', () => {
             (db.select as jest.Mock).mockReturnValue({
                 from: jest.fn().mockReturnValue({
                     leftJoin: jest.fn().mockReturnValue({
-                        where: jest.fn().mockReturnValue({
-                            groupBy: jest.fn().mockResolvedValue(mockResults)
+                        leftJoin: jest.fn().mockReturnValue({
+                            where: jest.fn().mockReturnValue({
+                                groupBy: jest.fn().mockResolvedValue(mockResults)
+                            })
                         })
                     })
                 })

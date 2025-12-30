@@ -65,7 +65,8 @@ class AuditRepository {
         });
     }
     async countByEntity(tenantId, entityType, entityId) {
-        const result = await this.db.select()
+        const result = await this.db
+            .select()
             .from(schema_1.auditLogs)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.auditLogs.tenantId, tenantId), (0, drizzle_orm_1.eq)(schema_1.auditLogs.entityType, entityType), (0, drizzle_orm_1.eq)(schema_1.auditLogs.entityId, entityId)));
         return result.length;
@@ -83,7 +84,8 @@ class AuditRepository {
     async deleteOlderThan(tenantId, days) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
-        const result = await this.db.delete(schema_1.auditLogs)
+        const result = await this.db
+            .delete(schema_1.auditLogs)
             .where((0, drizzle_orm_1.and)((0, drizzle_orm_1.eq)(schema_1.auditLogs.tenantId, tenantId), (0, drizzle_orm_1.between)(schema_1.auditLogs.createdAt, new Date(0), cutoffDate)))
             .returning();
         logger.info('Deleted old audit logs', { tenantId, days, count: result.length });

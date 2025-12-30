@@ -14,9 +14,7 @@ describe('1D Cutting Algorithm', () => {
                 { id: 'p1', length: 500, quantity: 1, orderItemId: 'o1' },
                 { id: 'p2', length: 500, quantity: 1, orderItemId: 'o2' }
             ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.optimize1D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.stockUsedCount).toBe(1);
@@ -29,12 +27,8 @@ describe('1D Cutting Algorithm', () => {
             // Our algorithm applies kerf AFTER existing cuts.
             // Pos 0: Piece 1 (0-495). Next pos: 495 + 10 = 505.
             // Pos 505: Piece 2 (505-1000). Total used: 1000.
-            const pieces = [
-                { id: 'p1', length: 495, quantity: 2, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 495, quantity: 2, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.optimize1D)(pieces, stock, { ...defaultOptions, kerf: 10 });
             expect(result.success).toBe(true);
             expect(result.bars[0].cuts).toHaveLength(2);
@@ -42,24 +36,16 @@ describe('1D Cutting Algorithm', () => {
             expect(result.bars[0].cuts[1].position).toBe(505); // 495 + 10
         });
         it('should report unplaced pieces when stock is insufficient', () => {
-            const pieces = [
-                { id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 1500, quantity: 1, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.optimize1D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(false);
             expect(result.unplacedPieces).toHaveLength(1);
             expect(result.unplacedPieces[0].id).toBe('p1');
         });
         it('should expand quantity correctly', () => {
-            const pieces = [
-                { id: 'p1', length: 100, quantity: 5, orderItemId: 'o1' }
-            ];
-            const stock = [
-                { id: 's1', length: 1000, available: 1 }
-            ];
+            const pieces = [{ id: 'p1', length: 100, quantity: 5, orderItemId: 'o1' }];
+            const stock = [{ id: 's1', length: 1000, available: 1 }];
             const result = (0, cutting1d_1.optimize1D)(pieces, stock, defaultOptions);
             expect(result.success).toBe(true);
             expect(result.bars[0].cuts).toHaveLength(5);

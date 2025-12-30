@@ -21,26 +21,28 @@ exports.tenants = (0, pg_core_1.pgTable)('tenants', {
     contactPhone: (0, pg_core_1.text)('contact_phone'),
     address: (0, pg_core_1.text)('address'),
     createdAt: (0, pg_core_1.timestamp)('created_at').defaultNow().notNull(),
-    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull(),
+    updatedAt: (0, pg_core_1.timestamp)('updated_at').defaultNow().notNull()
 });
 // Forward declaration for relations (will be connected in auth.ts)
 exports.tenantsRelations = (0, drizzle_orm_1.relations)(exports.tenants, ({ many }) => ({
-    users: many(exports.tenantUsers),
+    users: many(exports.tenantUsers)
 }));
 // ==================== TENANT USER (Join Table) ====================
 // Allows users to belong to multiple tenants with different roles
 exports.tenantUsers = (0, pg_core_1.pgTable)('tenant_users', {
     id: (0, pg_core_1.uuid)('id').primaryKey().defaultRandom(),
-    tenantId: (0, pg_core_1.uuid)('tenant_id').notNull().references(() => exports.tenants.id, { onDelete: 'cascade' }),
+    tenantId: (0, pg_core_1.uuid)('tenant_id')
+        .notNull()
+        .references(() => exports.tenants.id, { onDelete: 'cascade' }),
     userId: (0, pg_core_1.uuid)('user_id').notNull(), // References users.id (circular ref handled separately)
     isOwner: (0, pg_core_1.boolean)('is_owner').default(false).notNull(),
     isActive: (0, pg_core_1.boolean)('is_active').default(true).notNull(),
-    joinedAt: (0, pg_core_1.timestamp)('joined_at').defaultNow().notNull(),
+    joinedAt: (0, pg_core_1.timestamp)('joined_at').defaultNow().notNull()
 });
 exports.tenantUsersRelations = (0, drizzle_orm_1.relations)(exports.tenantUsers, ({ one }) => ({
     tenant: one(exports.tenants, {
         fields: [exports.tenantUsers.tenantId],
-        references: [exports.tenants.id],
-    }),
+        references: [exports.tenants.id]
+    })
 }));
 //# sourceMappingURL=tenant.js.map

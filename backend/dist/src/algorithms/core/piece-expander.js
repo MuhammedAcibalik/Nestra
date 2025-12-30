@@ -63,6 +63,6 @@ function sort1DByLengthDesc(pieces) {
  * Used by 2D algorithms
  */
 function sort2DByAreaDesc(pieces) {
-    return [...pieces].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    return [...pieces].sort((a, b) => b.width * b.height - a.width * a.height);
 }
 //# sourceMappingURL=piece-expander.js.map

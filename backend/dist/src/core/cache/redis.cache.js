@@ -121,9 +121,9 @@ class RedisCache {
         if (keys.length === 0)
             return [];
         try {
-            const prefixedKeys = keys.map(k => this.prefixKey(k));
+            const prefixedKeys = keys.map((k) => this.prefixKey(k));
             const values = await this.client.mget(...prefixedKeys);
-            return values.map(v => {
+            return values.map((v) => {
                 if (!v)
                     return null;
                 try {

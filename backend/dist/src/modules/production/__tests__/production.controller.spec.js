@@ -74,7 +74,8 @@ describe('ProductionController', () => {
     });
     describe('getApprovedPlans', () => {
         it('should return approved plans', async () => {
-            const mockPlans = [{
+            const mockPlans = [
+                {
                     id: 'plan-1',
                     planNumber: 'PN-001',
                     status: 'APPROVED',
@@ -83,7 +84,8 @@ describe('ProductionController', () => {
                     wastePercentage: 0,
                     stockUsedCount: 0,
                     layoutItems: []
-                }];
+                }
+            ];
             service.getApprovedPlans.mockResolvedValue((0, interfaces_1.success)(mockPlans));
             await controller.getApprovedPlans(req, res, next);
             expect(res.json).toHaveBeenCalledWith({

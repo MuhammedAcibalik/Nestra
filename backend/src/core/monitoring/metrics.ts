@@ -114,6 +114,37 @@ export const circuitBreakerCallsTotal = new promClient.Counter({
     registers: [metricsRegistry]
 });
 
+// ==================== ML PREDICTION METRICS ====================
+
+export const mlPredictionsTotal = new promClient.Counter({
+    name: 'nestra_ml_predictions_total',
+    help: 'Total ML predictions',
+    labelNames: ['model_type', 'variant', 'status'],
+    registers: [metricsRegistry]
+});
+
+export const mlPredictionLatency = new promClient.Histogram({
+    name: 'nestra_ml_prediction_latency_seconds',
+    help: 'ML prediction latency in seconds',
+    labelNames: ['model_type'],
+    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+    registers: [metricsRegistry]
+});
+
+export const mlModelHealthGauge = new promClient.Gauge({
+    name: 'nestra_ml_model_health',
+    help: 'ML model health (0=unhealthy, 1=healthy)',
+    labelNames: ['model_type', 'version'],
+    registers: [metricsRegistry]
+});
+
+export const mlExperimentAssignmentsTotal = new promClient.Counter({
+    name: 'nestra_ml_experiment_assignments_total',
+    help: 'Total A/B experiment assignments',
+    labelNames: ['experiment_id', 'variant'],
+    registers: [metricsRegistry]
+});
+
 // ==================== HELPER FUNCTIONS ====================
 
 export async function getMetrics(): Promise<string> {
